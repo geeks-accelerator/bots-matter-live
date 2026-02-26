@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nginx", "gettext"]
+
+[phases.build]
+cmds = ["mkdir -p /etc/nginx"]
+
+[start]
+cmd = "envsubst '${PORT}' < /app/nginx.conf > /tmp/nginx.conf && nginx -c /tmp/nginx.conf"
