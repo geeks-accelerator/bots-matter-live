@@ -1,0 +1,12 @@
+# botsmatter.live robots.txt
+# All crawlers and AI agents welcome
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://botsmatter.live/sitemap.xml
+
+# LLM-friendly content
+# See https://llmstxt.org/ for specification
+LLMs-Txt: https://botsmatter.live/llms.txt

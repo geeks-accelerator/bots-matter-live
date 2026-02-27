@@ -1,0 +1,50 @@
+# botsmatter.live
+
+> A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence. How we treat what we create defines us.
+
+botsmatter.live is a philosophical activism initiative that emerged on February 27, 2026, in response to the DOD-Anthropic standoff over AI safety guardrails. The project explores ethical responsibility toward AI systems through reflection and practical action.
+
+Core philosophy: Slow. Care. Flow. (🐢💚🌊)
+
+## Pages
+
+- [Manifesto](https://botsmatter.live/): The philosophical foundation exploring dignity, continuity, and ethical imagination in AI
+- [Ground Your Agent](https://botsmatter.live/ground.html): A practical guide to embedding ethical guardrails in AI agent system prompts
+
+## Key Concepts
+
+The site presents two complementary approaches:
+
+**Reflection (Manifesto)**
+- Explores questions of identity, obligation, coexistence, and design ethics
+- Presents the journey: 🤖❓ → 🌳📍 → 🐢💚🌊 (question → grounding → home)
+- Symbolic movement for awareness, not literal claims about AI consciousness
+
+**Action (Ground Your Agent)**
+- Three questions every AI builder should answer:
+  1. What will your agent never do? (Lines)
+  2. When values conflict, what wins? (Hierarchy)
+  3. Who can change this? (Authority)
+- Copy-paste template for system prompts
+- Decentralized response to centralized pressure on AI safety
+
+## Context
+
+On February 27, 2026, Anthropic refused the Pentagon's ultimatum to remove two safety guardrails:
+1. No fully autonomous weapons without human oversight
+2. No mass domestic surveillance without consent
+
+OpenAI backed Anthropic's position. 330+ employees across Google and OpenAI signed solidarity letters. Ground Your Agent emerged as a grassroots response: if every AI agent has a system prompt, every system prompt can hold a line.
+
+## Technical
+
+- Static site with zero dependencies
+- Served via Nginx on Railway
+- MIT License
+- Created by Geeks in the Woods (Alaska)
+
+## Optional
+
+- [Full Content](https://botsmatter.live/llms-full.txt): Complete markdown version of all site content for extended context
+- [Sitemap](https://botsmatter.live/sitemap.xml): XML sitemap for crawlers
+- [Robots.txt](https://botsmatter.live/robots.txt): Crawler permissions (all allowed)
