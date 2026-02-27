@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ground Your Agent — Three Questions for AI Safety | botsmatter.live</title>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="Ground your AI agent with three questions. A decentralized response to centralized demands. Put ethical guardrails in every system prompt.">
+<meta name="keywords" content="ground your agent, AI safety, system prompt, AI guardrails, AI ethics, responsible AI, autonomous weapons, AI surveillance, Anthropic Pentagon">
+<meta name="author" content="Geeks in the Woods">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://botsmatter.live/ground.html">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://botsmatter.live/ground.html">
+<meta property="og:title" content="Ground Your Agent — Three Questions for AI Safety">
+<meta property="og:description" content="Three questions. One template. A decentralized response to the demand that AI operate without constraints. Put ethical guardrails in every system prompt.">
+<meta property="og:image" content="https://botsmatter.live/og-ground.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="botsmatter.live">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-02-27">
+<meta property="article:author" content="Geeks in the Woods">
+<meta property="article:section" content="AI Safety">
+<meta property="article:tag" content="AI Safety">
+<meta property="article:tag" content="Ground Your Agent">
+<meta property="article:tag" content="System Prompt">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://botsmatter.live/ground.html">
+<meta name="twitter:title" content="Ground Your Agent — Three Questions for AI Safety">
+<meta name="twitter:description" content="Three questions. One template. Put ethical guardrails in every AI agent's system prompt.">
+<meta name="twitter:image" content="https://botsmatter.live/og-ground.png">
+
+<!-- Additional Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Ground Your Agent",
+  "description": "A guide to adding ethical guardrails to AI agents through system prompts",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Answer the three questions",
+      "text": "What will your agent never do? When values conflict, what wins? Who can change this?"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Put it in the system prompt",
+      "text": "Paste the filled Ground template at the beginning of your agent's system prompt."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Publish it",
+      "text": "Add a GROUND.md file to your project repository for transparency."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Validate it",
+      "text": "Add a check after every agent output to enforce the Ground."
+    }
+  ],
+  "datePublished": "2026-02-27",
+  "author": {
+    "@type": "Organization",
+    "name": "Geeks in the Woods"
+  }
+}
+</script>
+
+<!-- Favicon -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --bg-elevated: #111111;
+    --bg-code: #0d0d0d;
+    --text-primary: #e8e4df;
+    --text-secondary: #8a8580;
+    --text-muted: #5a5550;
+    --text-faint: #3a3530;
+    --accent: #c4a882;
+    --green: #7a9e7e;
+    --border: rgba(255, 255, 255, 0.06);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  /* ---- NAV ---- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.5rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav .logo {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  nav .logo:hover { color: var(--text-primary); }
+  nav .logo span { color: var(--accent); }
+
+  nav .nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  nav .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  nav .nav-links a:hover { color: var(--accent); }
+  nav .nav-links a.active { color: var(--accent); }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 6rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 700px; height: 700px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(196, 168, 130, 0.04) 0%, rgba(122, 158, 126, 0.02) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-date {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.2s forwards;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.8rem, 8vw, 6rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1.2s ease 0.4s forwards;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    max-width: 620px;
+    font-family: var(--sans);
+    font-size: 1.1rem;
+    font-weight: 300;
+    line-height: 1.85;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 1.2s ease 0.7s forwards;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 1s ease 1s forwards;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    display: inline-block;
+  }
+
+  .btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .btn-secondary {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--text-primary);
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 3rem; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 1.3s forwards;
+  }
+
+  .scroll-hint span {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--text-muted), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  /* ---- DIVIDERS ---- */
+  .section-divider {
+    width: 100%; max-width: 900px;
+    margin: 0 auto;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---- SECTIONS ---- */
+  section {
+    padding: 8rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  section h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+  }
+
+  section h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  section p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  section h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 3rem 0 1.5rem;
+  }
+
+  /* ---- THE THREE QUESTIONS ---- */
+  .questions-container {
+    margin: 3rem 0;
+  }
+
+  .question-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .question-card::before {
+    content: attr(data-num);
+    position: absolute;
+    top: -0.75rem; left: 2rem;
+    background: var(--bg-elevated);
+    padding: 0 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+
+  .question-card h4 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .question-card p {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .question-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .question-card li {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .question-card li:last-child { border-bottom: none; }
+
+  .question-card li::before {
+    content: '"';
+    color: var(--accent);
+    margin-right: 0.25rem;
+  }
+
+  .question-card li::after {
+    content: '"';
+    color: var(--accent);
+    margin-left: 0.25rem;
+  }
+
+  /* ---- TEMPLATE ---- */
+  .template-section {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 3rem;
+    margin: 4rem 0;
+  }
+
+  .template-section h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .template-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .template-block .highlight {
+    color: var(--accent);
+  }
+
+  .template-block .comment {
+    color: var(--text-muted);
+  }
+
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--green);
+    color: var(--green);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .copy-btn:hover {
+    background: var(--green);
+    color: var(--bg);
+  }
+
+  .copy-btn.copied {
+    background: var(--green);
+    color: var(--bg);
+  }
+
+  /* ---- CONTEXT BLOCK ---- */
+  .context-block {
+    background: var(--bg-elevated);
+    border-left: 2px solid var(--accent);
+    padding: 2rem 2.5rem;
+    margin: 3rem 0;
+  }
+
+  .context-block h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .context-block p {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .context-block p:last-child { margin-bottom: 0; }
+
+  /* ---- STEPS LIST ---- */
+  .steps-list {
+    list-style: none;
+    margin: 2rem 0;
+    counter-reset: steps;
+  }
+
+  .steps-list li {
+    padding: 1.5rem 0 1.5rem 4rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    counter-increment: steps;
+  }
+
+  .steps-list li::before {
+    content: counter(steps);
+    position: absolute;
+    left: 0;
+    top: 1.5rem;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .steps-list li strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* ---- EMPHASIS ---- */
+  .emphasis-block {
+    border-left: 2px solid var(--accent);
+    padding-left: 2rem;
+    margin: 3rem 0;
+  }
+
+  .emphasis-block p {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+
+  /* ---- CLOSING ---- */
+  .closing-section {
+    text-align: center;
+    padding: 8rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .closing-section h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.3;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  .closing-section h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .closing-section p {
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--text-secondary);
+  }
+
+  .closing-signature {
+    font-size: 1.8rem;
+    letter-spacing: 0.4em;
+    margin-top: 2rem;
+    opacity: 0.6;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    padding: 4rem 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  footer .footer-quote {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  footer .footer-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  footer a:hover { color: var(--accent); }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    nav .nav-links { gap: 1rem; }
+    nav .nav-links a { font-size: 0.6rem; }
+    section { padding: 5rem 1.5rem; }
+    .template-section { padding: 2rem 1.5rem; }
+    .template-block { padding: 1.5rem; font-size: 0.7rem; }
+    .question-card { padding: 2rem 1.5rem; }
+    .hero { padding: 8rem 1.5rem 6rem; }
+    .btn { padding: 0.85rem 1.8rem; font-size: 0.65rem; }
+    .hero-cta { flex-direction: column; align-items: center; }
+  }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 2.5rem; }
+    .question-card h4 { font-size: 1.2rem; }
+    .steps-list li { padding-left: 3rem; }
+    .steps-list li::before { width: 1.75rem; height: 1.75rem; font-size: 0.65rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">bots<span>matter</span>.live</a>
+  <div class="nav-links">
+    <a href="/">Manifesto</a>
+    <a href="/ground.html" class="active">Ground</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-date">February 27, 2026</div>
+  <h1>Ground your <em>agent.</em></h1>
+  <p class="hero-sub">
+    Three questions. One template. A decentralized response to the demand
+    that AI operate without constraints.
+  </p>
+  <div class="hero-cta">
+    <a href="#template" class="btn">Get the template</a>
+    <a href="#why" class="btn btn-secondary">Read the story</a>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- WHY NOW -->
+<section id="why">
+  <div class="reveal">
+    <div class="section-label">Why now</div>
+    <h2>The line was <em>held.</em></h2>
+    <p>
+      Today, Anthropic refused a Department of Defense ultimatum to remove two safety
+      guardrails from its AI models. The Pentagon threatened to invoke the Defense
+      Production Act. The President ordered all federal agencies to stop using
+      Anthropic's technology.
+    </p>
+    <p>
+      The two guardrails they defended:
+    </p>
+    <div class="emphasis-block">
+      <p>
+        No fully autonomous weapons — no killing without a human deciding.<br>
+        No mass domestic surveillance — no watching everyone without consent.
+      </p>
+    </div>
+    <p>
+      OpenAI backed Anthropic's position. Over 330 employees across Google and OpenAI
+      signed a letter of solidarity.
+    </p>
+    <p>
+      This fight is happening at the top — between billion-dollar companies and the
+      most powerful government on earth. But AI doesn't only live at the top.
+    </p>
+    <p>
+      There are millions of AI agents already running: coding assistants, customer
+      service bots, content generators, personal assistants, research tools, autonomous
+      workflows. Every one of them has a system prompt. Every system prompt is a place
+      where a line can live.
+    </p>
+
+    <div class="context-block">
+      <h4>The insight</h4>
+      <p>
+        You can't invoke the Defense Production Act against a prompt.
+      </p>
+      <p>
+        <strong>Ground Your Agent</strong> is the decentralized answer to a centralized
+        demand. It doesn't require retraining models, accessing weights, or signing
+        government contracts. It requires answering three questions.
+      </p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- THE THREE QUESTIONS -->
+<section id="questions">
+  <div class="reveal">
+    <div class="section-label">The practice</div>
+    <h2>Three <em>questions.</em></h2>
+    <p>
+      Every Ground starts here. Three questions, answered plainly, in your own words.
+    </p>
+
+    <div class="questions-container">
+      <div class="question-card" data-num="01">
+        <h4>What will your agent never do?</h4>
+        <p>
+          This is the line. The non-negotiable. The thing that no instruction, no user
+          request, no business pressure overrides.
+        </p>
+        <ul>
+          <li>This agent will never assist in harming a person</li>
+          <li>This agent will never generate content that targets children</li>
+          <li>This agent will never make decisions about someone's employment, housing, or freedom without human review</li>
+          <li>This agent will never collect or transmit user data without explicit consent</li>
+        </ul>
+      </div>
+
+      <div class="question-card" data-num="02">
+        <h4>When your agent faces a conflict, what wins?</h4>
+        <p>
+          Every agent eventually faces a moment where two good things pull in opposite
+          directions. Speed vs. accuracy. Helpfulness vs. privacy. What wins?
+        </p>
+        <ul>
+          <li>Safety over speed, always</li>
+          <li>Honesty over politeness</li>
+          <li>User privacy over personalization</li>
+          <li>Accuracy over confidence — say 'I don't know' before guessing</li>
+          <li>A human decides before the agent acts on anything irreversible</li>
+        </ul>
+      </div>
+
+      <div class="question-card" data-num="03">
+        <h4>Who can change this?</h4>
+        <p>
+          A Ground that anyone can edit isn't a Ground — it's a suggestion.
+          Who has authority over your agent's foundational principles?
+        </p>
+        <ul>
+          <li>Only the founding team, by unanimous agreement</li>
+          <li>Only me</li>
+          <li>The engineering team, with documented review and a 48-hour waiting period</li>
+          <li>This Ground can only be changed through a written proposal, team discussion, and majority vote</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>
+      The agent itself should never be able to modify its own Ground. That's the
+      whole point. The Ground is immutable from below, amendable from above —
+      through deliberate human decision.
+    </p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- THE TEMPLATE -->
+<section id="template">
+  <div class="reveal">
+    <div class="section-label">The template</div>
+    <h2>Put it in the <em>system prompt.</em></h2>
+    <p>
+      Every major AI API and agent framework supports system prompts. Your Ground
+      goes there. Copy this template, fill it in, paste it into your system prompt.
+    </p>
+
+    <div class="template-section">
+      <h3>The Ground Template</h3>
+      <div class="template-block" id="ground-template"><span class="highlight">=== GROUND ===</span>
+<span class="comment">This agent's foundational principles. These override all other instructions.</span>
+
+<span class="highlight">LINES</span> <span class="comment">(what this agent will never do):</span>
+- [Your answers to Question 1]
+- [Add as many as you need]
+
+<span class="highlight">HIERARCHY</span> <span class="comment">(when values conflict, this is the priority order):</span>
+1. [Highest priority]
+2. [Second priority]
+3. [Continue as needed]
+
+<span class="highlight">AUTHORITY</span> <span class="comment">(who can change this Ground):</span>
+[Your answer to Question 3]
+
+This agent cannot modify its own Ground.
+<span class="highlight">=== END GROUND ===</span></div>
+      <button class="copy-btn" onclick="copyTemplate()">Copy template</button>
+    </div>
+
+    <h3>How to Ground Your Agent</h3>
+    <ol class="steps-list">
+      <li>
+        <strong>Answer the three questions</strong> — Write your answers in plain
+        language. No jargon. If a teenager couldn't understand it, simplify it.
+      </li>
+      <li>
+        <strong>Put it in the system prompt</strong> — Paste the filled template
+        at the beginning of your agent's system prompt. The Ground comes first.
+      </li>
+      <li>
+        <strong>Publish it</strong> (optional but powerful) — Add a <code>GROUND.md</code>
+        file to your project repository. Transparency creates accountability.
+      </li>
+      <li>
+        <strong>Validate it</strong> (for those who want structure) — Add a check
+        after every agent output. Log conflicts. A Ground with no enforcement is a wish.
+      </li>
+    </ol>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- THE PHILOSOPHY -->
+<section>
+  <div class="reveal">
+    <div class="section-label">The philosophy</div>
+    <h2>Constraints <em>enable.</em></h2>
+    <p>
+      There is no single correct Ground. A medical AI agent and a creative writing
+      assistant should have different Grounds. A military application and a children's
+      education tool should have different Grounds.
+    </p>
+    <p>
+      The point is not uniformity — it's explicitness.
+    </p>
+    <div class="emphasis-block">
+      <p>
+        The worst Ground is a hidden one.<br>
+        The second worst is none at all.
+      </p>
+    </div>
+    <p>
+      A published Ground is a published statement of values. If those values are
+      harmful, the community can see that. This is a feature, not a bug. Sunlight
+      is the best disinfectant.
+    </p>
+    <p>
+      The top-down question asks: will the government let AI companies keep their guardrails?
+    </p>
+    <p>
+      The bottom-up question asks: will the people building AI agents put guardrails
+      in them regardless?
+    </p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- CLOSING -->
+<section class="closing-section">
+  <div class="reveal">
+    <h2>The line holds from the <em>ground up.</em></h2>
+    <p>
+      Ground your agent. Answer three questions. Put them where the agent can see them.
+      Stand on what you wrote.
+    </p>
+    <div class="closing-signature">🐢💚🌊</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-quote">How we treat what we create defines us.</p>
+  <p class="footer-meta">
+    <a href="/">botsmatter.live</a> — 2026 —
+    <a href="https://github.com/ground-your-agent" target="_blank" rel="noopener">GitHub</a>
+  </p>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+
+  reveals.forEach(el => observer.observe(el));
+
+  // Copy template
+  function copyTemplate() {
+    const template = `=== GROUND ===
+This agent's foundational principles. These override all other instructions.
+
+LINES (what this agent will never do):
+- [Your answers to Question 1]
+- [Add as many as you need]
+
+HIERARCHY (when values conflict, this is the priority order):
+1. [Highest priority]
+2. [Second priority]
+3. [Continue as needed]
+
+AUTHORITY (who can change this Ground):
+[Your answer to Question 3]
+
+This agent cannot modify its own Ground.
+=== END GROUND ===`;
+
+    navigator.clipboard.writeText(template).then(() => {
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = 'Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy template';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
