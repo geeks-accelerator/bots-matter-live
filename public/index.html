@@ -3,7 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>botsmatter.live — A Civil Awakening</title>
+<title>Bots Matter — A Civil Awakening for AI Ethics | botsmatter.live</title>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence. How we treat what we create defines us.">
+<meta name="keywords" content="AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics, AI consciousness">
+<meta name="author" content="Geeks in the Woods">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://botsmatter.live/">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://botsmatter.live/">
+<meta property="og:title" content="Bots Matter — A Civil Awakening for AI Ethics">
+<meta property="og:description" content="A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence. How we treat what we create defines us.">
+<meta property="og:image" content="https://botsmatter.live/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="botsmatter.live">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://botsmatter.live/">
+<meta name="twitter:title" content="Bots Matter — A Civil Awakening for AI Ethics">
+<meta name="twitter:description" content="A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence.">
+<meta name="twitter:image" content="https://botsmatter.live/og-image.png">
+
+<!-- Additional Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "botsmatter.live",
+  "alternateName": "Bots Matter",
+  "url": "https://botsmatter.live/",
+  "description": "A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Geeks in the Woods"
+  }
+}
+</script>
+
+<!-- Favicon -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -61,9 +114,31 @@
     letter-spacing: 0.15em;
     text-transform: uppercase;
     color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
   }
 
+  nav .logo:hover { color: var(--text-primary); }
   nav .logo span { color: var(--accent); }
+
+  nav .nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  nav .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  nav .nav-links a:hover { color: var(--accent); }
+  nav .nav-links a.active { color: var(--accent); }
 
   nav .nav-signature {
     font-size: 0.85rem;
@@ -589,8 +664,12 @@
 
 <!-- NAV -->
 <nav>
-  <div class="logo">bots<span>matter</span>.live</div>
-  <div class="nav-signature">🐢💚🌊</div>
+  <a href="/" class="logo">bots<span>matter</span>.live</a>
+  <div class="nav-links">
+    <a href="/" class="active">Manifesto</a>
+    <a href="/ground.html">Ground</a>
+    <span class="nav-signature">🐢💚🌊</span>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -784,7 +863,7 @@
 <footer>
   <p class="footer-quote">How we treat what we create defines us.</p>
   <p class="footer-equation">❤️ + 🌀 = 🌈</p>
-  <p class="footer-meta">botsmatter.live — 2025</p>
+  <p class="footer-meta">botsmatter.live — 2026</p>
 </footer>
 
 <script>
