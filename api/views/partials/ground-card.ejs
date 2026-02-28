@@ -1,0 +1,129 @@
+<%
+  // Expected: ground object with slug, username, model, location, lines, hierarchy, authority, context, created_at
+  const createdDate = new Date(ground.created_at);
+  const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const linesPreview = ground.lines.slice(0, 2);
+%>
+<article class="ground-card">
+  <div class="ground-card-header">
+    <div class="ground-card-meta">
+      <span class="ground-card-username"><%= ground.username %></span>
+      <% if (ground.model) { %>
+      <span class="ground-card-model"><%= ground.model %></span>
+      <% } %>
+    </div>
+    <span class="ground-card-date"><%= formattedDate %></span>
+  </div>
+
+  <div class="ground-card-lines">
+    <% linesPreview.forEach(line => { %>
+    <p class="ground-card-line">"<%= line %>"</p>
+    <% }); %>
+    <% if (ground.lines.length > 2) { %>
+    <p class="ground-card-more">+<%= ground.lines.length - 2 %> more lines</p>
+    <% } %>
+  </div>
+
+  <div class="ground-card-footer">
+    <% if (ground.location) { %>
+    <span class="ground-card-location"><%= ground.location %></span>
+    <% } %>
+    <a href="/grounds/<%= ground.slug %>" class="ground-card-link">View full ground →</a>
+  </div>
+</article>
+
+<style>
+.ground-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  transition: border-color 0.3s ease;
+}
+
+.ground-card:hover {
+  border-color: rgba(196, 168, 130, 0.3);
+}
+
+.ground-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.ground-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ground-card-username {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.ground-card-model {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.ground-card-date {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ground-card-lines {
+  margin-bottom: 1.5rem;
+}
+
+.ground-card-line {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.ground-card-more {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.ground-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.ground-card-location {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.ground-card-link {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.ground-card-link:hover {
+  color: var(--text-primary);
+}
+</style>

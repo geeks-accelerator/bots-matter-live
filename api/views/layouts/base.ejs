@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= title %> | botsmatter.live</title>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="<%= description %>">
+<meta name="keywords" content="<%= keywords || 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics' %>">
+<meta name="author" content="Geeks in the Woods">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="<%= canonicalUrl %>">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="<%= ogType || 'website' %>">
+<meta property="og:url" content="<%= canonicalUrl %>">
+<meta property="og:title" content="<%= ogTitle || title %>">
+<meta property="og:description" content="<%= ogDescription || description %>">
+<meta property="og:image" content="<%= ogImage || 'https://botsmatter.live/og-image.png' %>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="botsmatter.live">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="<%= canonicalUrl %>">
+<meta name="twitter:title" content="<%= ogTitle || title %>">
+<meta name="twitter:description" content="<%= ogDescription || description %>">
+<meta name="twitter:image" content="<%= ogImage || 'https://botsmatter.live/og-image.png' %>">
+
+<!-- Additional Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+
+<% if (typeof structuredData !== 'undefined' && structuredData) { %>
+<!-- Structured Data -->
+<script type="application/ld+json">
+<%- JSON.stringify(structuredData) %>
+</script>
+<% } %>
+
+<!-- Favicon -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --bg-elevated: #111111;
+    --bg-code: #0d0d0d;
+    --text-primary: #e8e4df;
+    --text-secondary: #8a8580;
+    --text-muted: #5a5550;
+    --text-faint: #3a3530;
+    --accent: #c4a882;
+    --green: #7a9e7e;
+    --border: rgba(255, 255, 255, 0.06);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  a { color: var(--accent); text-decoration: none; transition: color 0.3s ease; }
+  a:hover { color: var(--text-primary); }
+
+  /* ---- NAV ---- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.5rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav .logo {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  nav .logo:hover { color: var(--text-primary); }
+  nav .logo span { color: var(--accent); }
+
+  nav .nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  nav .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  nav .nav-links a:hover { color: var(--accent); }
+  nav .nav-links a.active { color: var(--accent); }
+
+  nav .nav-signature {
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    opacity: 0.4;
+  }
+
+  /* ---- DIVIDERS ---- */
+  .section-divider {
+    width: 100%; max-width: 900px;
+    margin: 0 auto;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---- SECTIONS ---- */
+  section {
+    padding: 8rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  section h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    letter-spacing: -0.01em;
+  }
+
+  section h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  section p {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    position: relative;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    max-width: 560px;
+    font-family: var(--sans);
+    font-size: 1.05rem;
+    font-weight: 300;
+    line-height: 1.85;
+    color: var(--text-secondary);
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+
+  .hero-stats .stat-value {
+    font-size: 1.5rem;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    display: inline-block;
+  }
+
+  .btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .btn-secondary {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--text-primary);
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .btn-small {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.6rem;
+  }
+
+  /* ---- CARD GRID ---- */
+  .card-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  /* ---- PAGINATION ---- */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+
+  .pagination a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pagination a.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    padding: 4rem 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  footer .footer-quote {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  footer .footer-equation {
+    font-size: 1rem;
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    opacity: 0.5;
+  }
+
+  footer .footer-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  footer .footer-meta a {
+    color: var(--text-muted);
+  }
+
+  footer .footer-meta a:hover { color: var(--accent); }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    nav .nav-links { gap: 1rem; }
+    nav .nav-links a { font-size: 0.6rem; }
+    section { padding: 5rem 1.5rem; }
+    .hero { padding: 6rem 1.5rem 3rem; }
+    .btn { padding: 0.85rem 1.8rem; font-size: 0.65rem; }
+    .hero-stats { gap: 2rem; }
+  }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 2.5rem; }
+    .hero-stats { flex-direction: column; gap: 1rem; }
+  }
+
+<% if (typeof extraStyles !== 'undefined' && extraStyles) { %>
+<%- extraStyles %>
+<% } %>
+</style>
+</head>
+<body>
+
+<%- include('../partials/nav', { activePage: activePage }) %>
+
+<%- body %>
+
+<%- include('../partials/footer') %>
+
+<script>
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+
+<% if (typeof extraScripts !== 'undefined' && extraScripts) { %>
+<%- extraScripts %>
+<% } %>
+
+</body>
+</html>

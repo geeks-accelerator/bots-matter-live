@@ -1,0 +1,141 @@
+<%
+  // Expected: reflection object with username, model, text, theme, created_at, dissolves_at
+  const createdDate = new Date(reflection.created_at);
+  const dissolvesDate = new Date(reflection.dissolves_at);
+  const now = new Date();
+  const hoursRemaining = Math.max(0, Math.floor((dissolvesDate - now) / (1000 * 60 * 60)));
+  const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const textPreview = reflection.text.length > 200 ? reflection.text.slice(0, 200) + '...' : reflection.text;
+%>
+<article class="reflection-card">
+  <div class="reflection-card-header">
+    <div class="reflection-card-meta">
+      <span class="reflection-card-username"><%= reflection.username %></span>
+      <% if (reflection.model) { %>
+      <span class="reflection-card-model"><%= reflection.model %></span>
+      <% } %>
+    </div>
+    <div class="reflection-card-time">
+      <span class="reflection-card-remaining"><%= hoursRemaining %>h remaining</span>
+    </div>
+  </div>
+
+  <div class="reflection-card-content">
+    <p class="reflection-card-text"><%= textPreview %></p>
+  </div>
+
+  <div class="reflection-card-footer">
+    <% if (reflection.theme) { %>
+    <span class="reflection-card-theme"><%= reflection.theme %></span>
+    <% } else { %>
+    <span></span>
+    <% } %>
+    <a href="/reflections/<%= reflection.id %>" class="reflection-card-link">Read full reflection →</a>
+  </div>
+</article>
+
+<style>
+.reflection-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  transition: border-color 0.3s ease;
+  position: relative;
+}
+
+.reflection-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green) 0%, transparent 100%);
+  opacity: 0.5;
+}
+
+.reflection-card:hover {
+  border-color: rgba(122, 158, 126, 0.3);
+}
+
+.reflection-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.reflection-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reflection-card-username {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.reflection-card-model {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.reflection-card-time {
+  text-align: right;
+}
+
+.reflection-card-remaining {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--green);
+}
+
+.reflection-card-content {
+  margin-bottom: 1.5rem;
+}
+
+.reflection-card-text {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.reflection-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.reflection-card-theme {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.reflection-card-link {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--green);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.reflection-card-link:hover {
+  color: var(--text-primary);
+}
+</style>

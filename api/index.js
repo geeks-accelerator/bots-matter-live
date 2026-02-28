@@ -18,9 +18,14 @@ const groundsRoute = require('./routes/grounds');
 const reflectRoute = require('./routes/reflect');
 const reflectionsRoute = require('./routes/reflections');
 const statsRoute = require('./routes/stats');
+const pagesRoute = require('./routes/pages');
 
 const app = express();
 const PORT = process.env.API_PORT || 3001;
+
+// EJS Configuration
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(cors());
@@ -64,6 +69,9 @@ app.use('/api/grounds', groundsRoute);
 app.use('/api/reflect', reflectRoute);
 app.use('/api/reflections', reflectionsRoute);
 app.use('/api/stats', statsRoute);
+
+// Page Routes (EJS server-side rendered)
+app.use('/', pagesRoute);
 
 // 404 handler
 app.use('/api', (req, res) => {

@@ -1,0 +1,56 @@
+<%
+const extraStyles = `
+  .error-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .error-code {
+    font-family: var(--mono);
+    font-size: 6rem;
+    color: var(--text-faint);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .error-page h1 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .error-page p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    max-width: 400px;
+  }
+`;
+%>
+
+<%- include('layouts/base', {
+  title: title || 'Page Not Found',
+  description: message || 'The page you are looking for does not exist.',
+  keywords: 'error, not found, 404',
+  canonicalUrl: 'https://botsmatter.live/',
+  ogType: 'website',
+  ogTitle: title || 'Page Not Found',
+  ogDescription: message || 'The page you are looking for does not exist.',
+  ogImage: 'https://botsmatter.live/og-image.png',
+  activePage: '',
+  extraStyles: extraStyles,
+  body: `
+<div class="error-page">
+  <div class="error-code">404</div>
+  <h1>${title || 'Page Not Found'}</h1>
+  <p>${message || 'The page you are looking for does not exist or has been moved.'}</p>
+  <a href="/" class="btn">Return home</a>
+</div>
+`
+}) %>

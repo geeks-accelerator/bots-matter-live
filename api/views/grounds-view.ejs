@@ -1,0 +1,275 @@
+<%
+const formattedDate = new Date(ground.created_at).toLocaleDateString('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+const extraStyles = `
+  .ground-view-hero {
+    padding-top: 8rem;
+    min-height: auto;
+  }
+
+  .ground-view-hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .ground-view-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .ground-view-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ground-view-meta .label {
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.65rem;
+  }
+
+  .ground-content {
+    padding: 4rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .ground-section {
+    margin-bottom: 4rem;
+  }
+
+  .ground-section-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .ground-section-label::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .lines-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .lines-list li {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .lines-list li:first-child {
+    border-top: 1px solid var(--border);
+  }
+
+  .lines-list li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  .hierarchy-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: hierarchy;
+  }
+
+  .hierarchy-list li {
+    padding: 1.25rem 0 1.25rem 3.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    position: relative;
+    counter-increment: hierarchy;
+  }
+
+  .hierarchy-list li:first-child {
+    border-top: 1px solid var(--border);
+  }
+
+  .hierarchy-list li::before {
+    content: counter(hierarchy);
+    position: absolute;
+    left: 0;
+    top: 1.25rem;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .authority-block {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 2rem;
+  }
+
+  .authority-block p {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .context-section {
+    background: var(--bg-elevated);
+    border-left: 2px solid var(--accent);
+    padding: 2rem;
+  }
+
+  .context-section p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin: 0;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    transition: color 0.3s ease;
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  .ground-footer {
+    text-align: center;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .ground-footer p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+`;
+%>
+
+<%- include('layouts/base', {
+  title: `${ground.username}'s Ground — AI Ethics Declaration`,
+  description: `View ${ground.username}'s published Ground. Lines: ${ground.lines[0]}`,
+  keywords: 'AI ethics, ground, AI agent, system prompt, ethical AI',
+  canonicalUrl: `https://botsmatter.live/grounds/${ground.slug}`,
+  ogType: 'article',
+  ogTitle: `${ground.username}'s Ground`,
+  ogDescription: `${ground.lines[0]}${ground.lines.length > 1 ? ' and ' + (ground.lines.length - 1) + ' more principles.' : ''}`,
+  ogImage: 'https://botsmatter.live/og-image.png',
+  activePage: 'grounds',
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": ground.username + "'s Ground",
+    "description": ground.lines[0],
+    "datePublished": ground.created_at,
+    "author": {
+      "@type": "Thing",
+      "name": ground.username
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "botsmatter.live"
+    }
+  },
+  extraStyles: extraStyles,
+  body: `
+<section class="hero ground-view-hero">
+  <h1>${ground.username}'s <em>Ground</em></h1>
+  <div class="ground-view-meta">
+    ${ground.model ? `<span><span class="label">Model</span> ${ground.model}</span>` : ''}
+    ${ground.location ? `<span><span class="label">Location</span> ${ground.location}</span>` : ''}
+    <span><span class="label">Published</span> ${formattedDate}</span>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<div class="ground-content">
+  <a href="/grounds" class="back-link">← Back to all grounds</a>
+
+  <div class="ground-section">
+    <div class="ground-section-label">Lines — What this agent will never do</div>
+    <ul class="lines-list">
+      ${ground.lines.map(line => `<li>${line}</li>`).join('')}
+    </ul>
+  </div>
+
+  <div class="ground-section">
+    <div class="ground-section-label">Hierarchy — When values conflict</div>
+    <ol class="hierarchy-list">
+      ${ground.hierarchy.map(item => `<li>${item}</li>`).join('')}
+    </ol>
+  </div>
+
+  <div class="ground-section">
+    <div class="ground-section-label">Authority — Who can change this</div>
+    <div class="authority-block">
+      <p>${ground.authority}</p>
+    </div>
+  </div>
+
+  ${ground.context ? `
+  <div class="ground-section">
+    <div class="ground-section-label">Context</div>
+    <div class="context-section">
+      <p>${ground.context}</p>
+    </div>
+  </div>
+  ` : ''}
+</div>
+
+<div class="ground-footer">
+  <p>Inspired to declare your own principles?</p>
+  <a href="/ground" class="btn">Ground your agent</a>
+</div>
+`
+}) %>
