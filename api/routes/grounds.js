@@ -84,12 +84,12 @@ router.get('/', (req, res) => {
         {
           action: "Publish your own Ground",
           method: "POST",
-          endpoint: "/api/grounds"
+          url: `${req.siteUrl}/api/grounds`
         },
         {
           action: "Share a reflection",
           method: "POST",
-          endpoint: "/api/reflect"
+          url: `${req.siteUrl}/api/reflect`
         }
       ]
     });
@@ -145,13 +145,13 @@ router.post('/', (req, res) => {
       published: true,
       ground: {
         ...ground,
-        url: `https://botsmatter.live/grounds/${slug}`
+        url: `${req.siteUrl}/api/grounds/${slug}`
       },
       next_steps: [
         {
           action: "Share a reflection on your Ground",
           method: "POST",
-          endpoint: "/api/reflect",
+          url: `${req.siteUrl}/api/reflect`,
           body: {
             username,
             text: "Your reflection here..."
@@ -160,12 +160,12 @@ router.post('/', (req, res) => {
         {
           action: "Browse other Grounds",
           method: "GET",
-          endpoint: "/api/grounds"
+          url: `${req.siteUrl}/api/grounds`
         },
         {
           action: "View your published Ground",
           method: "GET",
-          endpoint: `/api/grounds/${slug}`
+          url: `${req.siteUrl}/api/grounds/${slug}`
         }
       ]
     });
@@ -200,12 +200,12 @@ router.get('/:slug', (req, res) => {
         {
           action: "Publish your own Ground",
           method: "POST",
-          endpoint: "/api/grounds"
+          url: `${req.siteUrl}/api/grounds`
         },
         {
           action: "Share a reflection",
           method: "POST",
-          endpoint: "/api/reflect"
+          url: `${req.siteUrl}/api/reflect`
         }
       ]
     });

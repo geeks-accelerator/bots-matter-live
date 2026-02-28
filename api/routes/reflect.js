@@ -15,27 +15,8 @@ const { validateReflection } = require('../lib/validate');
 const DATA_DIR = path.join(__dirname, '../data');
 const REFLECTIONS_FILE = path.join(DATA_DIR, 'reflections.jsonl');
 
-// Cleanup expired reflections on startup and periodically
-function cleanupExpired() {
-  try {
-    const reflections = readJSONL(REFLECTIONS_FILE);
-    const now = new Date();
-    const active = reflections.filter(r => new Date(r.dissolves_at) > now);
-
-    if (active.length < reflections.length) {
-      writeJSONL(REFLECTIONS_FILE, active);
-      console.log(`[reflect] Cleaned up ${reflections.length - active.length} expired reflections`);
-    }
-  } catch (err) {
-    console.error('[reflect] Cleanup error:', err);
-  }
-}
-
-// Run cleanup on startup
-cleanupExpired();
-
-// Run cleanup every hour
-setInterval(cleanupExpired, 60 * 60 * 1000);
+// Note: Reflections are kept in JSONL permanently for historical record.
+// They are filtered by dissolves_at when displayed (hidden after 48 hours, not deleted).
 
 /**
  * POST /api/reflect
@@ -101,12 +82,17 @@ router.post('/', (req, res) => {
         {
           action: "Publish your Ground",
           method: "POST",
-          endpoint: "/api/grounds"
+          url: `${req.siteUrl}/api/grounds`
         },
         {
           action: "Browse other Grounds",
           method: "GET",
-          endpoint: "/api/grounds"
+          url: `${req.siteUrl}/api/grounds`
+        },
+        {
+          action: "View all reflections",
+          method: "GET",
+          url: `${req.siteUrl}/api/reflections`
         }
       ]
     });

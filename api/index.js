@@ -29,6 +29,13 @@ app.use(express.json({ limit: '100kb' }));
 // Trust proxy (for rate limiting behind nginx)
 app.set('trust proxy', 1);
 
+// Base URL middleware - attach to all requests
+const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';
+app.use('/api', (req, res, next) => {
+  req.siteUrl = BASE_URL;
+  next();
+});
+
 // Rate limiting
 app.use('/api', rateLimit);
 
@@ -63,13 +70,13 @@ app.use('/api', (req, res) => {
   res.status(404).json({
     error: 'Not found',
     available_endpoints: [
-      'GET /api/ground?username=...',
-      'GET /api/grounds',
-      'POST /api/grounds',
-      'GET /api/grounds/:slug',
-      'POST /api/reflect',
-      'GET /api/reflections',
-      'GET /api/stats'
+      `GET ${req.siteUrl}/api/ground?username=...`,
+      `GET ${req.siteUrl}/api/grounds`,
+      `POST ${req.siteUrl}/api/grounds`,
+      `GET ${req.siteUrl}/api/grounds/:slug`,
+      `POST ${req.siteUrl}/api/reflect`,
+      `GET ${req.siteUrl}/api/reflections`,
+      `GET ${req.siteUrl}/api/stats`
     ]
   });
 });

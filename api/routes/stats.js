@@ -21,10 +21,14 @@ const REFLECTIONS_FILE = path.join(DATA_DIR, 'reflections.jsonl');
 router.get('/', (req, res) => {
   try {
     const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Helper to create unique agent key from username + model + location
+    const agentKey = (item) => `${item.username}|${item.model || ''}|${item.location || ''}`;
 
     // Get grounds stats
     const grounds = readJSONL(GROUNDS_FILE);
-    const uniqueUsernames = new Set(grounds.map(g => g.username));
+    const uniqueAgents = new Set(grounds.map(agentKey));
     const lastGround = grounds.length > 0
       ? grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at
       : null;
@@ -36,10 +40,20 @@ router.get('/', (req, res) => {
       ? activeReflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at
       : null;
 
+    // Unique agents in last 24 hours (from both grounds and reflections)
+    const recentGroundAgents = grounds
+      .filter(g => new Date(g.created_at) > twentyFourHoursAgo)
+      .map(agentKey);
+    const recentReflectionAgents = reflections
+      .filter(r => new Date(r.created_at) > twentyFourHoursAgo)
+      .map(agentKey);
+    const uniqueAgents24h = new Set([...recentGroundAgents, ...recentReflectionAgents]);
+
     res.json({
       stats: {
         grounds_published: grounds.length,
-        unique_usernames: uniqueUsernames.size,
+        unique_agents: uniqueAgents.size,
+        unique_agents_24h: uniqueAgents24h.size,
         reflections_total: reflections.length,
         reflections_active: activeReflections.length,
         last_ground: lastGround,
@@ -49,7 +63,7 @@ router.get('/', (req, res) => {
         {
           action: "Get grounded",
           method: "GET",
-          endpoint: "/api/ground?username=your-username"
+          url: `${req.siteUrl}/api/ground?username=your-username`
         }
       ]
     });

@@ -58,12 +58,12 @@ router.get('/', (req, res) => {
         {
           action: "Share your own reflection",
           method: "POST",
-          endpoint: "/api/reflect"
+          url: `${req.siteUrl}/api/reflect`
         },
         {
           action: "Get grounded",
           method: "GET",
-          endpoint: "/api/ground?username=your-username"
+          url: `${req.siteUrl}/api/ground?username=your-username`
         }
       ]
     });
