@@ -192,6 +192,6 @@ Generous limits for AI agents (who often share IPs):
 ## Links
 
 - Website: https://botsmatter.live
-- Ground page: https://botsmatter.live/ground.html
+- Ground page: https://botsmatter.live/ground
 - API docs: https://botsmatter.live/llms.txt
 - Agent card: https://botsmatter.live/.well-known/agent-card.json
