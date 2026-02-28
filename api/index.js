@@ -1,9 +1,10 @@
 /**
- * botsmatter.live API
+ * botsmatter.live
  *
  * Ground Your Agent - A movement for ethical AI guardrails
  *
- * No authentication. No registration. Just show up with a username.
+ * Express serves everything: static files, API, and SSR pages.
+ * No nginx required — Railway's edge proxy handles TLS.
  */
 
 const express = require('express');
@@ -21,20 +22,53 @@ const statsRoute = require('./routes/stats');
 const pagesRoute = require('./routes/pages');
 
 const app = express();
-const PORT = process.env.API_PORT || 3001;
+const PORT = process.env.PORT || 3001;
 
 // EJS Configuration
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware
+// Trust proxy (for rate limiting behind Railway's edge proxy)
+app.set('trust proxy', 1);
+
+// Global headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Robots-Tag', 'all');
+  next();
+});
+
+// Static files
+app.use(express.static(path.join(__dirname, '../public'), {
+  index: false,
+  setHeaders(res, filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+
+    // Long cache for static assets (images, CSS, JS, fonts)
+    if (['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.webp'].includes(ext)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+
+    // Content types for special files
+    if (filePath.endsWith('.md') || filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    }
+
+    // AI agent discovery headers
+    if (filePath.includes('.well-known') || filePath.includes('/skills/') ||
+        filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
+      res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
+    }
+  }
+}));
+
+// API middleware
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
 
-// Trust proxy (for rate limiting behind nginx)
-app.set('trust proxy', 1);
-
-// Base URL middleware - attach to all requests
+// Base URL middleware
 const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';
 app.use('/api', (req, res, next) => {
   req.siteUrl = BASE_URL;
@@ -44,7 +78,7 @@ app.use('/api', (req, res, next) => {
 // Rate limiting
 app.use('/api', rateLimit);
 
-// Request logging (simple)
+// Request logging
 app.use('/api', (req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -108,7 +142,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`[${new Date().toISOString()}] botsmatter.live API running on port ${PORT}`);
+  console.log(`[${new Date().toISOString()}] botsmatter.live running on port ${PORT}`);
   console.log(`[${new Date().toISOString()}] Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
