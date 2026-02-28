@@ -41,7 +41,7 @@ app.use((req, res, next) => {
 // Static files
 app.use(express.static(path.join(__dirname, '../public'), {
   index: false,
-  setHeaders(res, filePath) {
+  setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
 
     // Long cache for static assets (images, CSS, JS, fonts)
