@@ -1,11 +1,2 @@
-[phases.setup]
-nixPkgs = ["nodejs_20"]
-
-[phases.install]
-cmds = ["cd /app/api && npm install"]
-
 [phases.build]
 cmds = ["mkdir -p ${DATA_DIR:-/app/api/data}"]
-
-[start]
-cmd = "cd /app/api && node index.js"

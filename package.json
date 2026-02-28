@@ -1,0 +1,14 @@
+{
+  "name": "botsmatter-live",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ground Your Agent - botsmatter.live",
+  "scripts": {
+    "postinstall": "cd api && npm install",
+    "start": "cd api && node index.js",
+    "dev": "cd api && node --watch index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
