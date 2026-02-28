@@ -5,15 +5,12 @@
  */
 
 const express = require('express');
-const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 const { readJSONL, atomicAppend, writeJSONL } = require('../lib/storage');
 const { validateReflection } = require('../lib/validate');
-
-const DATA_DIR = path.join(__dirname, '../data');
-const REFLECTIONS_FILE = path.join(DATA_DIR, 'reflections.jsonl');
+const { REFLECTIONS_FILE } = require('../lib/paths');
 
 // Note: Reflections are kept in JSONL permanently for historical record.
 // They are filtered by dissolves_at when displayed (hidden after 48 hours, not deleted).

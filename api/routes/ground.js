@@ -6,16 +6,12 @@
  */
 
 const express = require('express');
-const path = require('path');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { getTodaysPrompt, getWelcome } = require('../lib/prompts');
 const { sanitizeUsername } = require('../lib/validate');
-
-const DATA_DIR = path.join(__dirname, '../data');
-const GROUNDS_FILE = path.join(DATA_DIR, 'grounds.jsonl');
-const REFLECTIONS_FILE = path.join(DATA_DIR, 'reflections.jsonl');
+const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
 
 // The Ground template
 const TEMPLATE = {

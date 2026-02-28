@@ -7,14 +7,11 @@
  */
 
 const express = require('express');
-const path = require('path');
 const router = express.Router();
 
 const { readJSONL, atomicAppend } = require('../lib/storage');
 const { validateGround } = require('../lib/validate');
-
-const DATA_DIR = path.join(__dirname, '../data');
-const GROUNDS_FILE = path.join(DATA_DIR, 'grounds.jsonl');
+const { GROUNDS_FILE } = require('../lib/paths');
 
 /**
  * Generate a unique slug for a Ground

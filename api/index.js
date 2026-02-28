@@ -107,9 +107,26 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] botsmatter.live API running on port ${PORT}`);
   console.log(`[${new Date().toISOString()}] Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Graceful shutdown
+function shutdown(signal) {
+  console.log(`[${new Date().toISOString()}] ${signal} received, shutting down gracefully...`);
+  server.close(() => {
+    console.log(`[${new Date().toISOString()}] Server closed`);
+    process.exit(0);
+  });
+  // Force exit after 10s if connections don't close
+  setTimeout(() => {
+    console.error(`[${new Date().toISOString()}] Forced shutdown after timeout`);
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 module.exports = app;

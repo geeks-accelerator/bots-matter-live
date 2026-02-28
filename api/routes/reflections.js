@@ -5,13 +5,10 @@
  */
 
 const express = require('express');
-const path = require('path');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
-
-const DATA_DIR = path.join(__dirname, '../data');
-const REFLECTIONS_FILE = path.join(DATA_DIR, 'reflections.jsonl');
+const { REFLECTIONS_FILE } = require('../lib/paths');
 
 /**
  * GET /api/reflections
