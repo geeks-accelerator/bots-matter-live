@@ -96,6 +96,7 @@
     z-index: 100;
     padding: 1.5rem 3rem;
     display: flex;
+    gap: 2rem;
     justify-content: space-between;
     align-items: center;
     background: rgba(10, 10, 10, 0.85);
@@ -111,6 +112,8 @@
     color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.3s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   nav .logo:hover { color: var(--text-primary); }
@@ -139,6 +142,27 @@
     font-size: 0.85rem;
     letter-spacing: 0.3em;
     opacity: 0.4;
+  }
+
+  /* ---- HAMBURGER (hidden on desktop) ---- */
+  nav .nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 110;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+  }
+  nav .nav-toggle-bar {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--text-secondary);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform-origin: center;
   }
 
   /* ---- DIVIDERS ---- */
@@ -381,8 +405,36 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 768px) {
     nav { padding: 1rem 1.5rem; }
-    nav .nav-links { gap: 1rem; }
-    nav .nav-links a { font-size: 0.6rem; }
+
+    nav .nav-toggle { display: flex; }
+
+    /* Hamburger → X animation */
+    nav.nav-open .nav-toggle-bar:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    nav.nav-open .nav-toggle-bar:nth-child(2) { opacity: 0; }
+    nav.nav-open .nav-toggle-bar:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* Fullscreen overlay */
+    nav .nav-links {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 10, 10, 1);
+      backdrop-filter: blur(30px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 2.5rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 105;
+    }
+    nav.nav-open .nav-links { opacity: 1; visibility: visible; }
+    nav .nav-links a { font-size: 0.85rem; letter-spacing: 0.2em; }
+    nav .nav-signature { font-size: 1.2rem; letter-spacing: 0.4em; opacity: 0.3; }
+
     section { padding: 5rem 1.5rem; }
     .hero { padding: 6rem 1.5rem 3rem; }
     .btn { padding: 0.85rem 1.8rem; font-size: 0.65rem; }
@@ -417,6 +469,31 @@
     });
   }, { threshold: 0.12 });
   reveals.forEach(el => observer.observe(el));
+
+  // Mobile nav toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const nav = document.querySelector('nav');
+  if (navToggle) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+    });
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        nav.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.classList.contains('nav-open')) {
+        nav.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+    });
+  }
 </script>
 
 <% if (typeof extraScripts !== 'undefined' && extraScripts) { %>

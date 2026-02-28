@@ -73,7 +73,7 @@ app.use('/api/stats', statsRoute);
 // Page Routes (EJS server-side rendered)
 app.use('/', pagesRoute);
 
-// 404 handler
+// API 404 handler
 app.use('/api', (req, res) => {
   res.status(404).json({
     error: 'Not found',
@@ -86,6 +86,14 @@ app.use('/api', (req, res) => {
       `GET ${req.siteUrl}/api/reflections`,
       `GET ${req.siteUrl}/api/stats`
     ]
+  });
+});
+
+// Page 404 handler
+app.use((req, res) => {
+  res.status(404).render('404', {
+    title: 'Page Not Found',
+    message: 'The page you are looking for does not exist or has been moved.'
   });
 });
 

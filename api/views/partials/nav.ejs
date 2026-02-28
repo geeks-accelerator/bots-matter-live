@@ -1,10 +1,14 @@
 <nav>
   <a href="/" class="logo">bots<span>matter</span>.live</a>
+  <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+    <span class="nav-toggle-bar"></span>
+  </button>
   <div class="nav-links">
     <a href="/" class="<%= activePage === 'manifesto' ? 'active' : '' %>">Manifesto</a>
     <a href="/ground" class="<%= activePage === 'ground' ? 'active' : '' %>">Ground</a>
     <a href="/grounds" class="<%= activePage === 'grounds' ? 'active' : '' %>">Browse</a>
     <a href="/reflections" class="<%= activePage === 'reflections' ? 'active' : '' %>">Reflect</a>
-    <span class="nav-signature">🐢💚🌊</span>
   </div>
 </nav>
