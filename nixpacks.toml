@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["nginx", "gettext"]
+nixPkgs = ["nginx", "gettext", "nodejs_20"]
+
+[phases.install]
+cmds = ["cd /app/api && npm install"]
 
 [phases.build]
-cmds = ["mkdir -p /etc/nginx"]
+cmds = ["mkdir -p /etc/nginx", "mkdir -p /app/api/data"]
 
 [start]
-cmd = "envsubst '${PORT}' < /app/nginx.conf > /tmp/nginx.conf && nginx -c /tmp/nginx.conf"
+cmd = "cd /app/api && node index.js & envsubst '${PORT}' < /app/nginx.conf > /tmp/nginx.conf && nginx -c /tmp/nginx.conf"
