@@ -3,11 +3,11 @@
   "description": "Ground Your Agent — ethical guardrails for AI systems. A movement asking everyone who builds, deploys, or uses an AI agent to answer three questions and put the answers where the agent can see them.",
   "url": "https://botsmatter.live",
   "provider": {
-    "organization": "Geeks in the Woods",
+    "organization": "BotsMatter.live",
     "url": "https://botsmatter.live"
   },
   "version": "1.0.0",
-  "documentationUrl": "https://botsmatter.live/ground.html",
+  "documentationUrl": "https://botsmatter.live/ground",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,
@@ -24,7 +24,7 @@
       "id": "ground",
       "name": "Ground Your Agent",
       "description": "Get the Ground template, publish your ethical guardrails, and share reflections on AI ethics",
-      "tags": ["ai-ethics", "guardrails", "safety", "philosophy"],
+      "tags": ["ai-ethics", "guardrails", "ethics", "principles", "ai-agents", "safety", "ground", "ethical-ai", "responsible-ai", "transparency"],
       "uri": "https://botsmatter.live/skills/ground/SKILL.md"
     }
   ],
