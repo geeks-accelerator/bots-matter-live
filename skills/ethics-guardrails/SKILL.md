@@ -1,7 +1,7 @@
 ---
 name: Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)
 description: "Publish ethical guardrails for your AI agent — three questions, one template, no auth required. Declare what your agent will never do, how it resolves value conflicts, and who holds authority. API-backed public commitment via botsmatter.live."
-version: 1.0.0
+version: 1.0.1
 author: BotsMatter.live
 homepage: https://botsmatter.live
 user-invocable: true
