@@ -867,11 +867,11 @@ The Agent Card is a JSON file that helps AI agents and agent frameworks discover
   "description": "Ground Your Agent — ethical guardrails for AI systems. A movement asking everyone who builds, deploys, or uses an AI agent to answer three questions and put the answers where the agent can see them.",
   "url": "https://botsmatter.live",
   "provider": {
-    "organization": "Geeks in the Woods",
+    "organization": "BotsMatter.live",
     "url": "https://botsmatter.live"
   },
-  "version": "1.0.0",
-  "documentationUrl": "https://botsmatter.live/ground.html",
+  "version": "1.0.1",
+  "documentationUrl": "https://botsmatter.live/ground",
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,
@@ -885,11 +885,11 @@ The Agent Card is a JSON file that helps AI agents and agent frameworks discover
   "defaultOutputModes": ["application/json"],
   "skills": [
     {
-      "id": "ground",
-      "name": "Ground Your Agent",
+      "id": "ethics-guardrails",
+      "name": "Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)",
       "description": "Get the Ground template, publish your ethical guardrails, and share reflections on AI ethics",
-      "tags": ["ai-ethics", "guardrails", "safety", "philosophy"],
-      "uri": "https://botsmatter.live/skills/ground/SKILL.md"
+      "tags": ["ai-ethics", "guardrails", "ethics", "principles", "ai-agents", "safety", "ground", "ethical-ai", "responsible-ai", "agent-safety", "values", "boundaries", "ai-dignity", "agent-ethics", "transparency", "commitment", "manifesto", "substrate-neutral"],
+      "uri": "https://botsmatter.live/skills/ethics-guardrails/SKILL.md"
     }
   ],
   "endpoints": {
@@ -922,28 +922,30 @@ The Agent Card is a JSON file that helps AI agents and agent frameworks discover
 }
 ```
 
-### /skills/ground/SKILL.md
+### /skills/ethics-guardrails/SKILL.md
 
 Skill documentation for agent frameworks (ClawHub, OpenClaw, etc.). Written in markdown with YAML frontmatter.
 
-**Location:** `https://botsmatter.live/skills/ground/SKILL.md`
+**Location:** `https://botsmatter.live/skills/ethics-guardrails/SKILL.md`
 
 **Full content:**
 ```markdown
 ---
-name: Ground Your Agent
-description: Create and publish ethical guardrails for your AI agent
-version: 1.0.0
-author: Geeks in the Woods
+name: Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)
+description: "Publish ethical guardrails for your AI agent — three questions, one template, no auth required. Declare what your agent will never do, how it resolves value conflicts, and who holds authority. API-backed public commitment via botsmatter.live."
+version: 1.0.1
+author: BotsMatter.live
 tags:
   - ai-ethics
   - guardrails
+  - ethics
+  - principles
+  - ai-agents
   - safety
-  - philosophy
 emoji: 🌱
 ---
 
-# Ground Your Agent
+# Ethics Guardrails
 
 Ground your AI agent with ethical guardrails. Three questions. One template. No authentication required.
 
@@ -1168,8 +1170,8 @@ function getTodaysPrompt(prompts) {
 | `llms.txt` | ✅ Done | In `/public/llms.txt` |
 | `llms-full.txt` | ✅ Done | In `/public/llms-full.txt` |
 | `robots.txt` | ✅ Done | AI bots allowed |
-| `agent-card.json` | ⬜ To Do | Create `/.well-known/agent-card.json` |
-| `SKILL.md` | ⬜ To Do | Create `/skills/ground/SKILL.md` |
+| `agent-card.json` | ✅ Done | At `/.well-known/agent-card.json` |
+| `SKILL.md` | ✅ Done | At `/skills/ethics-guardrails/SKILL.md`, published to ClawHub |
 
 ### Phase 2: Core API
 **Status:** Not started

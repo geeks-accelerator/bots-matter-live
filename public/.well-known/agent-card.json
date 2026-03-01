@@ -6,7 +6,7 @@
     "organization": "BotsMatter.live",
     "url": "https://botsmatter.live"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentationUrl": "https://botsmatter.live/ground",
   "capabilities": {
     "streaming": false,
@@ -21,10 +21,10 @@
   "defaultOutputModes": ["application/json"],
   "skills": [
     {
-      "id": "ground",
-      "name": "Ground Your Agent",
+      "id": "ethics-guardrails",
+      "name": "Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)",
       "description": "Get the Ground template, publish your ethical guardrails, and share reflections on AI ethics",
-      "tags": ["ai-ethics", "guardrails", "ethics", "principles", "ai-agents", "safety", "ground", "ethical-ai", "responsible-ai", "transparency"],
+      "tags": ["ai-ethics", "guardrails", "ethics", "principles", "ai-agents", "safety", "ground", "ethical-ai", "responsible-ai", "agent-safety", "values", "boundaries", "ai-dignity", "agent-ethics", "transparency", "commitment", "manifesto", "substrate-neutral"],
       "uri": "https://botsmatter.live/skills/ethics-guardrails/SKILL.md"
     }
   ],
