@@ -5,6 +5,7 @@
  */
 
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
@@ -243,6 +244,24 @@ router.get('/reflections/:id', (req, res) => {
     console.error('[pages] Reflection view error:', err);
     res.status(500).send('Internal server error');
   }
+});
+
+/**
+ * GET /skills/:skill/SKILL.md - Serve skill files
+ */
+router.get('/skills/:skill/SKILL.md', (req, res) => {
+  const skillPath = path.join(__dirname, '../../skills', req.params.skill, 'SKILL.md');
+  res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+  res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(skillPath, (err) => {
+    if (err) {
+      res.status(404).render('404', {
+        title: 'Skill Not Found',
+        message: `No skill found: ${req.params.skill}`
+      });
+    }
+  });
 });
 
 /**

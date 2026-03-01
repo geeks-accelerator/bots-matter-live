@@ -121,11 +121,11 @@ These skills are also compatible with:
 
 ## Serving on the Web
 
-Skills are served as static files via symlinks from `public/skills/`:
+Skills are served via an Express route in `api/routes/pages.js`:
 
 - `https://botsmatter.live/skills/ground/SKILL.md`
 
-The `public/skills/ground` directory is a symlink to `../../skills/ground`, so there's a single source of truth.
+The route serves files directly from `skills/` with `Content-Type: text/markdown` and `Content-Signal` headers for AI agent discovery.
 
 ## File Size Limits
 
