@@ -133,7 +133,7 @@ SKILL.md files have a **20,000 byte limit** for ClawHub/OpenClaw.
 
 | Skill | Size | Headroom |
 |-------|------|----------|
-| `ground` | ~6,500 bytes | ~13,500 bytes |
+| `ground` | ~8,000 bytes | ~12,000 bytes |
 
 ## Research
 
