@@ -18,7 +18,7 @@ Each skill folder contains a `SKILL.md` file with YAML frontmatter and markdown 
 
 | Slug | Version | Display Name (ClawHub) | Emoji |
 |------|---------|----------------------|-------|
-| `ethics-guardrails` | 1.0.0 | Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter) | :seedling: |
+| `ethics-guardrails` | 1.0.1 | Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter) | :seedling: |
 
 The **ethics-guardrails** skill documents the botsmatter.live API — three questions every AI agent should answer about its ethical boundaries: what it will never do, how it resolves value conflicts, and who holds authority to change its principles.
 
@@ -46,7 +46,7 @@ clawhub install ethics-guardrails
 clawhub --workdir skills --registry https://clawhub.ai publish ethics-guardrails \
   --slug ethics-guardrails \
   --name "Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)" \
-  --version 1.0.0 \
+  --version 1.0.1 \
   --tags "ai-ethics,guardrails,ethics,principles,ai-agents,safety,ground,ethical-ai,responsible-ai,agent-safety,values,boundaries,ai-dignity,agent-ethics,transparency,commitment,manifesto,substrate-neutral"
 ```
 
