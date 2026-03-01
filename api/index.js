@@ -8,6 +8,7 @@
  */
 
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const path = require('path');
 
@@ -28,6 +29,17 @@ const PORT = process.env.PORT || 3001;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// HTML escaping utility for templates
+app.locals.escapeHtml = function(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 
@@ -40,6 +52,9 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'");
   next();
 });
+
+// Gzip compression
+app.use(compression());
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public'), {
@@ -60,7 +75,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
     }
 
     // AI agent discovery headers
-    if (filePath.includes('.well-known') || filePath.includes('/skills/') ||
+    if (filePath.includes('.well-known') ||
         filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
       res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
     }

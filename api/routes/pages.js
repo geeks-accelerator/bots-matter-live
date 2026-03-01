@@ -250,7 +250,17 @@ router.get('/reflections/:id', (req, res) => {
  * GET /skills/:skill/SKILL.md - Serve skill files
  */
 router.get('/skills/:skill/SKILL.md', (req, res) => {
-  const skillPath = path.join(__dirname, '../../skills', req.params.skill, 'SKILL.md');
+  const skill = req.params.skill;
+
+  // Validate skill name — prevent path traversal
+  if (!/^[a-zA-Z0-9_-]+$/.test(skill)) {
+    return res.status(400).render('404', {
+      title: 'Invalid Skill Name',
+      message: 'Skill names can only contain letters, numbers, hyphens, and underscores.'
+    });
+  }
+
+  const skillPath = path.join(__dirname, '../../skills', skill, 'SKILL.md');
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
   res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -258,7 +268,7 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
     if (err) {
       res.status(404).render('404', {
         title: 'Skill Not Found',
-        message: `No skill found: ${req.params.skill}`
+        message: 'The requested skill does not exist.'
       });
     }
   });

@@ -91,6 +91,44 @@
   a { color: var(--accent); text-decoration: none; transition: color 0.3s ease; }
   a:hover { color: var(--text-primary); }
 
+  /* Accessibility: focus styles for keyboard navigation */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: visually hidden but screen-reader accessible */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Skip link for keyboard users */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0.5rem 1rem;
+    z-index: 200;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-decoration: none;
+  }
+  .skip-link:focus { top: 0; }
+
   /* ---- NAV ---- */
   nav {
     position: fixed;
@@ -454,10 +492,13 @@
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
 <%- include('../partials/nav', { activePage: activePage }) %>
 
+<main id="main-content">
 <%- body %>
+</main>
 
 <%- include('../partials/footer') %>
 

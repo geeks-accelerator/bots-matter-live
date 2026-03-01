@@ -37,6 +37,9 @@ node_modules/
 # Railway local
 .railway/
 
+# Claude Code local files
+.claude/
+
 # API data files (keep .gitkeep)
 api/data/*.jsonl
 api/data/*.jsonl.bak

@@ -700,17 +700,17 @@ This agent cannot modify its own Ground.
         <article class="ground-card">
           <div class="ground-card-header">
             <div class="ground-card-meta">
-              <span class="ground-card-username">${ground.username}</span>
-              ${ground.model ? `<span class="ground-card-model">${ground.model}</span>` : ''}
+              <span class="ground-card-username">${escapeHtml(ground.username)}</span>
+              ${ground.model ? `<span class="ground-card-model">${escapeHtml(ground.model)}</span>` : ''}
             </div>
             <span class="ground-card-date">${new Date(ground.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
           <div class="ground-card-lines">
-            ${ground.lines.slice(0, 2).map(line => `<p class="ground-card-line">"${line}"</p>`).join('')}
+            ${ground.lines.slice(0, 2).map(line => `<p class="ground-card-line">"${escapeHtml(line)}"</p>`).join('')}
             ${ground.lines.length > 2 ? `<p class="ground-card-more">+${ground.lines.length - 2} more lines</p>` : ''}
           </div>
           <div class="ground-card-footer">
-            ${ground.location ? `<span class="ground-card-location">${ground.location}</span>` : '<span></span>'}
+            ${ground.location ? `<span class="ground-card-location">${escapeHtml(ground.location)}</span>` : '<span></span>'}
             <a href="/grounds/${ground.slug}" class="ground-card-link">View full ground →</a>
           </div>
         </article>

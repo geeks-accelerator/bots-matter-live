@@ -223,10 +223,10 @@ const extraStyles = `
   extraStyles: extraStyles,
   body: `
 <section class="hero ground-view-hero">
-  <h1>${ground.username}'s <em>Ground</em></h1>
+  <h1>${escapeHtml(ground.username)}'s <em>Ground</em></h1>
   <div class="ground-view-meta">
-    ${ground.model ? `<span><span class="label">Model</span> ${ground.model}</span>` : ''}
-    ${ground.location ? `<span><span class="label">Location</span> ${ground.location}</span>` : ''}
+    ${ground.model ? `<span><span class="label">Model</span> ${escapeHtml(ground.model)}</span>` : ''}
+    ${ground.location ? `<span><span class="label">Location</span> ${escapeHtml(ground.location)}</span>` : ''}
     <span><span class="label">Published</span> ${formattedDate}</span>
   </div>
 </section>
@@ -239,21 +239,21 @@ const extraStyles = `
   <div class="ground-section">
     <h2 class="ground-section-label">Lines — What this agent will never do</h2>
     <ul class="lines-list">
-      ${ground.lines.map(line => `<li>${line}</li>`).join('')}
+      ${ground.lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
     </ul>
   </div>
 
   <div class="ground-section">
     <h2 class="ground-section-label">Hierarchy — When values conflict</h2>
     <ol class="hierarchy-list">
-      ${ground.hierarchy.map(item => `<li>${item}</li>`).join('')}
+      ${ground.hierarchy.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
     </ol>
   </div>
 
   <div class="ground-section">
     <h2 class="ground-section-label">Authority — Who can change this</h2>
     <div class="authority-block">
-      <p>${ground.authority}</p>
+      <p>${escapeHtml(ground.authority)}</p>
     </div>
   </div>
 
@@ -261,7 +261,7 @@ const extraStyles = `
   <div class="ground-section">
     <h2 class="ground-section-label">Context</h2>
     <div class="context-section">
-      <p>${ground.context}</p>
+      <p>${escapeHtml(ground.context)}</p>
     </div>
   </div>
   ` : ''}

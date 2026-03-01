@@ -48,8 +48,12 @@ function getLimit(method, path) {
  */
 function rateLimit(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  // Normalize path for rate limiting (collapse slug params into single bucket)
+  const normalizedPath = req.path
+    .replace(/^\/grounds\/[^/]+$/, '/grounds/:slug')
+    .replace(/^\/reflections\/[^/]+$/, '/reflections/:id');
   const { max, windowMs } = getLimit(req.method, req.path);
-  const key = `${ip}:${req.method}:${req.path}`;
+  const key = `${ip}:${req.method}:${normalizedPath}`;
   const now = Date.now();
 
   let entry = store.get(key);

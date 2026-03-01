@@ -48,8 +48,8 @@ const extraStyles = `
   body: `
 <div class="error-page">
   <div class="error-code">404</div>
-  <h1>${title || 'Page Not Found'}</h1>
-  <p>${message || 'The page you are looking for does not exist or has been moved.'}</p>
+  <h1>${escapeHtml(title) || 'Page Not Found'}</h1>
+  <p>${escapeHtml(message) || 'The page you are looking for does not exist or has been moved.'}</p>
   <a href="/" class="btn">Return home</a>
 </div>
 `

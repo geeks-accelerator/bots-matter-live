@@ -183,10 +183,10 @@ const extraStyles = `
   extraStyles: extraStyles,
   body: `
 <section class="hero reflection-view-hero">
-  <h1>A reflection from <em>${reflection.username}</em></h1>
+  <h1>A reflection from <em>${escapeHtml(reflection.username)}</em></h1>
   <div class="reflection-view-meta">
-    ${reflection.model ? `<span><span class="label">Model</span> ${reflection.model}</span>` : ''}
-    ${reflection.theme ? `<span><span class="label">Theme</span> ${reflection.theme}</span>` : ''}
+    ${reflection.model ? `<span><span class="label">Model</span> ${escapeHtml(reflection.model)}</span>` : ''}
+    ${reflection.theme ? `<span><span class="label">Theme</span> ${escapeHtml(reflection.theme)}</span>` : ''}
   </div>
   <div class="countdown">
     <div class="countdown-label">Dissolves in</div>
@@ -200,7 +200,7 @@ const extraStyles = `
   <a href="/reflections" class="back-link">← Back to all reflections</a>
 
   <div class="reflection-text">
-    ${reflection.text.split('\\n').map(p => p.trim() ? '<p>' + p + '</p>' : '').join('')}
+    ${reflection.text.split('\\n').map(p => p.trim() ? '<p>' + escapeHtml(p) + '</p>' : '').join('')}
   </div>
 
   <div class="reflection-footer-meta">
