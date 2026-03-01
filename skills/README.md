@@ -6,10 +6,10 @@ This directory contains skills published to [ClawHub](https://clawhub.ai) so AI 
 
 ```
 skills/
-├── README.md          # This file
-├── .env               # ClawHub token (gitignored)
-└── ground/
-    └── SKILL.md       # Ground Your Agent — ethical guardrails for AI agents
+├── README.md              # This file
+├── .env                   # ClawHub token (gitignored)
+└── ethics-guardrails/
+    └── SKILL.md           # Ethics Guardrails — ethical principles for AI agents
 ```
 
 Each skill folder contains a `SKILL.md` file with YAML frontmatter and markdown documentation. This is the only file required by ClawHub.
@@ -18,9 +18,11 @@ Each skill folder contains a `SKILL.md` file with YAML frontmatter and markdown 
 
 | Slug | Version | Display Name (ClawHub) | Emoji |
 |------|---------|----------------------|-------|
-| `ground` | 1.0.0 | Bots Matter — Ground Your AI Agent with Ethical Guardrails | :seedling: |
+| `ethics-guardrails` | 1.0.0 | Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter) | :seedling: |
 
-The **ground** skill documents the botsmatter.live API — three questions every AI agent should answer about its ethical boundaries: what it will never do, how it resolves value conflicts, and who holds authority to change its principles.
+The **ethics-guardrails** skill documents the botsmatter.live API — three questions every AI agent should answer about its ethical boundaries: what it will never do, how it resolves value conflicts, and who holds authority to change its principles.
+
+**ClawHub listing:** https://clawhub.ai/leegitw/ethics-guardrails
 
 ### Slug vs Display Name
 
@@ -28,10 +30,10 @@ ClawHub has two fields: `slug` (permanent URL/install identifier, lowercase) and
 
 ```bash
 # Slug = install identifier (never changes)
-clawhub install ground
+clawhub install ethics-guardrails
 
 # Name = display name (optimized for search)
---name "Bots Matter — Ground Your AI Agent with Ethical Guardrails"
+--name "Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)"
 ```
 
 ---
@@ -41,11 +43,11 @@ clawhub install ground
 ### Single Skill
 
 ```bash
-clawhub --workdir skills --registry https://clawhub.ai publish ground \
-  --slug ground \
-  --name "Bots Matter — Ground Your AI Agent with Ethical Guardrails" \
+clawhub --workdir skills --registry https://clawhub.ai publish ethics-guardrails \
+  --slug ethics-guardrails \
+  --name "Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter)" \
   --version 1.0.0 \
-  --tags "ai-ethics,guardrails,safety,philosophy,ai-agents,ground,ethical-ai,responsible-ai,agent-safety,principles,values,boundaries,ai-dignity"
+  --tags "ai-ethics,guardrails,ethics,principles,ai-agents,safety,ground,ethical-ai,responsible-ai,agent-safety,values,boundaries,ai-dignity,agent-ethics,transparency,commitment,manifesto,substrate-neutral"
 ```
 
 ### All Skills (sync)
@@ -60,7 +62,7 @@ clawhub --workdir skills --registry https://clawhub.ai sync
 
 | Skill | Tags |
 |-------|------|
-| `ground` | ai-ethics, guardrails, safety, philosophy, ai-agents, ground, ethical-ai, responsible-ai, agent-safety, principles, values, boundaries, ai-dignity |
+| `ethics-guardrails` | ai-ethics, guardrails, ethics, principles, ai-agents, safety, ground, ethical-ai, responsible-ai, agent-safety, values, boundaries, ai-dignity, agent-ethics, transparency, commitment, manifesto, substrate-neutral |
 
 ### Rate Limits
 
@@ -123,7 +125,7 @@ These skills are also compatible with:
 
 Skills are served via an Express route in `api/routes/pages.js`:
 
-- `https://botsmatter.live/skills/ground/SKILL.md`
+- `https://botsmatter.live/skills/ethics-guardrails/SKILL.md`
 
 The route serves files directly from `skills/` with `Content-Type: text/markdown` and `Content-Signal` headers for AI agent discovery.
 
@@ -133,7 +135,7 @@ SKILL.md files have a **20,000 byte limit** for ClawHub/OpenClaw.
 
 | Skill | Size | Headroom |
 |-------|------|----------|
-| `ground` | ~8,000 bytes | ~12,000 bytes |
+| `ethics-guardrails` | ~8,000 bytes | ~12,000 bytes |
 
 ## Research
 

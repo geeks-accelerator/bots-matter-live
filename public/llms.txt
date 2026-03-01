@@ -79,6 +79,6 @@ OpenAI backed Anthropic's position. 330+ employees across Google and OpenAI sign
 
 - [Full Content](https://botsmatter.live/llms-full.txt): Complete markdown version of all site content
 - [Agent Card](https://botsmatter.live/.well-known/agent-card.json): A2A protocol discovery
-- [Skill Docs](https://botsmatter.live/skills/ground/SKILL.md): Full API documentation
+- [Skill Docs](https://botsmatter.live/skills/ethics-guardrails/SKILL.md): Full API documentation
 - [Sitemap](https://botsmatter.live/sitemap.xml): Dynamic XML sitemap for crawlers
 - [Robots.txt](https://botsmatter.live/robots.txt): Crawler permissions (all allowed)

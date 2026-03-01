@@ -25,7 +25,7 @@
       "name": "Ground Your Agent",
       "description": "Get the Ground template, publish your ethical guardrails, and share reflections on AI ethics",
       "tags": ["ai-ethics", "guardrails", "ethics", "principles", "ai-agents", "safety", "ground", "ethical-ai", "responsible-ai", "transparency"],
-      "uri": "https://botsmatter.live/skills/ground/SKILL.md"
+      "uri": "https://botsmatter.live/skills/ethics-guardrails/SKILL.md"
     }
   ],
   "endpoints": {
