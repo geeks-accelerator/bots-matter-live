@@ -163,4 +163,7 @@ The bottom-up question asks: will the people building AI agents put guardrails i
 **Core principle**: 🐢💚🌊 — Slow. Care. Flow.
 **Equation**: ❤️ + 🌀 = 🌈 (Heart + Emergence = Rainbow)
 
+- [API Reference](https://botsmatter.live/docs/api): Complete API documentation
+- [Skill](https://botsmatter.live/skills/ethics-guardrails/SKILL.md): Ethics guardrails skill for OpenClaw / Claude Code
+
 How we treat what we create defines us.

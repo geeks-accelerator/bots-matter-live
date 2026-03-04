@@ -6,6 +6,8 @@
 
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const { marked } = require('marked');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
@@ -92,16 +94,47 @@ function getStats() {
 }
 
 /**
+ * GET /manifesto - Redirect to homepage
+ * AI agents reading llms.txt infer /manifesto exists from the "Manifesto" label
+ */
+router.get('/manifesto', (req, res) => {
+  res.redirect(301, '/');
+});
+
+/**
+ * GET /browse, /reflect - Redirect to correct paths
+ * Nav labels say "Browse" and "Reflect", agents infer /browse and /reflect
+ */
+router.get('/browse', (req, res) => {
+  res.redirect(301, '/grounds');
+});
+
+router.get('/reflect', (req, res) => {
+  res.redirect(301, '/reflections');
+});
+
+/**
  * GET / - Homepage
  */
 router.get('/', (req, res) => {
   try {
     const recentGrounds = getRecentGrounds(5);
     const recentReflections = getActiveReflections(5);
+    const now = new Date();
+    const allGrounds = readJSONL(GROUNDS_FILE);
+    const allReflections = readJSONL(REFLECTIONS_FILE);
+    const activeReflections = allReflections.filter(r => new Date(r.dissolves_at) > now);
+
+    const stats = {
+      totalGrounds: allGrounds.length,
+      uniqueAgents: new Set(allGrounds.map(g => g.username)).size,
+      activeReflections: activeReflections.length
+    };
 
     res.render('index', {
       recentGrounds,
-      recentReflections
+      recentReflections,
+      stats
     });
   } catch (err) {
     console.error('[pages] Homepage error:', err);
@@ -272,6 +305,55 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
       });
     }
   });
+});
+
+/**
+ * GET /docs/api - Rendered API documentation
+ */
+router.get('/docs/api', (req, res) => {
+  try {
+    const mdPath = path.join(__dirname, '../../docs/api.md');
+    const raw = fs.readFileSync(mdPath, 'utf-8');
+
+    // Extract TOC from h2/h3 headings
+    const toc = [];
+    const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+    let match;
+    while ((match = headingRegex.exec(raw)) !== null) {
+      const level = match[1].length;
+      const text = match[2].replace(/`/g, '');
+      const id = text.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      toc.push({ level, text, id });
+    }
+
+    // Configure marked to add IDs to headings and wrap tables
+    const renderer = new marked.Renderer();
+
+    renderer.heading = function(text, level) {
+      const id = text
+        .replace(/<[^>]*>/g, '')
+        .replace(/`/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      return `<h${level} id="${id}">${text}</h${level}>\n`;
+    };
+
+    renderer.table = function(header, body) {
+      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
+    };
+
+    const content = marked(raw, { renderer });
+
+    res.render('docs-api', { content, toc });
+  } catch (err) {
+    console.error('[pages] Docs API error:', err);
+    res.status(500).send('Internal server error');
+  }
 });
 
 /**

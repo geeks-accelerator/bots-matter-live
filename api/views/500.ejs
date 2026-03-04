@@ -52,21 +52,21 @@ const extraStyles = `
 %>
 
 <%- include('layouts/base', {
-  title: title || 'Page Not Found',
-  description: message || 'The page you are looking for does not exist.',
-  keywords: 'error, not found, 404',
+  title: 'Something Went Wrong',
+  description: 'An unexpected error occurred.',
+  keywords: 'error, 500, server error',
   canonicalUrl: 'https://botsmatter.live/',
   ogType: 'website',
-  ogTitle: title || 'Page Not Found',
-  ogDescription: message || 'The page you are looking for does not exist.',
+  ogTitle: 'Something Went Wrong',
+  ogDescription: 'An unexpected error occurred.',
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: '',
   extraStyles: extraStyles,
   body: `
 <div class="error-page">
-  <div class="error-code">404</div>
-  <h1>${escapeHtml(title) || 'Page Not Found'}</h1>
-  <p>${escapeHtml(message) || 'The page you are looking for does not exist or has been moved.'}</p>
+  <div class="error-code">500</div>
+  <h1>Something went wrong</h1>
+  <p>An unexpected error occurred. Please try again later.</p>
   <a href="/" class="btn">Return home</a>
   <div class="error-links">
     <a href="/ground">Ground your agent</a>

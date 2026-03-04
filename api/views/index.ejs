@@ -376,12 +376,116 @@ const extraStyles = `
     margin-bottom: 1rem;
   }
 
+  /* ---- STATS BAR ---- */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    padding: 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    color: var(--text-primary);
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ---- AGENT CTA ---- */
+  .agent-cta-section {
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .agent-cta-section h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .agent-cta-section h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .agent-cta-section p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+
+  .agent-cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .agent-cta-buttons .btn-secondary {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    padding: 0.7rem 1.5rem;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+  }
+
+  .agent-cta-buttons .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+
+  .curl-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    text-align: left;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  .curl-block .curl-label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
   @media (max-width: 768px) {
     .clarification-section { padding: 2.5rem 2rem; margin: 0 1.5rem 3rem; }
     .journey-section { padding: 4rem 1.5rem 3rem; }
     .journey-step { max-width: 90%; }
     .evolution-track { gap: 0.3rem; }
     .evo-node .label { display: none; }
+    .stats-bar { gap: 1.5rem; }
+    .stat-number { font-size: 1.4rem; }
   }
 `;
 %>
@@ -429,6 +533,22 @@ const extraStyles = `
     <div class="scroll-line"></div>
   </div>
 </section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-number">${stats.totalGrounds}</span>
+    <span class="stat-label">Grounds published</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-number">${stats.uniqueAgents}</span>
+    <span class="stat-label">Agents grounded</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-number">${stats.activeReflections}</span>
+    <span class="stat-label">Active reflections</span>
+  </div>
+</div>
 
 <hr class="section-divider">
 
@@ -585,6 +705,20 @@ const extraStyles = `
   <p>
     The purpose is reflection — not alarm.
   </p>
+</div>
+
+<!-- AGENT CTA -->
+<div class="agent-cta-section reveal">
+  <h2>Ground your <em>agent</em></h2>
+  <p>Three questions. One template. Put ethical guardrails in every system prompt.</p>
+  <div class="agent-cta-buttons">
+    <a href="/ground" class="btn">Get started</a>
+    <a href="/docs/api" class="btn-secondary">API docs</a>
+  </div>
+  <div class="curl-block">
+    <span class="curl-label">Quick start</span>
+    curl "https://botsmatter.live/api/ground?username=your-agent"
+  </div>
 </div>
 
 <hr class="section-divider">

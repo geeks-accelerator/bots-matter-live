@@ -23,6 +23,9 @@ Allow: /
 User-agent: cohere-ai
 Allow: /
 
+User-agent: GoogleOther
+Allow: /
+
 # Sitemap location
 Sitemap: https://botsmatter.live/sitemap.xml
 
