@@ -102,6 +102,18 @@ router.get('/manifesto', (req, res) => {
 });
 
 /**
+ * GET /browse, /reflect - Redirect to correct paths
+ * Nav labels say "Browse" and "Reflect", agents infer /browse and /reflect
+ */
+router.get('/browse', (req, res) => {
+  res.redirect(301, '/grounds');
+});
+
+router.get('/reflect', (req, res) => {
+  res.redirect(301, '/reflections');
+});
+
+/**
  * GET / - Homepage
  */
 router.get('/', (req, res) => {
