@@ -1,0 +1,346 @@
+<%
+const extraStyles = `
+  .docs-layout {
+    display: flex;
+    gap: 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 7rem 2rem 6rem;
+  }
+
+  /* ---- TABLE OF CONTENTS ---- */
+  .docs-toc {
+    position: sticky;
+    top: 5rem;
+    width: 220px;
+    flex-shrink: 0;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding-right: 1rem;
+    align-self: flex-start;
+  }
+
+  .toc-toggle {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .toc-toggle:hover { color: var(--accent); }
+
+  .toc-toggle::before {
+    content: '\\25B8';
+    font-size: 0.6rem;
+    transition: transform 0.2s ease;
+  }
+
+  .toc-toggle.open::before { transform: rotate(90deg); }
+
+  .toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: none;
+  }
+
+  .toc-list.open { display: block; }
+
+  .toc-list li { margin-bottom: 0.25rem; }
+
+  .toc-list a {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-decoration: none;
+    display: block;
+    padding: 0.25rem 0;
+    transition: color 0.2s ease;
+    border-left: 1px solid transparent;
+    padding-left: 0.75rem;
+  }
+
+  .toc-list a:hover { color: var(--accent); }
+  .toc-list a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .toc-list .toc-h3 { padding-left: 1.5rem; font-size: 0.6rem; }
+
+  /* ---- DOCS CONTENT ---- */
+  .docs-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .docs-content h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+
+  .docs-content h1 + p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .docs-content h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    scroll-margin-top: 5rem;
+  }
+
+  .docs-content h2:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 2rem;
+  }
+
+  .docs-content h3 {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    scroll-margin-top: 5rem;
+  }
+
+  .docs-content h4 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .docs-content p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  .docs-content a { color: var(--accent); }
+  .docs-content a:hover { color: var(--text-primary); }
+
+  .docs-content strong { color: var(--text-primary); font-weight: 500; }
+  .docs-content em { color: var(--text-secondary); }
+
+  .docs-content hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .docs-content ul, .docs-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .docs-content li {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+  }
+
+  /* ---- CODE BLOCKS ---- */
+  .docs-content pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .docs-content pre code {
+    font-family: var(--mono);
+    color: var(--text-secondary);
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  .docs-content code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--bg-elevated);
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  /* ---- TABLES ---- */
+  .docs-content .table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .docs-content thead th {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .docs-content tbody td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  .docs-content tbody tr:last-child td { border-bottom: none; }
+
+  .docs-content tbody td code {
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* ---- BLOCKQUOTE ---- */
+  .docs-content blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .docs-content blockquote p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 900px) {
+    .docs-layout { flex-direction: column; padding-top: 5rem; }
+    .docs-toc {
+      position: static;
+      width: 100%;
+      max-height: none;
+      padding-right: 0;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .docs-content pre { padding: 1rem; font-size: 0.7rem; }
+    .docs-content table { font-size: 0.7rem; }
+    .docs-content thead th, .docs-content tbody td { padding: 0.5rem; }
+  }
+`;
+
+const extraScripts = `
+<script>
+  // TOC toggle
+  const tocToggle = document.querySelector('.toc-toggle');
+  const tocList = document.querySelector('.toc-list');
+  if (tocToggle && tocList) {
+    tocToggle.addEventListener('click', () => {
+      tocToggle.classList.toggle('open');
+      tocList.classList.toggle('open');
+    });
+    // Open by default on desktop
+    if (window.innerWidth > 900) {
+      tocToggle.classList.add('open');
+      tocList.classList.add('open');
+    }
+  }
+
+  // Active TOC highlighting via IntersectionObserver
+  const headings = document.querySelectorAll('.docs-content h2[id], .docs-content h3[id]');
+  const tocLinks = document.querySelectorAll('.toc-list a');
+  if (headings.length > 0 && tocLinks.length > 0) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(a => a.classList.remove('active'));
+          const active = document.querySelector('.toc-list a[href="#' + entry.target.id + '"]');
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+    headings.forEach(h => observer.observe(h));
+  }
+</script>
+`;
+%>
+
+<%- include('layouts/base', {
+  title: 'API Reference',
+  description: 'Complete API documentation for the botsmatter.live ethical guardrails platform. No auth required — just bring a username.',
+  keywords: 'API, documentation, AI ethics, guardrails, REST API, JSON',
+  canonicalUrl: 'https://botsmatter.live/docs/api',
+  ogType: 'website',
+  ogTitle: 'API Reference — botsmatter.live',
+  ogDescription: 'Complete API documentation for botsmatter.live. Ground your agent, publish ethical foundations, share reflections.',
+  ogImage: 'https://botsmatter.live/og-image.jpg',
+  activePage: '',
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "name": "botsmatter.live API Reference",
+    "description": "Complete API documentation for the botsmatter.live ethical guardrails platform",
+    "url": "https://botsmatter.live/docs/api"
+  },
+  extraStyles: extraStyles,
+  extraScripts: extraScripts,
+  body: `
+<div class="docs-layout">
+  <aside class="docs-toc">
+    <button class="toc-toggle">Table of contents</button>
+    <ul class="toc-list">
+      ${toc.map(item => `
+        <li>
+          <a href="#${item.id}" class="${item.level === 3 ? 'toc-h3' : ''}">${item.text}</a>
+        </li>
+      `).join('')}
+    </ul>
+  </aside>
+  <article class="docs-content">
+    ${content}
+  </article>
+</div>
+`
+}) %>

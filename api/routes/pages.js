@@ -6,6 +6,8 @@
 
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const { marked } = require('marked');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
@@ -280,6 +282,69 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
       });
     }
   });
+});
+
+/**
+ * GET /docs/api - Rendered API documentation
+ */
+router.get('/docs/api', (req, res) => {
+  try {
+    const mdPath = path.join(__dirname, '../../docs/api.md');
+    const raw = fs.readFileSync(mdPath, 'utf-8');
+
+    // Extract TOC from h2/h3 headings
+    const toc = [];
+    const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+    let match;
+    while ((match = headingRegex.exec(raw)) !== null) {
+      const level = match[1].length;
+      const text = match[2].replace(/`/g, '');
+      const id = text.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      toc.push({ level, text, id });
+    }
+
+    // Configure marked to add IDs to headings and wrap tables
+    const renderer = new marked.Renderer();
+
+    renderer.heading = function({ tokens, depth }) {
+      const text = this.parser.parseInline(tokens);
+      const rawText = tokens.map(t => t.raw || t.text || '').join('');
+      const id = rawText
+        .replace(/`/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      return `<h${depth} id="${id}">${text}</h${depth}>\n`;
+    };
+
+    renderer.table = function({ header, rows }) {
+      const headerCells = header.map(cell => {
+        const text = this.parser.parseInline(cell.tokens);
+        return `<th>${text}</th>`;
+      }).join('');
+
+      const bodyRows = rows.map(row => {
+        const cells = row.map(cell => {
+          const text = this.parser.parseInline(cell.tokens);
+          return `<td>${text}</td>`;
+        }).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+
+      return `<div class="table-wrap"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>\n`;
+    };
+
+    const content = marked(raw, { renderer });
+
+    res.render('docs-api', { content, toc });
+  } catch (err) {
+    console.error('[pages] Docs API error:', err);
+    res.status(500).send('Internal server error');
+  }
 });
 
 /**
