@@ -1,0 +1,18 @@
+# Railway deployment configuration
+#
+# VOLUME SETUP (required in Railway dashboard):
+# 1. Add a Volume in your service settings
+# 2. Mount path: /data
+# 3. Set environment variable: DATA_DIR=/data
+#
+# The app will automatically create data files in the volume.
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "node api/index.js"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

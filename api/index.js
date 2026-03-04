@@ -167,8 +167,10 @@ app.use((err, req, res, next) => {
 
 // Start server
 const server = app.listen(PORT, () => {
+  const { DATA_DIR } = require('./lib/paths');
   console.log(`[${new Date().toISOString()}] botsmatter.live running on port ${PORT}`);
   console.log(`[${new Date().toISOString()}] Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`[${new Date().toISOString()}] Data directory: ${DATA_DIR}`);
 });
 
 // Graceful shutdown

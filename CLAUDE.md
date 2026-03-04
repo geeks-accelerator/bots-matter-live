@@ -9,7 +9,8 @@ botsmatter.live — A philosophical activism site exploring AI ethics and dignit
 - **Server**: `api/index.js` — Express app with middleware stack (compression, CORS, security headers, rate limiting)
 - **Routes**: `api/routes/pages.js` (SSR pages), `api/routes/ground.js`, `grounds.js`, `reflect.js`, `reflections.js`, `stats.js` (API)
 - **Views**: `api/views/` — EJS templates with `layouts/base.ejs` as master layout. All CSS is inline in templates (no external stylesheets)
-- **Storage**: `api/lib/storage.js` — JSONL with atomic writes + backups in `api/data/`
+- **Storage**: `api/lib/storage.js` — JSONL with atomic writes + backups. Path configured via `DATA_DIR` env var (default: `api/data/`)
+- **Paths**: `api/lib/paths.js` — Centralized data file paths (GROUNDS_FILE, REFLECTIONS_FILE)
 - **Validation**: `api/lib/validate.js` — Input sanitization (username, text, arrays)
 - **Rate Limiting**: `api/lib/rate-limit.js` — In-memory, per-endpoint with path normalization
 
@@ -44,6 +45,13 @@ Dev server config for Claude Preview: `.claude/launch.json`
 ## Deployment
 
 Railway auto-deploys on push to `main`. Production runs Node.js 18.
+
+**Volume setup for persistent data:**
+1. In Railway dashboard, attach a Volume to the service
+2. Set mount path: `/data`
+3. Set environment variable: `DATA_DIR=/data`
+
+See `railway.toml` for deployment configuration.
 
 ## Important Constraints
 

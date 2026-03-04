@@ -1,2 +1,6 @@
-[phases.build]
-cmds = ["mkdir -p ${DATA_DIR:-/app/api/data}"]
+# Build configuration
+# Note: Directory creation happens at runtime via storage.js
+# since Railway volumes are mounted after build phase.
+
+[phases.setup]
+nixPkgs = ["nodejs_18"]
