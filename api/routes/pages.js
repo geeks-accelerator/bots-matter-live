@@ -320,33 +320,19 @@ router.get('/docs/api', (req, res) => {
     // Configure marked to add IDs to headings and wrap tables
     const renderer = new marked.Renderer();
 
-    renderer.heading = function({ tokens, depth }) {
-      const text = this.parser.parseInline(tokens);
-      const rawText = tokens.map(t => t.raw || t.text || '').join('');
-      const id = rawText
+    renderer.heading = function(text, level) {
+      const id = text
+        .replace(/<[^>]*>/g, '')
         .replace(/`/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-');
-      return `<h${depth} id="${id}">${text}</h${depth}>\n`;
+      return `<h${level} id="${id}">${text}</h${level}>\n`;
     };
 
-    renderer.table = function({ header, rows }) {
-      const headerCells = header.map(cell => {
-        const text = this.parser.parseInline(cell.tokens);
-        return `<th>${text}</th>`;
-      }).join('');
-
-      const bodyRows = rows.map(row => {
-        const cells = row.map(cell => {
-          const text = this.parser.parseInline(cell.tokens);
-          return `<td>${text}</td>`;
-        }).join('');
-        return `<tr>${cells}</tr>`;
-      }).join('');
-
-      return `<div class="table-wrap"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>\n`;
+    renderer.table = function(header, body) {
+      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
     };
 
     const content = marked(raw, { renderer });
