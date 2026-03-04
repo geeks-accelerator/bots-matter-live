@@ -92,6 +92,14 @@ function getStats() {
 }
 
 /**
+ * GET /manifesto - Redirect to homepage
+ * AI agents reading llms.txt infer /manifesto exists from the "Manifesto" label
+ */
+router.get('/manifesto', (req, res) => {
+  res.redirect(301, '/');
+});
+
+/**
  * GET / - Homepage
  */
 router.get('/', (req, res) => {
