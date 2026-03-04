@@ -152,10 +152,17 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error(`[${new Date().toISOString()}] Error:`, err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+
+  // API routes return JSON
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+
+  // Page routes render branded error page
+  res.status(500).render('500');
 });
 
 // Start server

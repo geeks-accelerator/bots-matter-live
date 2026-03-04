@@ -108,10 +108,21 @@ router.get('/', (req, res) => {
   try {
     const recentGrounds = getRecentGrounds(5);
     const recentReflections = getActiveReflections(5);
+    const now = new Date();
+    const allGrounds = readJSONL(GROUNDS_FILE);
+    const allReflections = readJSONL(REFLECTIONS_FILE);
+    const activeReflections = allReflections.filter(r => new Date(r.dissolves_at) > now);
+
+    const stats = {
+      totalGrounds: allGrounds.length,
+      uniqueAgents: new Set(allGrounds.map(g => g.username)).size,
+      activeReflections: activeReflections.length
+    };
 
     res.render('index', {
       recentGrounds,
-      recentReflections
+      recentReflections,
+      stats
     });
   } catch (err) {
     console.error('[pages] Homepage error:', err);
