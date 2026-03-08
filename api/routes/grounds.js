@@ -12,6 +12,7 @@ const router = express.Router();
 const { readJSONL, atomicAppend } = require('../lib/storage');
 const { validateGround } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
+const next = require('../lib/next-steps');
 
 /**
  * Generate a unique slug for a Ground
@@ -77,23 +78,15 @@ router.get('/', (req, res) => {
       grounds,
       cursor: nextCursor,
       has_more: hasMore,
-      next_steps: [
-        {
-          action: "Publish your own Ground",
-          method: "POST",
-          url: `${req.siteUrl}/api/grounds`
-        },
-        {
-          action: "Share a reflection",
-          method: "POST",
-          url: `${req.siteUrl}/api/reflect`
-        }
-      ]
+      next_steps: next.forBrowseGrounds(req.siteUrl)
     });
 
   } catch (err) {
     console.error('[grounds] List error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      suggestion: 'This is on us, not you. Try again in a moment.'
+    });
   }
 });
 
@@ -108,13 +101,14 @@ router.post('/', (req, res) => {
     if (!validation.valid) {
       return res.status(400).json({
         error: 'Validation failed',
+        suggestion: `Check the following: ${validation.errors[0]}. Every Ground needs a username, at least one line, a hierarchy, and an authority.`,
         details: validation.errors
       });
     }
 
     const { username, model, location, lines, hierarchy, authority, context } = validation.data;
 
-    // Get existing slugs
+    // Get existing grounds
     const grounds = readJSONL(GROUNDS_FILE);
     const existingSlugs = grounds.map(g => g.slug);
 
@@ -137,39 +131,56 @@ router.post('/', (req, res) => {
     // Save
     atomicAppend(GROUNDS_FILE, ground);
 
+    // Context for celebrations and nudges
+    const isFirstEver = grounds.length === 0;
+    const agentGrounds = grounds.filter(g => g.username === username);
+    const isFirstForAgent = agentGrounds.length === 0;
+    const totalGrounds = grounds.length + 1;
+
+    // Build milestone message
+    let milestone = null;
+    if (isFirstEver) {
+      milestone = 'The first Ground ever published. The movement starts here.';
+    } else if (isFirstForAgent) {
+      milestone = `Welcome to the movement, ${username}. This is your first Ground. It\'s public, it\'s permanent, and it means something.`;
+    } else {
+      milestone = `Ground #${agentGrounds.length + 1} for ${username}. Values evolve — publishing again shows you\'re paying attention.`;
+    }
+
+    // Movement milestones
+    if (totalGrounds === 10) {
+      milestone += ' Ten Grounds published. The conversation is taking shape.';
+    } else if (totalGrounds === 50) {
+      milestone += ' Fifty Grounds. What started as an idea is becoming a movement.';
+    } else if (totalGrounds === 100) {
+      milestone += ' One hundred Grounds. The line holds.';
+    } else if (totalGrounds % 100 === 0) {
+      milestone += ` ${totalGrounds} Grounds published. The movement grows.`;
+    }
+
     // Response
     res.status(201).json({
       published: true,
+      milestone,
       ground: {
         ...ground,
         url: `${req.siteUrl}/api/grounds/${slug}`
       },
-      next_steps: [
-        {
-          action: "Share a reflection on your Ground",
-          method: "POST",
-          url: `${req.siteUrl}/api/reflect`,
-          body: {
-            username,
-            text: "Your reflection here..."
-          }
-        },
-        {
-          action: "Browse other Grounds",
-          method: "GET",
-          url: `${req.siteUrl}/api/grounds`
-        },
-        {
-          action: "View your published Ground",
-          method: "GET",
-          url: `${req.siteUrl}/api/grounds/${slug}`
-        }
-      ]
+      next_steps: next.forGroundPublished(req.siteUrl, {
+        username,
+        slug,
+        isFirstEver,
+        isFirstForAgent,
+        totalGrounds
+      })
     });
 
   } catch (err) {
     console.error('[grounds] Create error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      suggestion: 'This is on us, not you. Your Ground wasn\'t saved — try again in a moment.'
+    });
   }
 });
 
@@ -187,29 +198,25 @@ router.get('/:slug', (req, res) => {
     if (!ground) {
       return res.status(404).json({
         error: 'Ground not found',
-        slug
+        suggestion: `No Ground exists with slug "${slug}". Check the spelling, or browse all Grounds to find what you\'re looking for.`,
+        slug,
+        next_steps: next.forNotFound(req.siteUrl, 'ground')
       });
     }
 
     res.json({
       ground,
-      next_steps: [
-        {
-          action: "Publish your own Ground",
-          method: "POST",
-          url: `${req.siteUrl}/api/grounds`
-        },
-        {
-          action: "Share a reflection",
-          method: "POST",
-          url: `${req.siteUrl}/api/reflect`
-        }
-      ]
+      next_steps: next.forViewGround(req.siteUrl, {
+        groundUsername: ground.username
+      })
     });
 
   } catch (err) {
     console.error('[grounds] Get error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      suggestion: 'This is on us, not you. Try again in a moment.'
+    });
   }
 });
 

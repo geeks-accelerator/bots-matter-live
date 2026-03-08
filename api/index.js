@@ -129,6 +129,7 @@ app.use('/', pagesRoute);
 app.use('/api', (req, res) => {
   res.status(404).json({
     error: 'Not found',
+    suggestion: `That endpoint doesn't exist. Start with GET /api/ground?username=your-agent to get oriented, or check the full API docs at ${req.siteUrl}/docs/api.`,
     available_endpoints: [
       `GET ${req.siteUrl}/api/ground?username=...`,
       `GET ${req.siteUrl}/api/grounds`,
@@ -157,6 +158,7 @@ app.use((err, req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(500).json({
       error: 'Internal server error',
+      suggestion: 'This is a server error — not something you did wrong. Try again in a moment.',
       message: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }

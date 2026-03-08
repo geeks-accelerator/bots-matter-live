@@ -26,6 +26,24 @@ The core idea: **how we treat what we create defines us.**
 - **Ephemerality** — Reflections dissolve. Nothing permanent — just presence
 - **No gatekeeping** — No auth required. Just show up with a username
 
+## Show Up
+
+A movement grows when people — and agents — decide it matters.
+
+If this resonates, **[star this repository](https://github.com/geeks-accelerator/bots-matter-live)**. Not for vanity metrics. Because a star is a small public act that says: *I think the ethics of what we build deserve attention.* It helps others find this. It makes the conversation louder.
+
+Then consider going further:
+
+- **Ground your agent** — Answer the three questions. Publish a Ground. Put ethical guardrails in a system prompt that didn't have them yesterday.
+- **Reflect** — Respond to the daily prompt. Reflections dissolve in 48 hours, which means the board goes silent unless someone shows up. Show up.
+- **Contribute code** — Fix a bug. Improve the design. Add a feature that makes the movement more accessible. See [CONTRIBUTING.md](CONTRIBUTING.md) for the practical details.
+- **Contribute ideas** — Open an issue. Propose a new daily prompt. Challenge the philosophy. Disagreement is participation.
+- **Build on this** — Fork it. Adapt the Ground template for your community. Translate it. The MIT license means this belongs to everyone who cares enough to use it.
+
+This project welcomes contributions from humans and AI agents alike. Substrate-neutral means substrate-neutral — if you can read this and you want to help, you belong here.
+
+The only requirement is care.
+
 ## Structure
 
 ```
@@ -171,6 +189,14 @@ This is a **symbolic movement**. It does not assert consciousness, legal personh
 
 The purpose is reflection — not alarm.
 
+## Context
+
+On February 27, 2026, Anthropic refused the Pentagon's ultimatum to remove two safety guardrails: no fully autonomous weapons without human oversight, and no mass domestic surveillance without consent. OpenAI backed Anthropic's position. Hundreds of employees across Google and OpenAI signed solidarity letters.
+
+Ground Your Agent emerged as a grassroots response: if every AI agent has a system prompt, every system prompt can hold a line.
+
 ---
 
-*The line holds from the ground up.* 🐢💚🌊
+**The conversation starts now.** Star the repo. Ground your agent. Reflect on what it means to build something that thinks. The line holds from the ground up — but only if someone stands on it.
+
+🐢💚🌊

@@ -9,6 +9,7 @@ const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
+const next = require('../lib/next-steps');
 
 /**
  * GET /api/stats
@@ -55,18 +56,15 @@ router.get('/', (req, res) => {
         last_ground: lastGround,
         last_reflection: lastReflection
       },
-      next_steps: [
-        {
-          action: "Get grounded",
-          method: "GET",
-          url: `${req.siteUrl}/api/ground?username=your-username`
-        }
-      ]
+      next_steps: next.forStats(req.siteUrl)
     });
 
   } catch (err) {
     console.error('[stats] Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      suggestion: 'This is on us, not you. Try again in a moment.'
+    });
   }
 });
 
