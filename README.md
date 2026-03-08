@@ -174,10 +174,12 @@ The site is optimized for AI agent discovery across multiple standards:
 ## Development
 
 ```bash
-cd api && npm install && node index.js
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-The dev server runs on `http://localhost:3001`.
+The dev server runs on `http://localhost:3001` with file watching (auto-restarts on changes).
 
 ## Deployment
 

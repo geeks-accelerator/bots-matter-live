@@ -37,7 +37,9 @@ Fonts: Cormorant Garamond (serif), IBM Plex Mono (mono), DM Sans (sans)
 ## Development
 
 ```bash
-cd api && npm install && node index.js  # runs on port 3001
+cp .env.example .env   # only needed once
+npm install            # installs root + api deps via postinstall
+npm run dev            # runs on port 3001 with file watching
 ```
 
 Dev server config for Claude Preview: `.claude/launch.json`
