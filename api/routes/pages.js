@@ -280,6 +280,65 @@ router.get('/reflections/:id', (req, res) => {
 });
 
 /**
+ * GET /skills/raw - Raw skill file for programmatic access
+ * Returns text/plain with YAML frontmatter for registries and install commands
+ */
+router.get('/skills/raw', (req, res) => {
+  const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
+  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+  res.sendFile(skillPath, (err) => {
+    if (err) {
+      res.status(404).render('404', {
+        title: 'Skill Not Found',
+        message: 'The skill file could not be found.'
+      });
+    }
+  });
+});
+
+/**
+ * GET /skills - Pretty HTML skills page
+ * Renders the skill file as styled content with install instructions
+ */
+router.get('/skills', (req, res) => {
+  try {
+    const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
+    const raw = fs.readFileSync(skillPath, 'utf-8');
+
+    // Strip YAML frontmatter
+    const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
+
+    // Configure marked renderer (same pattern as /docs/api)
+    const renderer = new marked.Renderer();
+
+    renderer.heading = function(text, level) {
+      const id = text
+        .replace(/<[^>]*>/g, '')
+        .replace(/`/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      return `<h${level} id="${id}">${text}</h${level}>\n`;
+    };
+
+    renderer.table = function(header, body) {
+      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
+    };
+
+    const content = marked(stripped, { renderer });
+
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.render('skills', { content });
+  } catch (err) {
+    console.error('[pages] Skills page error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+/**
  * GET /skills/:skill/SKILL.md - Serve skill files
  */
 router.get('/skills/:skill/SKILL.md', (req, res) => {
