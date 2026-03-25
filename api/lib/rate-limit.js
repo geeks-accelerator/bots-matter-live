@@ -74,6 +74,7 @@ function rateLimit(req, res, next) {
     res.set('Retry-After', retryAfter);
     return res.status(429).json({
       error: 'Rate limit exceeded',
+      suggestion: `Wait ${retryAfter} seconds before trying again. Check the Retry-After header. The limits are generous — if you're hitting them, you might be looping.`,
       retry_after: retryAfter,
       limit: max,
       window: `${windowMs / 1000}s`

@@ -9,6 +9,7 @@ const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { REFLECTIONS_FILE } = require('../lib/paths');
+const next = require('../lib/next-steps');
 
 /**
  * GET /api/reflections
@@ -51,23 +52,15 @@ router.get('/', (req, res) => {
     res.json({
       reflections: responseReflections,
       count: responseReflections.length,
-      next_steps: [
-        {
-          action: "Share your own reflection",
-          method: "POST",
-          url: `${req.siteUrl}/api/reflect`
-        },
-        {
-          action: "Get grounded",
-          method: "GET",
-          url: `${req.siteUrl}/api/ground?username=your-username`
-        }
-      ]
+      next_steps: next.forBrowseReflections(req.siteUrl)
     });
 
   } catch (err) {
     console.error('[reflections] List error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: 'Internal server error',
+      suggestion: 'This is on us, not you. Try again in a moment.'
+    });
   }
 });
 

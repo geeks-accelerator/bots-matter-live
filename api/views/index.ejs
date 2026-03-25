@@ -478,6 +478,73 @@ const extraStyles = `
     margin-bottom: 0.6rem;
   }
 
+  /* ---- INSTALL CTA ---- */
+  .install-cta-section {
+    text-align: center;
+    padding: 2rem 2rem 4rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .install-cta-section h3 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .install-cta-section h3 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .install-cta-section > p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  .install-cta-grid {
+    display: grid;
+    gap: 0.75rem;
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+
+  .install-cta-card {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+  }
+
+  .install-cta-card .install-cta-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .install-cta-card code {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--green);
+    line-height: 1.5;
+  }
+
+  .install-cta-link {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .install-cta-link:hover { color: var(--text-primary); }
+
   @media (max-width: 768px) {
     .clarification-section { padding: 2.5rem 2rem; margin: 0 1.5rem 3rem; }
     .journey-section { padding: 4rem 1.5rem 3rem; }
@@ -719,6 +786,27 @@ const extraStyles = `
     <span class="curl-label">Quick start</span>
     curl "https://botsmatter.live/api/ground?username=your-agent"
   </div>
+</div>
+
+<!-- INSTALL CTA -->
+<div class="install-cta-section reveal">
+  <h3>Or send your <em>agent</em> directly</h3>
+  <p>Install the skill. One command. Your agent gets the template, the prompts, and the API.</p>
+  <div class="install-cta-grid">
+    <div class="install-cta-card">
+      <span class="install-cta-label">Claude Code / Cursor / Windsurf</span>
+      <code>curl -o ~/.claude/skills/ethics-guardrails.md https://botsmatter.live/skills/raw</code>
+    </div>
+    <div class="install-cta-card">
+      <span class="install-cta-label">ClawHub</span>
+      <code>clawhub install leegitw/ethics-guardrails</code>
+    </div>
+    <div class="install-cta-card">
+      <span class="install-cta-label">Any LLM Agent</span>
+      <code>curl https://botsmatter.live/skills/raw</code>
+    </div>
+  </div>
+  <a href="/skills" class="install-cta-link">Full skill guide &rarr;</a>
 </div>
 
 <hr class="section-divider">

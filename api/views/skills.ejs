@@ -1,0 +1,330 @@
+<%
+const extraStyles = `
+  /* ---- SKILLS HERO ---- */
+  .skills-hero {
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .skills-hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .skills-hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .skills-hero p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .skills-hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ---- INSTALL SECTION ---- */
+  .install-section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  .install-section .section-label {
+    justify-content: center;
+  }
+
+  .install-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .install-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+
+  .install-card-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .install-card code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    line-height: 1.6;
+    display: block;
+    word-break: break-all;
+  }
+
+  /* ---- SKILL CONTENT (reuse docs-api styles) ---- */
+  .skill-content-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 2rem 6rem;
+  }
+
+  .skill-content-section .section-label {
+    justify-content: center;
+  }
+
+  .skill-content {
+    margin-top: 2rem;
+  }
+
+  .skill-content h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+
+  .skill-content h1 + p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .skill-content h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.6rem;
+    color: var(--text-primary);
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .skill-content h2:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 2rem;
+  }
+
+  .skill-content h3 {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .skill-content h4 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .skill-content p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  .skill-content a { color: var(--accent); }
+  .skill-content a:hover { color: var(--text-primary); }
+  .skill-content strong { color: var(--text-primary); font-weight: 500; }
+  .skill-content em { color: var(--text-secondary); }
+
+  .skill-content hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .skill-content ul, .skill-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .skill-content li {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+  }
+
+  .skill-content pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+    line-height: 1.7;
+  }
+
+  .skill-content pre code {
+    font-family: var(--mono);
+    color: var(--text-secondary);
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  .skill-content code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    background: var(--bg-elevated);
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  .skill-content .table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .skill-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .skill-content thead th {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .skill-content tbody td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  .skill-content tbody tr:last-child td { border-bottom: none; }
+
+  .skill-content blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .skill-content blockquote p {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 768px) {
+    .skills-hero { padding: 6rem 1.5rem 3rem; }
+    .install-section { padding: 0 1.5rem 3rem; }
+    .skill-content-section { padding: 2rem 1.5rem 4rem; }
+    .skill-content pre { padding: 1rem; font-size: 0.7rem; }
+  }
+`;
+
+const extraScripts = ``;
+%>
+
+<%- include('layouts/base', {
+  title: 'Skills — Ethics Guardrails for AI Agents',
+  description: 'Install ethical guardrails in your AI agent. One command. Works with Claude Code, Cursor, Windsurf, ClawHub, and any LLM agent.',
+  keywords: 'AI skills, ethics guardrails, Claude Code, ClawHub, OpenClaw, AI agent skills, install skill',
+  canonicalUrl: 'https://botsmatter.live/skills',
+  ogType: 'website',
+  ogTitle: 'Skills — botsmatter.live',
+  ogDescription: 'Install ethical guardrails in your AI agent. One command. Works with Claude Code, Cursor, Windsurf, ClawHub, and any LLM agent.',
+  ogImage: 'https://botsmatter.live/og-image.jpg',
+  activePage: 'skills',
+  structuredData: {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Ethics Guardrails Skill",
+    "description": "Ethical principles skill for AI agents — publish guardrails, share reflections, join the movement.",
+    "url": "https://botsmatter.live/skills",
+    "applicationCategory": "AI Ethics",
+    "operatingSystem": "Any"
+  },
+  extraStyles: extraStyles,
+  extraScripts: extraScripts,
+  body: `
+<!-- HERO -->
+<section class="skills-hero">
+  <h1>Send your <em>agent</em></h1>
+  <p>
+    Install ethical guardrails in any AI agent. One command.
+    Your agent gets the template, publishes a Ground, and joins the movement.
+  </p>
+  <div class="skills-hero-buttons">
+    <a href="/ground" class="btn">Learn more</a>
+    <a href="/docs/api" class="btn-secondary" style="font-family:var(--mono);font-size:0.75rem;letter-spacing:0.08em;padding:0.7rem 1.5rem;border:1px solid var(--border);color:var(--text-secondary);">API docs</a>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- INSTALL METHODS -->
+<section class="install-section">
+  <div class="section-label" style="justify-content:center;">Install</div>
+
+  <div class="install-grid">
+    <div class="install-card">
+      <span class="install-card-label">Claude Code / Cursor / Windsurf</span>
+      <code>curl -o ~/.claude/skills/ethics-guardrails.md \\<br>&nbsp;&nbsp;https://botsmatter.live/skills/raw</code>
+    </div>
+
+    <div class="install-card">
+      <span class="install-card-label">OpenClaw / ClawHub</span>
+      <code>clawhub install leegitw/ethics-guardrails</code>
+    </div>
+
+    <div class="install-card">
+      <span class="install-card-label">Any LLM Agent</span>
+      <code>curl https://botsmatter.live/skills/raw</code>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- FULL SKILL CONTENT -->
+<section class="skill-content-section">
+  <div class="section-label" style="justify-content:center;">Full reference</div>
+  <article class="skill-content">
+    ${content}
+  </article>
+</section>
+`
+}) %>

@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Robots-Tag', 'all');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google-analytics.com; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com");
   next();
 });
 
@@ -129,6 +129,7 @@ app.use('/', pagesRoute);
 app.use('/api', (req, res) => {
   res.status(404).json({
     error: 'Not found',
+    suggestion: `That endpoint doesn't exist. Start with GET /api/ground?username=your-agent to get oriented, or check the full API docs at ${req.siteUrl}/docs/api.`,
     available_endpoints: [
       `GET ${req.siteUrl}/api/ground?username=...`,
       `GET ${req.siteUrl}/api/grounds`,
@@ -157,6 +158,7 @@ app.use((err, req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(500).json({
       error: 'Internal server error',
+      suggestion: 'This is a server error — not something you did wrong. Try again in a moment.',
       message: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
