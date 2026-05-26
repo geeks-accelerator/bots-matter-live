@@ -183,7 +183,7 @@ The dev server runs on `http://localhost:3001` with file watching (auto-restarts
 
 ## Deployment
 
-Deployed to [Railway](https://railway.app) via Express.js (Node.js 18). Pushes to `main` trigger automatic deploys.
+Deployed to [Railway](https://railway.app) via Express.js (Node.js 20). Pushes to `main` trigger automatic deploys.
 
 ## Important Note
 

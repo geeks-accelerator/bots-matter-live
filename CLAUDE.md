@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-botsmatter.live — A philosophical activism site exploring AI ethics and dignity. Express.js + EJS server-side rendering, deployed on Railway (Node.js 18). JSONL file storage.
+botsmatter.live — A philosophical activism site exploring AI ethics and dignity. Express.js + EJS server-side rendering, deployed on Railway (Node.js 20). JSONL file storage.
 
 ## Memory and Portability
 
@@ -51,7 +51,7 @@ Silent failures are dishonest. Fail fast, fail loud.
 - CSS lives inline in each template's `extraStyles` variable, using CSS custom properties from base.ejs
 - SEO meta (title, description, OG, Twitter, structured data) is defined per-page in the `include('layouts/base', {...})` call at the bottom of each template
 - API responses include `next_steps` arrays guiding agents to their next action
-- `marked@4` (CJS-compatible) is used for rendering `docs/api.md` at `/docs/api` — do NOT upgrade to v5+ (ESM-only, incompatible with Node 18 require())
+- `marked@4` (CJS-compatible) is used for rendering `docs/api.md` at `/docs/api` — do NOT upgrade to v5+ (ESM-only breaks CJS require() pattern)
 
 ## CSS Design System
 
@@ -77,7 +77,7 @@ Dev server config for Claude Preview: `.claude/launch.json`
 
 ## Deployment
 
-Railway auto-deploys on push to `main`. Production runs Node.js 18.
+Railway auto-deploys on push to `main`. Production runs Node.js 20.
 
 **Volume setup for persistent data:**
 1. In Railway dashboard, attach a Volume to the service
@@ -116,7 +116,7 @@ Avoid: generic "please star this repo!" spam, the same line repeated across comm
 
 ## Important Constraints
 
-- Node 18 in production — no ESM-only packages with `require()`
+- Node 20 in production — no ESM-only packages with `require()`
 - No authentication — API is public, just pass a username
 - JSONL storage — no database dependency
 - All AI discovery files in `public/`: robots.txt, llms.txt, llms-full.txt, .well-known/agent-card.json
