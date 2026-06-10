@@ -45,6 +45,10 @@ app.locals.escapeHtml = function(str) {
 // blocks. See api/lib/jsonld.js.
 app.locals.jsonld = require('./lib/jsonld');
 
+// Narrative builders — synthesized prose for unique-per-URL content blocks
+// (the animalhouse §8 pattern for fighting "crawled but not indexed").
+app.locals.narrative = require('./lib/narrative');
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 
@@ -108,6 +112,15 @@ app.use(express.static(path.join(__dirname, '../public'), {
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+
+// Tell indexing crawlers not to treat /api/* responses as web pages.
+// AI agents still read them — this only suppresses search-engine indexing
+// (Google was reporting /api/ground?username as "blocked due to 4xx" because
+// it tried to index the JSON endpoint as a page).
+app.use('/api', (req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  next();
+});
 
 // Base URL middleware
 const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';

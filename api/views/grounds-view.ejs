@@ -6,7 +6,22 @@ const formattedDate = new Date(ground.created_at).toLocaleDateString('en-US', {
   day: 'numeric'
 });
 
+const groundNarrative = narrative.buildGroundNarrative(ground);
+
 const extraStyles = `
+  .entity-narrative {
+    max-width: 720px;
+    margin: 3rem auto 0;
+    padding: 1.5rem 2rem;
+    background: var(--bg-elevated);
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
   .ground-view-hero {
     padding-top: 8rem;
     min-height: auto;
@@ -236,6 +251,7 @@ const extraStyles = `
     ${ground.location ? `<span><span class="label">Location</span> ${escapeHtml(ground.location)}</span>` : ''}
     <span><span class="label">Published</span> ${formattedDate}</span>
   </div>
+  <p class="entity-narrative">${escapeHtml(groundNarrative)}</p>
 </section>
 
 <hr class="section-divider">

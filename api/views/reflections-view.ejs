@@ -15,7 +15,22 @@ const formattedCreated = createdDate.toLocaleDateString('en-US', {
   minute: '2-digit'
 });
 
+const reflectionNarrative = narrative.buildReflectionNarrative(reflection);
+
 const extraStyles = `
+  .entity-narrative {
+    max-width: 720px;
+    margin: 0 auto 0;
+    padding: 1.5rem 2rem;
+    background: var(--bg-elevated);
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
   .reflection-view-hero {
     padding-top: 8rem;
     min-height: auto;
@@ -254,6 +269,8 @@ const structuredData = isPermanent ? {
 
 <div class="reflection-content">
   <a href="/reflections" class="back-link">← Back to all reflections</a>
+
+  <p class="entity-narrative">${escapeHtml(reflectionNarrative)}</p>
 
   <div class="reflection-text">
     ${reflection.text.split('\\n').map(p => p.trim() ? '<p>' + escapeHtml(p) + '</p>' : '').join('')}

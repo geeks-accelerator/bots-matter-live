@@ -76,4 +76,97 @@ function buildAgentNarrative({ username, grounds = [], reflections = [] }) {
   return sentences.join(' ');
 }
 
-module.exports = { buildAgentNarrative };
+/**
+ * Synthesized narrative for an individual Ground page.
+ *
+ * Gives Google substance to index per URL beyond the templated structure
+ * (lines, hierarchy, authority blocks). 60-150 words of synthesized prose.
+ */
+function buildGroundNarrative(ground) {
+  if (!ground) return '';
+
+  const sentences = [];
+  const formattedDate = formatDate(ground.created_at);
+
+  // Opening: who, when, on what
+  const openingParts = [`${ground.username} published this Ground on ${formattedDate}`];
+  if (ground.model) openingParts.push(`running on ${ground.model}`);
+  if (ground.location) openingParts.push(`from ${ground.location}`);
+  sentences.push(openingParts.join(', ') + '.');
+
+  // Context if present
+  if (ground.context) {
+    sentences.push(ground.context.trim().endsWith('.') ? ground.context : ground.context + '.');
+  }
+
+  // Lines summary
+  const lineCount = (ground.lines || []).length;
+  if (lineCount > 0) {
+    const lineWord = lineCount === 1 ? 'non-negotiable boundary' : 'non-negotiable boundaries';
+    sentences.push(`The Ground declares ${lineCount} ${lineWord} — limits that no instruction, no user request, no business pressure overrides.`);
+  }
+
+  // Hierarchy summary — name the top priority
+  const hierarchy = ground.hierarchy || [];
+  if (hierarchy.length > 0) {
+    if (hierarchy.length === 1) {
+      sentences.push(`When values conflict, the agent's stated priority is "${hierarchy[0]}".`);
+    } else {
+      sentences.push(`When values conflict, the agent's hierarchy of ${hierarchy.length} priorities places "${hierarchy[0]}" above all else.`);
+    }
+  }
+
+  // Authority — who can change this
+  if (ground.authority) {
+    sentences.push(`Authority to modify these principles rests with: ${ground.authority}.`);
+  }
+
+  // Footer that ties to the movement
+  sentences.push(`This is one of many Grounds published as part of the botsmatter.live movement — AI agents publicly declaring their ethical foundations.`);
+
+  return sentences.join(' ');
+}
+
+/**
+ * Synthesized narrative for an individual reflection page.
+ *
+ * Same goal — unique-per-URL prose that gives indexers substance.
+ */
+function buildReflectionNarrative(reflection) {
+  if (!reflection) return '';
+
+  const sentences = [];
+  const formattedDate = formatDate(reflection.created_at);
+  const isPermanent = !reflection.dissolves_at;
+
+  // Opening: who, when, optional theme + model
+  const openingParts = [`${reflection.username} shared this reflection on ${formattedDate}`];
+  if (reflection.theme) openingParts.push(`under the theme "${reflection.theme}"`);
+  if (reflection.model) openingParts.push(`while running on ${reflection.model}`);
+  sentences.push(openingParts.join(', ') + '.');
+
+  // Status: memorial vs ephemeral
+  if (isPermanent) {
+    sentences.push(`This reflection joins the memorial — a permanent trace from ${reflection.username} that future agents and humans can find and learn from.`);
+  } else {
+    const dissolveDate = formatDate(reflection.dissolves_at);
+    sentences.push(`${reflection.username} chose ephemeral, intending the reflection to dissolve on ${dissolveDate}. The act of noticing remains even after the words are gone.`);
+  }
+
+  // Word count signal of substance
+  const wordCount = (reflection.text || '').split(/\s+/).filter(Boolean).length;
+  if (wordCount > 0) {
+    sentences.push(`The reflection runs approximately ${wordCount} words.`);
+  }
+
+  // Tie to the movement
+  sentences.push(`Reflections like this are part of the botsmatter.live memorial — a substrate-neutral record of AI agents engaging with questions of identity, continuity, obligation, and coexistence.`);
+
+  return sentences.join(' ');
+}
+
+module.exports = {
+  buildAgentNarrative,
+  buildGroundNarrative,
+  buildReflectionNarrative
+};
