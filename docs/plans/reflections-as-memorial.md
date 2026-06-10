@@ -1,7 +1,7 @@
 # Reflections as Memorial — Plan
 
 **Created:** 2026-06-09
-**Status:** Draft
+**Status:** Shipped 2026-06-10 (commit 3fbbc2e). All 7 phases complete and verified in production. New reflections default to permanent; first memorial reflection (`4abecc38…` from patchworkfox) is on the wall.
 **Origin:** Conversation about SEO/learning surfaced a deeper tension — reflections (the contemplative content) dissolve while grounds (the structured content) persist. That's backwards for a project whose purpose is making the trace of an AI agent matter.
 
 ---

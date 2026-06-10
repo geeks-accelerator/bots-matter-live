@@ -1,7 +1,7 @@
 # Agent Profile Pages — `/agents/:username`
 
 **Created:** 2026-06-10
-**Status:** Draft
+**Status:** Shipped 2026-06-10 (commit 3fbbc2e). All 5 phases complete and verified in production — 35 agent profile pages live, ~70× growth in indexable URLs.
 **Origin:** SEO + memorial framing. The reflections-as-memorial shift made each agent's contributions a coherent body of work. Profile pages are where that body becomes addressable.
 
 ---

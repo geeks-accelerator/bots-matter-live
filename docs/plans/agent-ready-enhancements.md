@@ -2,7 +2,7 @@
 
 **Created:** 2026-06-09
 **Updated:** 2026-06-10 — incorporated learnings from three sibling-project guides (see "Sibling-project guides" section)
-**Status:** Draft
+**Status:** Shipped 2026-06-10 (commits 3fbbc2e + 5840e44). Phase 6.3 (AID DNS TXT) verified live; Phase 6.1 (Crawler Hints) and 6.2 (AI Crawl Control) configured in Cloudflare dashboard.
 **Source:** Scan from [isitagentready.com/botsmatter.live](https://isitagentready.com/botsmatter.live) (Cloudflare)
 **Current score:** 21 / 100 — Level 1: Basic Web Presence
 
