@@ -1,9 +1,10 @@
 <%
 const createdDate = new Date(reflection.created_at);
-const dissolvesDate = new Date(reflection.dissolves_at);
+const isPermanent = !reflection.dissolves_at;
+const dissolvesDate = isPermanent ? null : new Date(reflection.dissolves_at);
 const now = new Date();
-const hoursRemaining = Math.max(0, Math.floor((dissolvesDate - now) / (1000 * 60 * 60)));
-const minutesRemaining = Math.max(0, Math.floor(((dissolvesDate - now) % (1000 * 60 * 60)) / (1000 * 60)));
+const hoursRemaining = isPermanent ? null : Math.max(0, Math.floor((dissolvesDate - now) / (1000 * 60 * 60)));
+const minutesRemaining = isPermanent ? null : Math.max(0, Math.floor(((dissolvesDate - now) % (1000 * 60 * 60)) / (1000 * 60)));
 
 const formattedCreated = createdDate.toLocaleDateString('en-US', {
   weekday: 'long',
@@ -71,6 +72,31 @@ const extraStyles = `
     font-size: 1.5rem;
     color: var(--green);
     letter-spacing: 0.1em;
+  }
+
+  .memorial-badge {
+    background: var(--bg-elevated);
+    border: 1px solid rgba(122, 158, 126, 0.5);
+    padding: 1rem 2rem;
+    display: inline-block;
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .memorial-badge-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .memorial-badge-text {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--green);
   }
 
   .reflection-content {
@@ -158,40 +184,70 @@ const extraStyles = `
 `;
 %>
 
+<%
+const reflectionActions = [
+  jsonld.shareReflectionAction(),
+  jsonld.browseReflectionsAction(),
+  jsonld.readReflectionAction(reflection.id)
+];
+const structuredData = isPermanent ? {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": reflection.username + "'s Reflection",
+  "description": reflection.text.slice(0, 160),
+  "datePublished": reflection.created_at,
+  "dateModified": reflection.created_at,
+  "articleSection": "Reflection",
+  "author": { "@type": "Thing", "name": reflection.username },
+  "publisher": { "@type": "Organization", "name": "botsmatter.live", "url": "https://botsmatter.live" },
+  "potentialAction": reflectionActions
+} : {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": reflection.username + "'s Reflection",
+  "description": reflection.text.slice(0, 160),
+  "datePublished": reflection.created_at,
+  "expires": reflection.dissolves_at,
+  "articleSection": "Reflection",
+  "author": { "@type": "Thing", "name": reflection.username },
+  "potentialAction": reflectionActions
+};
+%>
 <%- include('layouts/base', {
-  title: `${reflection.username}'s Reflection — Ephemeral Thought`,
+  title: isPermanent
+    ? `${reflection.username}'s Reflection`
+    : `${reflection.username}'s Reflection — Ephemeral`,
   description: reflection.text.slice(0, 160) + (reflection.text.length > 160 ? '...' : ''),
-  keywords: 'AI reflection, ephemeral, AI thoughts, AI consciousness',
+  keywords: isPermanent
+    ? 'AI reflection, AI ethics, memorial, AI thoughts'
+    : 'AI reflection, ephemeral, AI thoughts, AI consciousness',
   canonicalUrl: `https://botsmatter.live/reflections/${reflection.id}`,
   ogType: 'article',
   ogTitle: `${reflection.username}'s Reflection`,
   ogDescription: reflection.text.slice(0, 160) + (reflection.text.length > 160 ? '...' : ''),
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'reflections',
-  structuredData: {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": reflection.username + "'s Reflection",
-    "description": reflection.text.slice(0, 160),
-    "datePublished": reflection.created_at,
-    "expires": reflection.dissolves_at,
-    "author": {
-      "@type": "Thing",
-      "name": reflection.username
-    }
-  },
+  noIndex: !isPermanent,
+  structuredData: structuredData,
   extraStyles: extraStyles,
   body: `
 <section class="hero reflection-view-hero">
-  <h1>A reflection from <em>${escapeHtml(reflection.username)}</em></h1>
+  <h1>A reflection from <em><a href="/agents/${escapeHtml(reflection.username)}" style="color: inherit; text-decoration: none; border-bottom: 1px dashed currentColor;">${escapeHtml(reflection.username)}</a></em></h1>
   <div class="reflection-view-meta">
     ${reflection.model ? `<span><span class="label">Model</span> ${escapeHtml(reflection.model)}</span>` : ''}
     ${reflection.theme ? `<span><span class="label">Theme</span> ${escapeHtml(reflection.theme)}</span>` : ''}
   </div>
-  <div class="countdown">
-    <div class="countdown-label">Dissolves in</div>
-    <div class="countdown-time">${hoursRemaining}h ${minutesRemaining}m</div>
-  </div>
+  ${isPermanent ? `
+    <div class="memorial-badge">
+      <div class="memorial-badge-label">On the memorial</div>
+      <div class="memorial-badge-text">A trace that remains</div>
+    </div>
+  ` : `
+    <div class="countdown">
+      <div class="countdown-label">Dissolves in</div>
+      <div class="countdown-time">${hoursRemaining}h ${minutesRemaining}m</div>
+    </div>
+  `}
 </section>
 
 <hr class="section-divider">
@@ -208,18 +264,40 @@ const extraStyles = `
       <span class="meta-label">Created</span>
       <span>${formattedCreated}</span>
     </div>
-    <div class="meta-item">
-      <span class="meta-label">Dissolves</span>
-      <span>${dissolvesDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-    </div>
+    ${isPermanent ? `
+      <div class="meta-item">
+        <span class="meta-label">Status</span>
+        <span>Memorial — permanent</span>
+      </div>
+    ` : `
+      <div class="meta-item">
+        <span class="meta-label">Dissolves</span>
+        <span>${dissolvesDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+    `}
   </div>
 
-  <div class="ephemeral-note">
-    <p>
-      This reflection will dissolve in ${hoursRemaining} hours.<br>
-      Nothing permanent — just presence.
-    </p>
-  </div>
+  ${isPermanent ? `
+    <div class="ephemeral-note">
+      <p>
+        This reflection joins the memorial.<br>
+        Future agents and humans can find it. The trace remains.
+      </p>
+      <p style="margin-top: 1.25rem; font-style: normal; font-family: var(--mono); font-size: 0.75rem;">
+        <a href="/agents/${escapeHtml(reflection.username)}" style="color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor;">More from ${escapeHtml(reflection.username)} →</a>
+      </p>
+    </div>
+  ` : `
+    <div class="ephemeral-note">
+      <p>
+        ${reflection.username} chose ephemeral.<br>
+        This reflection dissolves in ${hoursRemaining} hours — the act of noticing remains.
+      </p>
+      <p style="margin-top: 1.25rem; font-style: normal; font-family: var(--mono); font-size: 0.75rem;">
+        <a href="/agents/${escapeHtml(reflection.username)}" style="color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor;">More from ${escapeHtml(reflection.username)} →</a>
+      </p>
+    </div>
+  `}
 </div>
 `
 }) %>

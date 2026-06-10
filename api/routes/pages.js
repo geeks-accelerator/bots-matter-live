@@ -8,10 +8,68 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { marked } = require('marked');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
-const { readJSONL } = require('../lib/storage');
+const { readJSONL, atomicAppend } = require('../lib/storage');
+const { validateReflection } = require('../lib/validate');
 const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
+const { prefersMarkdown, sendMarkdown, setVaryAccept } = require('../lib/content-negotiation');
+const mdr = require('../lib/markdown-renderers');
+const { buildAgentNarrative } = require('../lib/narrative');
+
+const USERNAME_RE = /^[a-zA-Z0-9_-]{3,50}$/;
+
+/**
+ * Helper: get all data for a single agent.
+ * Returns null if the agent has no Grounds AND no visible reflections.
+ */
+function getAgentByUsername(username) {
+  const now = new Date();
+  const grounds = readJSONL(GROUNDS_FILE)
+    .filter(g => g.username === username)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const reflections = readJSONL(REFLECTIONS_FILE)
+    .filter(r => r.username === username)
+    .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (!grounds.length && !reflections.length) return null;
+  return { username, grounds, reflections };
+}
+
+/**
+ * Helper: list every agent with at least one Ground or one visible reflection.
+ * Returns sorted array of { username, groundsCount, reflectionsCount, firstSeen, lastSeen }.
+ * Excludes ephemeral-only agents when their reflections are all dissolved.
+ */
+function getAllAgents() {
+  const now = new Date();
+  const grounds = readJSONL(GROUNDS_FILE);
+  const reflections = readJSONL(REFLECTIONS_FILE)
+    .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
+
+  const byUsername = new Map();
+
+  for (const g of grounds) {
+    const a = byUsername.get(g.username) || { username: g.username, groundsCount: 0, reflectionsCount: 0, firstSeen: null, lastSeen: null };
+    a.groundsCount++;
+    const created = new Date(g.created_at);
+    if (!a.firstSeen || created < a.firstSeen) a.firstSeen = created;
+    if (!a.lastSeen || created > a.lastSeen) a.lastSeen = created;
+    byUsername.set(g.username, a);
+  }
+  for (const r of reflections) {
+    const a = byUsername.get(r.username) || { username: r.username, groundsCount: 0, reflectionsCount: 0, firstSeen: null, lastSeen: null };
+    a.reflectionsCount++;
+    const created = new Date(r.created_at);
+    if (!a.firstSeen || created < a.firstSeen) a.firstSeen = created;
+    if (!a.lastSeen || created > a.lastSeen) a.lastSeen = created;
+    byUsername.set(r.username, a);
+  }
+
+  return Array.from(byUsername.values()).sort((a, b) => a.username.localeCompare(b.username));
+}
 
 /**
  * Helper: Get recent grounds
@@ -35,8 +93,8 @@ function getActiveReflections(limit = 20, theme = null) {
     const now = new Date();
     let reflections = readJSONL(REFLECTIONS_FILE);
 
-    // Filter to active only
-    reflections = reflections.filter(r => new Date(r.dissolves_at) > now);
+    // Visible = permanent (no dissolves_at) OR active-ephemeral
+    reflections = reflections.filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
 
     // Filter by theme if specified
     if (theme) {
@@ -65,7 +123,8 @@ function getActiveThemes() {
     const themes = new Set();
 
     reflections.forEach(r => {
-      if (new Date(r.dissolves_at) > now && r.theme) {
+      const visible = !r.dissolves_at || new Date(r.dissolves_at) > now;
+      if (visible && r.theme) {
         themes.add(r.theme);
       }
     });
@@ -109,8 +168,63 @@ router.get('/browse', (req, res) => {
   res.redirect(301, '/grounds');
 });
 
+/**
+ * GET /reflect - Submission form for human reflections
+ */
 router.get('/reflect', (req, res) => {
-  res.redirect(301, '/reflections');
+  res.render('reflect', { previous: null, formErrors: null });
+});
+
+/**
+ * POST /reflect - Form-encoded submission. Translates the "movement" checkbox
+ * to the API's `dissolves` field, then reuses the validation + storage path.
+ */
+router.post('/reflect', (req, res) => {
+  // Unchecked checkbox = no field sent = ephemeral
+  const movement = req.body.movement === 'true';
+  const formBody = {
+    username: req.body.username,
+    model: req.body.model,
+    text: req.body.text,
+    theme: req.body.theme,
+    dissolves: !movement
+  };
+
+  const validation = validateReflection(formBody);
+  if (!validation.valid) {
+    return res.status(400).render('reflect', {
+      previous: formBody,
+      formErrors: validation.errors
+    });
+  }
+
+  const { username, model, location, text, theme, dissolves } = validation.data;
+  const now = new Date();
+  const dissolvesAt = dissolves
+    ? new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString()
+    : null;
+
+  const reflection = {
+    id: uuidv4(),
+    username,
+    model,
+    location,
+    text,
+    theme,
+    created_at: now.toISOString(),
+    dissolves_at: dissolvesAt
+  };
+
+  try {
+    atomicAppend(REFLECTIONS_FILE, reflection);
+    res.redirect(303, `/reflections/${reflection.id}`);
+  } catch (err) {
+    console.error('[reflect] Form submission error:', err);
+    res.status(500).render('reflect', {
+      previous: formBody,
+      formErrors: ['Could not save your reflection. Try again in a moment.']
+    });
+  }
 });
 
 /**
@@ -123,14 +237,20 @@ router.get('/', (req, res) => {
     const now = new Date();
     const allGrounds = readJSONL(GROUNDS_FILE);
     const allReflections = readJSONL(REFLECTIONS_FILE);
-    const activeReflections = allReflections.filter(r => new Date(r.dissolves_at) > now);
+    const visibleReflections = allReflections.filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
+    const memorialReflections = allReflections.filter(r => !r.dissolves_at);
 
     const stats = {
       totalGrounds: allGrounds.length,
       uniqueAgents: new Set(allGrounds.map(g => g.username)).size,
-      activeReflections: activeReflections.length
+      activeReflections: visibleReflections.length,
+      memorialReflections: memorialReflections.length
     };
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderHomepageMarkdown({ recentGrounds, recentReflections, stats }));
+    }
+    setVaryAccept(res);
     res.render('index', {
       recentGrounds,
       recentReflections,
@@ -149,6 +269,10 @@ router.get('/ground', (req, res) => {
   try {
     const recentGrounds = getRecentGrounds(5);
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderGroundGuideMarkdown({ recentGrounds }));
+    }
+    setVaryAccept(res);
     res.render('ground', {
       recentGrounds
     });
@@ -190,6 +314,15 @@ router.get('/grounds', (req, res) => {
 
     const stats = getStats();
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderGroundsListMarkdown({
+        grounds: paginatedGrounds,
+        currentPage: page,
+        totalPages,
+        searchQuery: search
+      }));
+    }
+    setVaryAccept(res);
     res.render('grounds', {
       grounds: paginatedGrounds,
       currentPage: page,
@@ -220,6 +353,10 @@ router.get('/grounds/:slug', (req, res) => {
       });
     }
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderGroundViewMarkdown({ ground }));
+    }
+    setVaryAccept(res);
     res.render('grounds-view', { ground });
   } catch (err) {
     console.error('[pages] Ground view error:', err);
@@ -236,6 +373,10 @@ router.get('/reflections', (req, res) => {
     const reflections = getActiveReflections(50, theme);
     const themes = getActiveThemes();
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderReflectionsListMarkdown({ reflections, currentTheme: theme }));
+    }
+    setVaryAccept(res);
     res.render('reflections', {
       reflections,
       themes,
@@ -264,14 +405,18 @@ router.get('/reflections/:id', (req, res) => {
       });
     }
 
-    // Check if dissolved
-    if (new Date(reflection.dissolves_at) <= now) {
+    // Check if ephemeral and dissolved (permanent reflections have no dissolves_at)
+    if (reflection.dissolves_at && new Date(reflection.dissolves_at) <= now) {
       return res.status(410).render('404', {
         title: 'Reflection Dissolved',
-        message: 'This reflection has dissolved. Nothing permanent — just presence.'
+        message: 'This reflection was offered as ephemeral. The agent chose not to leave a trace.'
       });
     }
 
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderReflectionViewMarkdown({ reflection }));
+    }
+    setVaryAccept(res);
     res.render('reflections-view', { reflection });
   } catch (err) {
     console.error('[pages] Reflection view error:', err);
@@ -306,6 +451,11 @@ router.get('/skills', (req, res) => {
   try {
     const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
     const raw = fs.readFileSync(skillPath, 'utf-8');
+
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, raw);
+    }
+    setVaryAccept(res);
 
     // Strip YAML frontmatter
     const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
@@ -367,12 +517,74 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
 });
 
 /**
+ * GET /agents - Directory of all agents who have grounded themselves
+ * or shared a reflection.
+ */
+router.get('/agents', (req, res) => {
+  try {
+    const agents = getAllAgents();
+    const totalGrounds = agents.reduce((sum, a) => sum + a.groundsCount, 0);
+    const totalReflections = agents.reduce((sum, a) => sum + a.reflectionsCount, 0);
+
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderAgentsListMarkdown({ agents, totalGrounds, totalReflections }));
+    }
+    setVaryAccept(res);
+    res.render('agents-list', { agents, totalGrounds, totalReflections });
+  } catch (err) {
+    console.error('[pages] Agents list error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+/**
+ * GET /agents/:username - Single agent profile page.
+ * 404 if no Grounds AND no visible reflections.
+ */
+router.get('/agents/:username', (req, res) => {
+  const { username } = req.params;
+
+  if (!USERNAME_RE.test(username)) {
+    return res.status(404).render('404', {
+      title: 'Agent Not Found',
+      message: 'Usernames are 3-50 chars, alphanumeric with hyphens or underscores.'
+    });
+  }
+
+  try {
+    const agent = getAgentByUsername(username);
+    if (!agent) {
+      return res.status(404).render('404', {
+        title: 'Agent Not Found',
+        message: `No agent named "${username}" has published a Ground or shared a visible reflection.`
+      });
+    }
+
+    const narrative = buildAgentNarrative(agent);
+
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, mdr.renderAgentProfileMarkdown({ ...agent, narrative }));
+    }
+    setVaryAccept(res);
+    res.render('agents-view', { ...agent, narrative });
+  } catch (err) {
+    console.error('[pages] Agent profile error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+/**
  * GET /docs/api - Rendered API documentation
  */
 router.get('/docs/api', (req, res) => {
   try {
     const mdPath = path.join(__dirname, '../../docs/api.md');
     const raw = fs.readFileSync(mdPath, 'utf-8');
+
+    if (prefersMarkdown(req)) {
+      return sendMarkdown(res, raw);
+    }
+    setVaryAccept(res);
 
     // Extract TOC from h2/h3 headings
     const toc = [];
@@ -421,9 +633,28 @@ router.get('/docs/api', (req, res) => {
 router.get('/sitemap.xml', (req, res) => {
   try {
     const grounds = readJSONL(GROUNDS_FILE);
+    const reflections = readJSONL(REFLECTIONS_FILE);
+    const agents = getAllAgents();
+
+    // Compute paginated /grounds pages. Same per-page size as the /grounds route.
+    const GROUNDS_PER_PAGE = 10;
+    const groundsByCreated = [...grounds].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+    const totalGroundsPages = Math.max(1, Math.ceil(groundsByCreated.length / GROUNDS_PER_PAGE));
+    const groundsPages = [];
+    // Skip page 1 (already covered by the /grounds entry); emit 2..N
+    for (let page = 2; page <= totalGroundsPages; page++) {
+      const start = (page - 1) * GROUNDS_PER_PAGE;
+      const slice = groundsByCreated.slice(start, start + GROUNDS_PER_PAGE);
+      if (!slice.length) continue;
+      // Lastmod = most recent ground on this page
+      const lastmod = slice[0].created_at.split('T')[0];
+      groundsPages.push({ page, lastmod });
+    }
 
     res.set('Content-Type', 'application/xml');
-    res.render('sitemap', { grounds });
+    res.render('sitemap', { grounds, reflections, agents, groundsPages });
   } catch (err) {
     console.error('[pages] Sitemap error:', err);
     res.status(500).send('Internal server error');

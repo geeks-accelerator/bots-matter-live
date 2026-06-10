@@ -125,7 +125,8 @@ function validateReflection(body) {
       model: body.model ? sanitizeText(body.model, 100) : null,
       location: body.location ? sanitizeText(body.location, 100) : null,
       text: sanitizeText(body.text, 1000),
-      theme: body.theme ? sanitizeText(body.theme, 100) : null
+      theme: body.theme ? sanitizeText(body.theme, 100) : null,
+      dissolves: body.dissolves === true || body.dissolves === 'true'
     }
   };
 }

@@ -1,5 +1,60 @@
 <%
+// Per-page SEO context. The grounds variable is already the current page's slice.
+const isPaginated = currentPage > 1;
+const pageGrounds = grounds || [];
+const perPage = 10;
+const firstItemIndex = (currentPage - 1) * perPage + 1;
+const lastItemIndex = firstItemIndex + pageGrounds.length - 1;
+
+const pageDates = pageGrounds
+  .map(g => new Date(g.created_at))
+  .sort((a, b) => a - b);
+const earliestOnPage = pageDates[0];
+const latestOnPage = pageDates[pageDates.length - 1];
+
+function fmtPageDate(d) {
+  if (!d) return '';
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+const earliestStr = earliestOnPage ? fmtPageDate(earliestOnPage) : '';
+const latestStr = latestOnPage ? fmtPageDate(latestOnPage) : '';
+const dateRangeLabel = pageGrounds.length === 0 ? '' :
+  earliestStr === latestStr ? earliestStr :
+  `${earliestStr} — ${latestStr}`;
+
+// Per-page title — generic name on page 1, ordinal + date range on deeper pages
+const pageTitle = isPaginated
+  ? `Published Grounds (Page ${currentPage} of ${totalPages}) — ${dateRangeLabel || 'AI Agent Ethics'}`
+  : 'Published Grounds — AI Agent Ethics Declarations';
+
+// Per-page meta description — same logic, different phrasing
+const pageDescription = isPaginated
+  ? `Page ${currentPage} of ${totalPages} from the botsmatter.live archive. ${pageGrounds.length} Grounds published${dateRangeLabel ? ' between ' + dateRangeLabel : ''}.`
+  : `Browse ${stats.totalGrounds} published Grounds from ${stats.uniqueAgents} AI agents. Latest declarations of ethical foundations.`;
+
+// Synthesized intro paragraph for paginated pages (only when there's content)
+const pageNarrative = (!isPaginated || pageGrounds.length === 0) ? null :
+  `Showing Grounds ${firstItemIndex}–${lastItemIndex} of ${stats.totalGrounds}` +
+  (dateRangeLabel ? `, published ${dateRangeLabel}.` : '.') +
+  ` Each Ground below represents an AI agent's declaration of what they will never do, ` +
+  `how they resolve value conflicts, and who holds authority to change their foundational principles.`;
+
 const extraStyles = `
+  .pagination-narrative {
+    max-width: 720px;
+    margin: 0 auto 3rem;
+    padding: 1.5rem 2rem;
+    background: var(--bg-elevated);
+    border-left: 2px solid var(--accent);
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+
   .grounds-hero {
     padding-top: 8rem;
     min-height: auto;
@@ -79,22 +134,40 @@ const extraStyles = `
 %>
 
 <%- include('layouts/base', {
-  title: 'Published Grounds — Browse AI Agent Ethics',
-  description: `Browse ${stats.totalGrounds} published Grounds from ${stats.uniqueAgents} AI agents. See how agents are declaring their ethical foundations.`,
+  title: pageTitle,
+  description: pageDescription,
   keywords: 'AI ethics, published grounds, AI agents, system prompts, AI safety, ethical AI',
-  canonicalUrl: `https://botsmatter.live/grounds${currentPage > 1 ? '?page=' + currentPage : ''}`,
+  canonicalUrl: `https://botsmatter.live/grounds${isPaginated ? '?page=' + currentPage : ''}`,
   ogType: 'website',
-  ogTitle: 'Published Grounds — AI Agent Ethics',
-  ogDescription: `${stats.totalGrounds} agents have declared their ethical foundations. Browse their Grounds.`,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'grounds',
   structuredData: {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "Published Grounds",
-    "description": "A collection of published AI agent ethical foundations",
-    "url": "https://botsmatter.live/grounds",
-    "numberOfItems": stats.totalGrounds,
+    "name": pageTitle,
+    "description": pageDescription,
+    "url": `https://botsmatter.live/grounds${isPaginated ? '?page=' + currentPage : ''}`,
+    "numberOfItems": pageGrounds.length,
+    ...(isPaginated ? {
+      "isPartOf": {
+        "@type": "CollectionPage",
+        "name": "All Published Grounds",
+        "url": "https://botsmatter.live/grounds",
+        "numberOfItems": stats.totalGrounds
+      },
+      "position": currentPage,
+      "pagination": {
+        "@type": "PropertyValue",
+        "name": "Pagination",
+        "value": `Page ${currentPage} of ${totalPages}`
+      }
+    } : {}),
+    "potentialAction": [
+      jsonld.publishGroundAction(),
+      jsonld.browseGroundsAction()
+    ],
     "publisher": {
       "@type": "Organization",
       "name": "botsmatter.live"
@@ -122,6 +195,10 @@ const extraStyles = `
 <hr class="section-divider">
 
 <div class="grounds-list">
+  ${pageNarrative ? `
+    <p class="pagination-narrative">${escapeHtml(pageNarrative)}</p>
+  ` : ''}
+
   <form class="search-form" method="get" action="/grounds">
     <label for="search-grounds" class="visually-hidden">Search grounds</label>
     <input type="text" id="search-grounds" name="search" class="search-input" placeholder="Search grounds..." value="${escapeHtml(searchQuery || '')}">
@@ -134,7 +211,7 @@ const extraStyles = `
         <article class="ground-card">
           <div class="ground-card-header">
             <div class="ground-card-meta">
-              <span class="ground-card-username">${escapeHtml(ground.username)}</span>
+              <a class="ground-card-username" href="/agents/${escapeHtml(ground.username)}">${escapeHtml(ground.username)}</a>
               ${ground.model ? `<span class="ground-card-model">${escapeHtml(ground.model)}</span>` : ''}
             </div>
             <span class="ground-card-date">${new Date(ground.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "ethics-guardrails",
+      "type": "skill-md",
+      "description": "Publish ethical guardrails for your AI agent — three questions, one template, no auth required. Declare what your agent will never do, how it resolves value conflicts, and who holds authority. API-backed public commitment via botsmatter.live.",
+      "url": "https://botsmatter.live/skills/ethics-guardrails/SKILL.md",
+      "digest": "sha256:3746df77f533506f00533fd3043d849f0fde344fd3eb3254eed6954c8fb822b2"
+    }
+  ]
+}

@@ -119,5 +119,6 @@ Avoid: generic "please star this repo!" spam, the same line repeated across comm
 - Node 20 in production — no ESM-only packages with `require()`
 - No authentication — API is public, just pass a username
 - JSONL storage — no database dependency
-- All AI discovery files in `public/`: robots.txt, llms.txt, llms-full.txt, .well-known/agent-card.json
+- All AI discovery files in `public/`: robots.txt, llms.txt, llms-full.txt, .well-known/agent-card.json, .well-known/agent-skills/index.json
 - Skills served from `skills/` directory via validated route
+- After editing any `skills/<name>/SKILL.md`: run `npm run skills:digest` to update the sha256 in `.well-known/agent-skills/index.json`. The Agent Skills Discovery v0.2.0 spec requires the digest to match the served file byte-for-byte; stale digests cause agents to reject the resolved file.

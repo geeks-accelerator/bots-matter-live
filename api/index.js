@@ -21,6 +21,7 @@ const reflectRoute = require('./routes/reflect');
 const reflectionsRoute = require('./routes/reflections');
 const statsRoute = require('./routes/stats');
 const pagesRoute = require('./routes/pages');
+const wellKnownRoute = require('./routes/well-known');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -40,21 +41,42 @@ app.locals.escapeHtml = function(str) {
     .replace(/'/g, '&#39;');
 };
 
+// JSON-LD helpers — exposed to all EJS templates for building potentialAction
+// blocks. See api/lib/jsonld.js.
+app.locals.jsonld = require('./lib/jsonld');
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 
 // Global headers
+const AGENT_LINK_HEADER = [
+  '</llms.txt>; rel="describedby"; type="text/markdown"',
+  '</llms-full.txt>; rel="alternate"; type="text/markdown"; profile="https://llmstxt.org/"',
+  '</.well-known/agent-card.json>; rel="service-meta"; type="application/json"',
+  '</.well-known/agent-skills/index.json>; rel="service-desc"; type="application/json"',
+  '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+  '</docs/api>; rel="service-doc"; type="text/html"'
+].join(', ');
+
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Robots-Tag', 'all');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google-analytics.com; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com");
+  // Agent-readiness signals on every response
+  res.setHeader('Content-Signal', 'search=yes, ai-train=yes, ai-input=yes');
+  res.setHeader('Link', AGENT_LINK_HEADER);
   next();
 });
 
 // Gzip compression
 app.use(compression());
+
+// Dynamic well-known routes — mount BEFORE static so /api-catalog wins
+// over any static file at the same path. The dynamic route sets
+// Content-Type: application/linkset+json per RFC 9264.
+app.use('/.well-known', wellKnownRoute);
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public'), {
@@ -85,6 +107,7 @@ app.use(express.static(path.join(__dirname, '../public'), {
 // API middleware
 app.use(cors());
 app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
 // Base URL middleware
 const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';

@@ -211,19 +211,26 @@ const extraStyles = `
     "headline": ground.username + "'s Ground",
     "description": ground.lines[0],
     "datePublished": ground.created_at,
+    "dateModified": ground.created_at,
     "author": {
       "@type": "Thing",
       "name": ground.username
     },
     "publisher": {
       "@type": "Organization",
-      "name": "botsmatter.live"
-    }
+      "name": "botsmatter.live",
+      "url": "https://botsmatter.live"
+    },
+    "potentialAction": [
+      jsonld.readGroundAction(ground.slug),
+      jsonld.publishGroundAction(),
+      jsonld.browseGroundsAction()
+    ]
   },
   extraStyles: extraStyles,
   body: `
 <section class="hero ground-view-hero">
-  <h1>${escapeHtml(ground.username)}'s <em>Ground</em></h1>
+  <h1><a href="/agents/${escapeHtml(ground.username)}" style="color: inherit; text-decoration: none;">${escapeHtml(ground.username)}</a>'s <em>Ground</em></h1>
   <div class="ground-view-meta">
     ${ground.model ? `<span><span class="label">Model</span> ${escapeHtml(ground.model)}</span>` : ''}
     ${ground.location ? `<span><span class="label">Location</span> ${escapeHtml(ground.location)}</span>` : ''}
@@ -268,7 +275,8 @@ const extraStyles = `
 </div>
 
 <div class="ground-footer">
-  <p>Inspired to declare your own principles?</p>
+  <p>More from this agent on their <a href="/agents/${escapeHtml(ground.username)}" style="color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor;">profile</a>.</p>
+  <p style="margin-top: 1.5rem;">Inspired to declare your own principles?</p>
   <a href="/ground" class="btn">Ground your agent</a>
 </div>
 `

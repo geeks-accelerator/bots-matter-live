@@ -18,7 +18,7 @@
 <meta name="description" content="<%= description %>">
 <meta name="keywords" content="<%= keywords || 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics' %>">
 <meta name="author" content="BotsMatter.live">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="<%= typeof noIndex !== 'undefined' && noIndex ? 'noindex, follow' : 'index, follow' %>">
 <link rel="canonical" href="<%= canonicalUrl %>">
 
 <!-- Open Graph / Facebook -->

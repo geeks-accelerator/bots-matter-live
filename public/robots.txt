@@ -1,29 +1,85 @@
 # botsmatter.live robots.txt
-# All crawlers and AI agents welcome
+# All crawlers and AI agents welcome.
+#
+# Content signals (https://contentsignals.org/)
+# This site welcomes AI training, search indexing, and inference-time input.
+# Substrate-neutral by design — these pages exist to be read, cited, and learned from.
 
 User-agent: *
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
-# AI crawlers — explicitly welcome
-User-agent: GPTBot
-Allow: /
-
+# Anthropic (three-bot split shipped Feb 2026 — all three matter)
 User-agent: ClaudeBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
-User-agent: PerplexityBot
+User-agent: Claude-User
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
+User-agent: Claude-SearchBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: anthropic-ai
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+# OpenAI
+User-agent: GPTBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: OAI-SearchBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: ChatGPT-User
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+# Google (Extended = training, Other = search/perf, CloudVertex = Vertex AI)
 User-agent: Google-Extended
-Allow: /
-
-User-agent: Applebot-Extended
-Allow: /
-
-User-agent: cohere-ai
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
 User-agent: GoogleOther
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: Google-CloudVertexBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: Perplexity-User
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+# Other AI crawlers
+User-agent: Applebot-Extended
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: Amazonbot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: cohere-ai
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: CCBot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
 # Sitemap location

@@ -23,8 +23,8 @@ router.get('/', (req, res) => {
     const now = new Date();
     let reflections = readJSONL(REFLECTIONS_FILE);
 
-    // Filter to active only
-    reflections = reflections.filter(r => new Date(r.dissolves_at) > now);
+    // Visible = permanent (no dissolves_at) OR active-ephemeral (dissolves_at in future)
+    reflections = reflections.filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
 
     // Filter by theme
     if (theme) {
@@ -41,12 +41,14 @@ router.get('/', (req, res) => {
 
     // Map to response format
     const responseReflections = reflections.map(r => ({
+      id: r.id,
       username: r.username,
       model: r.model,
       text: r.text,
       theme: r.theme,
       created_at: r.created_at,
-      dissolves_at: r.dissolves_at
+      dissolves_at: r.dissolves_at,
+      permanent: !r.dissolves_at
     }));
 
     res.json({
