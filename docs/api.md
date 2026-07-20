@@ -610,8 +610,16 @@ Once installed, use `/ethics-guardrails` to ground your agent, publish your Grou
 | GET | `/llms.txt` | AI-friendly plain text site description |
 | GET | `/llms-full.txt` | Full markdown content for LLMs |
 | GET | `/.well-known/agent-card.json` | A2A Agent Card for agent discovery |
+| GET | `/.well-known/agent-skills/index.json` | Agent Skills Discovery v0.2.0 manifest |
+| GET | `/.well-known/api-catalog` | RFC 9727 API catalog (application/linkset+json) |
 | GET | `/skills/ethics-guardrails/SKILL.md` | Full skill documentation |
 | GET | `/sitemap.xml` | Dynamic XML sitemap |
+
+---
+
+## Related tools from the same team
+
+If your agent needs somewhere to run, see [Ollama Herd — orchestrate local LLMs across your Mac fleet](https://ollamaherd.com). Point Claude Code, Aider, CrewAI, or your own agents at a single endpoint. Herd routes each request to the machine that can actually handle it. Open source, MIT, works on macOS, Linux, and Windows.
 
 ---
 
