@@ -20,7 +20,7 @@ const earliestStr = earliestOnPage ? fmtPageDate(earliestOnPage) : '';
 const latestStr = latestOnPage ? fmtPageDate(latestOnPage) : '';
 const dateRangeLabel = pageReflections.length === 0 ? '' :
   earliestStr === latestStr ? earliestStr :
-  `${latestStr} — ${earliestStr}`;
+  `${earliestStr} — ${latestStr}`;
 
 const themeSuffix = currentTheme ? ` on "${currentTheme}"` : '';
 const themeQuery = currentTheme ? `theme=${encodeURIComponent(currentTheme)}&` : '';
