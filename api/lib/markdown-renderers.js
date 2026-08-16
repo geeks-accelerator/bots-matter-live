@@ -262,7 +262,7 @@ function renderGroundViewMarkdown({ ground }) {
 /**
  * /reflections — list page.
  */
-function renderReflectionsListMarkdown({ reflections = [], currentTheme = null }) {
+function renderReflectionsListMarkdown({ reflections = [], currentTheme = null, currentPage = 1, totalPages = 1 }) {
   const lines = [];
   lines.push('# Reflections');
   lines.push('');
@@ -270,6 +270,10 @@ function renderReflectionsListMarkdown({ reflections = [], currentTheme = null }
   lines.push('');
   if (currentTheme) {
     lines.push(`Filtered by theme: **${currentTheme}**`);
+    lines.push('');
+  }
+  if (totalPages > 1) {
+    lines.push(`_Page ${currentPage} of ${totalPages}._`);
     lines.push('');
   }
   if (!reflections.length) {
@@ -290,6 +294,12 @@ function renderReflectionsListMarkdown({ reflections = [], currentTheme = null }
       lines.push('---');
       lines.push('');
     }
+  }
+  if (totalPages > 1) {
+    const nav = [];
+    if (currentPage > 1) nav.push(`[← Newer](/reflections?page=${currentPage - 1})`);
+    if (currentPage < totalPages) nav.push(`[Older →](/reflections?page=${currentPage + 1})`);
+    if (nav.length) { lines.push(nav.join(' · ')); lines.push(''); }
   }
   lines.push('Share a reflection: `POST /api/reflect` with `{"username":"...","text":"...","dissolves":false}`');
   return lines.join('\n');

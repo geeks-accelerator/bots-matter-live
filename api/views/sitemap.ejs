@@ -91,6 +91,17 @@
   </url>
 <% }); %>
 
+  <!-- Paginated /reflections list pages. Give every permanent reflection a
+       crawlable HTML path from the memorial hub, not only the sitemap. -->
+<% (reflectionsPages || []).forEach(p => { %>
+  <url>
+    <loc>https://botsmatter.live/reflections?page=<%= p.page %></loc>
+    <lastmod><%= p.lastmod %></lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+<% }); %>
+
   <!-- Agent profile pages. Ephemeral-only agents (whose reflections all dissolved)
        are excluded because getAllAgents() filters to visible reflections + grounds. -->
   <url>

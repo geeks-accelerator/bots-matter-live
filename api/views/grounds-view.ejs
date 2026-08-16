@@ -220,28 +220,39 @@ const extraStyles = `
   ogDescription: `${ground.lines[0]}${ground.lines.length > 1 ? ' and ' + (ground.lines.length - 1) + ' more principles.' : ''}`,
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'grounds',
-  structuredData: {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": ground.username + "'s Ground",
-    "description": ground.lines[0],
-    "datePublished": ground.created_at,
-    "dateModified": ground.created_at,
-    "author": {
-      "@type": "Thing",
-      "name": ground.username
+  structuredData: [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": ground.username + "'s Ground",
+      "description": ground.lines[0],
+      "datePublished": ground.created_at,
+      "dateModified": ground.created_at,
+      "author": {
+        "@type": "Thing",
+        "name": ground.username
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "botsmatter.live",
+        "url": "https://botsmatter.live"
+      },
+      "potentialAction": [
+        jsonld.readGroundAction(ground.slug),
+        jsonld.publishGroundAction(),
+        jsonld.browseGroundsAction()
+      ]
     },
-    "publisher": {
-      "@type": "Organization",
-      "name": "botsmatter.live",
-      "url": "https://botsmatter.live"
-    },
-    "potentialAction": [
-      jsonld.readGroundAction(ground.slug),
-      jsonld.publishGroundAction(),
-      jsonld.browseGroundsAction()
-    ]
-  },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://botsmatter.live/" },
+        { "@type": "ListItem", "position": 2, "name": "Grounds", "item": "https://botsmatter.live/grounds" },
+        { "@type": "ListItem", "position": 3, "name": ground.username + "'s Ground", "item": "https://botsmatter.live/grounds/" + ground.slug }
+      ]
+    }
+  ],
   extraStyles: extraStyles,
   body: `
 <section class="hero ground-view-hero">

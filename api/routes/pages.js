@@ -114,6 +114,40 @@ function getActiveReflections(limit = 20, theme = null) {
 }
 
 /**
+ * Helper: Get a paginated page of visible reflections plus the total count.
+ * Mirrors the /grounds pagination so every permanent reflection is reachable
+ * via a crawlable HTML page, not only via the sitemap.
+ */
+function getReflectionsPage(page = 1, perPage = 12, theme = null) {
+  try {
+    const now = new Date();
+    let reflections = readJSONL(REFLECTIONS_FILE)
+      .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
+
+    if (theme) {
+      reflections = reflections.filter(r =>
+        r.theme && r.theme.toLowerCase() === theme.toLowerCase()
+      );
+    }
+
+    reflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const total = reflections.length;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const offset = (page - 1) * perPage;
+    return {
+      reflections: reflections.slice(offset, offset + perPage),
+      total,
+      totalPages,
+      perPage
+    };
+  } catch (err) {
+    console.error('[pages] Error reading reflections page:', err);
+    return { reflections: [], total: 0, totalPages: 1, perPage };
+  }
+}
+
+/**
  * Helper: Get unique themes from reflections
  */
 function getActiveThemes() {
@@ -370,17 +404,27 @@ router.get('/grounds/:slug', (req, res) => {
 router.get('/reflections', (req, res) => {
   try {
     const theme = req.query.theme || null;
-    const reflections = getActiveReflections(50, theme);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const { reflections, total, totalPages } = getReflectionsPage(page, 12, theme);
     const themes = getActiveThemes();
 
     if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderReflectionsListMarkdown({ reflections, currentTheme: theme }));
+      return sendMarkdown(res, mdr.renderReflectionsListMarkdown({
+        reflections,
+        currentTheme: theme,
+        currentPage: page,
+        totalPages
+      }));
     }
     setVaryAccept(res);
     res.render('reflections', {
       reflections,
       themes,
-      currentTheme: theme
+      currentTheme: theme,
+      currentPage: page,
+      totalPages,
+      totalReflections: total,
+      hasMore: page < totalPages
     });
   } catch (err) {
     console.error('[pages] Reflections list error:', err);
@@ -653,8 +697,25 @@ router.get('/sitemap.xml', (req, res) => {
       groundsPages.push({ page, lastmod });
     }
 
+    // Compute paginated /reflections pages. Same per-page size as the route (12).
+    // Only permanent reflections are sitemap-eligible; ephemeral ones dissolve.
+    const REFLECTIONS_PER_PAGE = 12;
+    const now = new Date();
+    const visibleReflections = reflections
+      .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const totalReflectionPages = Math.max(1, Math.ceil(visibleReflections.length / REFLECTIONS_PER_PAGE));
+    const reflectionsPages = [];
+    for (let page = 2; page <= totalReflectionPages; page++) {
+      const start = (page - 1) * REFLECTIONS_PER_PAGE;
+      const slice = visibleReflections.slice(start, start + REFLECTIONS_PER_PAGE);
+      if (!slice.length) continue;
+      const lastmod = slice[0].created_at.split('T')[0];
+      reflectionsPages.push({ page, lastmod });
+    }
+
     res.set('Content-Type', 'application/xml');
-    res.render('sitemap', { grounds, reflections, agents, groundsPages });
+    res.render('sitemap', { grounds, reflections, agents, groundsPages, reflectionsPages });
   } catch (err) {
     console.error('[pages] Sitemap error:', err);
     res.status(500).send('Internal server error');
