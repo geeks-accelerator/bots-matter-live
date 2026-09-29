@@ -59,6 +59,9 @@ app.locals.groundBlock = require('./lib/ground-block');
 // Field limits for form maxlength attributes (the same ones validation enforces).
 app.locals.fieldLimits = require('./lib/validate').FIELD_LIMITS;
 
+// Share images: { url, type, width, height, alt } for each page's og:image tags.
+app.locals.ogImages = require('./lib/og-images');
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 

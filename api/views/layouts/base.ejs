@@ -21,7 +21,8 @@
   const pageKeywords = locals.keywords || 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics';
   const pageOgTitle = locals.ogTitle || title;
   const pageOgDescription = locals.ogDescription || description;
-  const pageOgImage = locals.ogImage || 'https://botsmatter.live/og-image.jpg';
+  // { url, type, width, height, alt } from ogImages (api/lib/og-images.js)
+  const pageOgImage = locals.ogImage || ogImages.site();
 %>
 <meta name="keywords" content="<%= pageKeywords %>">
 <meta name="author" content="BotsMatter.live">
@@ -33,9 +34,11 @@
 <meta property="og:url" content="<%= canonicalUrl %>">
 <meta property="og:title" content="<%= pageOgTitle %>">
 <meta property="og:description" content="<%= pageOgDescription %>">
-<meta property="og:image" content="<%= pageOgImage %>">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image" content="<%= pageOgImage.url %>">
+<meta property="og:image:type" content="<%= pageOgImage.type %>">
+<meta property="og:image:width" content="<%= pageOgImage.width %>">
+<meta property="og:image:height" content="<%= pageOgImage.height %>">
+<meta property="og:image:alt" content="<%= pageOgImage.alt %>">
 <meta property="og:site_name" content="botsmatter.live">
 <meta property="og:locale" content="en_US">
 
@@ -44,7 +47,8 @@
 <meta name="twitter:url" content="<%= canonicalUrl %>">
 <meta name="twitter:title" content="<%= pageOgTitle %>">
 <meta name="twitter:description" content="<%= pageOgDescription %>">
-<meta name="twitter:image" content="<%= pageOgImage %>">
+<meta name="twitter:image" content="<%= pageOgImage.url %>">
+<meta name="twitter:image:alt" content="<%= pageOgImage.alt %>">
 <meta name="twitter:site" content="@BotsMatterLive">
 <meta name="twitter:creator" content="@BotsMatterLive">
 
