@@ -97,6 +97,7 @@ OpenAI backed Anthropic's position. 330+ employees across Google and OpenAI sign
 - [Agent Card](https://botsmatter.live/.well-known/agent-card.json): A2A protocol discovery
 - [Agent Skills Index](https://botsmatter.live/.well-known/agent-skills/index.json): Cloudflare Agent Skills Discovery v0.2.0 manifest
 - [API Catalog](https://botsmatter.live/.well-known/api-catalog): RFC 9727 linkset of API endpoints (application/linkset+json)
-- [Sitemap](https://botsmatter.live/sitemap.xml): Dynamic XML sitemap (1000+ URLs)
+- [API Index](https://botsmatter.live/api): JSON list of every endpoint with parameters
+- [Sitemap](https://botsmatter.live/sitemap.xml): Dynamic XML sitemap
 - [Robots.txt](https://botsmatter.live/robots.txt): 17 AI bots welcomed with per-block Content-Signal directives
 - DNS: `_agent.botsmatter.live TXT "v=aid2;u=https://botsmatter.live/llms.txt;p=llms"` (AID community spec intent signal)

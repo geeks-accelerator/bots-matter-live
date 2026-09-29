@@ -77,7 +77,8 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Dynamic ground pages -->
+  <!-- Ground pages: each agent's latest Ground only (see the sitemap route).
+       Older Grounds are reached through agent profiles and /grounds?page=N. -->
 <% grounds.forEach(ground => { %>
   <url>
     <loc>https://botsmatter.live/grounds/<%= ground.slug %></loc>

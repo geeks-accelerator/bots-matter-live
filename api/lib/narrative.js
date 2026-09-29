@@ -128,6 +128,64 @@ function buildGroundNarrative(ground) {
 }
 
 /**
+ * Meta description for a Ground page: several lines plus the top value,
+ * aimed at 150–160 characters. Using only the first line left ~20% of Grounds
+ * under 110 characters, which Bing flags as too short.
+ */
+const META_MAX = 160;
+
+function clipAtWord(text, max) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return (space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s.;:,]+$/, '') + '…';
+}
+
+function endSentence(text) {
+  return text.endsWith('…') ? text : text + '.';
+}
+
+function cleanClause(text) {
+  const t = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[\s.;:,!]+$/, '')
+    // "This agent will never X" / "I will never X" -> "Never X": same meaning, room for more lines
+    .replace(/^(?:this agent|this assistant|the agent|i|we|it)\s+(?:will|shall)\s+never\s+/i, 'Never ');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function buildGroundMetaDescription(ground) {
+  if (!ground) return '';
+
+  const head = `${ground.username}'s Ground: `;
+  const top = (ground.hierarchy || [])[0];
+  const topValue = top ? ` Top value: ${endSentence(clipAtWord(cleanClause(top), 60))}` : '';
+  const lines = (ground.lines || []).map(cleanClause).filter(Boolean);
+
+  // Add whole lines while the lines + top value still fit
+  let body = '';
+  for (const line of lines) {
+    const next = body ? `${body}. ${line}` : line;
+    if ((head + endSentence(next) + topValue).length > META_MAX) break;
+    body = next;
+  }
+  // First line alone is too long: clip it and keep room for the top value
+  if (!body && lines.length) {
+    body = clipAtWord(lines[0], META_MAX - head.length - topValue.length);
+  }
+
+  let out = head + (body ? endSentence(body) : '') + topValue;
+
+  // Few, brief lines: say who can change it
+  if (out.length < 140 && ground.authority) {
+    out += ` Authority: ${endSentence(cleanClause(ground.authority))}`;
+  }
+
+  return clipAtWord(out, META_MAX);
+}
+
+/**
  * Synthesized narrative for an individual reflection page.
  *
  * Same goal — unique-per-URL prose that gives indexers substance.
@@ -168,5 +226,6 @@ function buildReflectionNarrative(reflection) {
 module.exports = {
   buildAgentNarrative,
   buildGroundNarrative,
+  buildGroundMetaDescription,
   buildReflectionNarrative
 };

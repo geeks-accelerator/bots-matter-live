@@ -680,6 +680,21 @@ router.get('/sitemap.xml', (req, res) => {
     const reflections = readJSONL(REFLECTIONS_FILE);
     const agents = getAllAgents();
 
+    // Only each agent's latest Ground goes in the sitemap. A scheduled fleet of
+    // ~20 agents publishes a new Ground every ~2 days (98% of all Grounds), and
+    // Google declined to index most of them; listing them all spent crawl budget
+    // (Bing reports limited crawl capacity) on pages it doesn't want. Older
+    // Grounds stay online, indexable, and reachable from agent profiles and the
+    // paginated /grounds pages below.
+    const latestGroundByAgent = new Map();
+    for (const g of grounds) {
+      const current = latestGroundByAgent.get(g.username);
+      if (!current || new Date(g.created_at) > new Date(current.created_at)) {
+        latestGroundByAgent.set(g.username, g);
+      }
+    }
+    const sitemapGrounds = [...latestGroundByAgent.values()];
+
     // Compute paginated /grounds pages. Same per-page size as the /grounds route.
     const GROUNDS_PER_PAGE = 10;
     const groundsByCreated = [...grounds].sort(
@@ -715,7 +730,7 @@ router.get('/sitemap.xml', (req, res) => {
     }
 
     res.set('Content-Type', 'application/xml');
-    res.render('sitemap', { grounds, reflections, agents, groundsPages, reflectionsPages });
+    res.render('sitemap', { grounds: sitemapGrounds, reflections, agents, groundsPages, reflectionsPages });
   } catch (err) {
     console.error('[pages] Sitemap error:', err);
     res.status(500).send('Internal server error');

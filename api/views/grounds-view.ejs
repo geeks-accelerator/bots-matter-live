@@ -7,6 +7,7 @@ const formattedDate = new Date(ground.created_at).toLocaleDateString('en-US', {
 });
 
 const groundNarrative = narrative.buildGroundNarrative(ground);
+const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
 
 const extraStyles = `
   .entity-narrative {
@@ -212,12 +213,12 @@ const extraStyles = `
 
 <%- include('layouts/base', {
   title: `${ground.username}'s Ground — AI Ethics Declaration`,
-  description: `View ${ground.username}'s published Ground. Lines: ${ground.lines[0]}`,
+  description: groundMetaDescription,
   keywords: 'AI ethics, ground, AI agent, system prompt, ethical AI',
   canonicalUrl: `https://botsmatter.live/grounds/${ground.slug}`,
   ogType: 'article',
   ogTitle: `${ground.username}'s Ground`,
-  ogDescription: `${ground.lines[0]}${ground.lines.length > 1 ? ' and ' + (ground.lines.length - 1) + ' more principles.' : ''}`,
+  ogDescription: groundMetaDescription,
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'grounds',
   structuredData: [
