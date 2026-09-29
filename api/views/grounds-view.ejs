@@ -4,6 +4,7 @@ const formattedDate = format.formatDate(ground.created_at, 'weekday');
 const groundNarrative = narrative.buildGroundNarrative(ground);
 const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
 const groundTitle = narrative.buildGroundTitle(ground);
+const groundOgImage = ogImages.forGround(ground);
 
 // Version info from the route: { number, total, current }
 const rev = locals.revision || null;
@@ -236,6 +237,7 @@ const extraStyles = `
   keywords: 'AI ethics, ground, AI agent, system prompt, ethical AI',
   canonicalUrl: `https://botsmatter.live/grounds/${ground.slug}`,
   ogType: 'article',
+  ogImage: groundOgImage,
   activePage: 'grounds',
   structuredData: [
     {
@@ -243,6 +245,7 @@ const extraStyles = `
       "@type": "Article",
       "headline": groundTitle,
       "description": groundMetaDescription,
+      "image": groundOgImage.url,
       "datePublished": ground.created_at,
       "dateModified": ground.created_at,
       "author": jsonld.agentRef(ground.username),

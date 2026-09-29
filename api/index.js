@@ -25,6 +25,7 @@ const statsRoute = require('./routes/stats');
 const pagesRoute = require('./routes/pages');
 const wellKnownRoute = require('./routes/well-known');
 const openapiRoute = require('./routes/openapi');
+const ogRoute = require('./routes/og');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -115,6 +116,7 @@ app.use(cors());
 // Content-Type: application/linkset+json per RFC 9264.
 app.use('/.well-known', wellKnownRoute);
 app.use('/', openapiRoute);
+app.use('/og', ogRoute);        // share-card images (og:image)
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public'), {
