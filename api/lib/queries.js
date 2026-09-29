@@ -93,7 +93,7 @@ function getAgentByUsername(username) {
 /**
  * Every agent with a Ground or a visible reflection:
  * { username, groundsCount, reflectionsCount, firstSeen, lastSeen, currentGround }
- * sorted by username. currentGround is the agent's newest Ground (or null).
+ * most recently active first. currentGround is the agent's newest Ground (or null).
  */
 function getAllAgents() {
   const byUsername = new Map();
@@ -121,7 +121,7 @@ function getAllAgents() {
     seen(a, r.created_at);
   }
 
-  return Array.from(byUsername.values()).sort((a, b) => a.username.localeCompare(b.username));
+  return Array.from(byUsername.values()).sort((a, b) => b.lastSeen - a.lastSeen);
 }
 
 /**

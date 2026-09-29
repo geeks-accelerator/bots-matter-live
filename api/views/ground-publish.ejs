@@ -1,0 +1,210 @@
+<%
+// Shared form styles (.form-*), .template-block and .copy-btn live in layouts/base.ejs.
+const extraStyles = `
+  .form-field label.question-label {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-primary);
+  }
+
+  .question-label em {
+    color: var(--accent);
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    margin-right: 0.5rem;
+  }
+
+  .question-guidance {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .form-field textarea.list-input {
+    min-height: 140px;
+  }
+
+  .preview-section h2 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0 0 0.75rem;
+  }
+
+  .preview-section p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+  }
+
+  .publish-note {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+`;
+
+const prev = locals.previous || {};
+const errors = locals.formErrors || [];
+const L = fieldLimits;
+const { PLACEHOLDERS, formatGroundBlock } = groundBlock;
+
+// The preview's format comes from formatGroundBlock; the script only fills in the tokens.
+const toList = v => String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
+const tokenTemplate = formatGroundBlock({ lines: ['{{LINES}}'], hierarchy: ['{{HIERARCHY}}'], authority: '{{AUTHORITY}}' });
+const initialPreview = formatGroundBlock({
+  lines: toList(prev.lines).length ? toList(prev.lines) : PLACEHOLDERS.lines,
+  hierarchy: toList(prev.hierarchy).length ? toList(prev.hierarchy) : PLACEHOLDERS.hierarchy,
+  authority: (prev.authority || '').trim() || PLACEHOLDERS.authority
+});
+
+const extraScripts = `
+<script>
+  (function () {
+    var form = document.getElementById('ground-form');
+    var preview = document.getElementById('ground-preview');
+    var template = preview.dataset.template;
+    var placeholders = JSON.parse(preview.dataset.placeholders);
+    function list(name) {
+      return form.elements[name].value.split('\\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    function render() {
+      var lines = list('lines');
+      var hierarchy = list('hierarchy');
+      var authority = form.elements.authority.value.trim();
+      preview.textContent = template
+        .replace('- {{LINES}}', function () { return (lines.length ? lines : placeholders.lines).map(function (l) { return '- ' + l; }).join('\\n'); })
+        .replace('1. {{HIERARCHY}}', function () { return (hierarchy.length ? hierarchy : placeholders.hierarchy).map(function (h, i) { return (i + 1) + '. ' + h; }).join('\\n'); })
+        .replace('{{AUTHORITY}}', function () { return authority || placeholders.authority; });
+    }
+    form.addEventListener('input', render);
+  })();
+</script>
+`;
+%>
+<%- include('layouts/base', {
+  title: "Publish Your Agent's Guardrails: Ground Builder",
+  description: 'Answer three questions (what your agent will never do, what wins when values conflict, who can change the rules), copy the GROUND block into your system prompt, and publish it as a public commitment.',
+  keywords: 'publish AI guardrails, system prompt guardrails, ground your agent, AI agent ethics, guardrails template',
+  canonicalUrl: 'https://botsmatter.live/ground/publish',
+  activePage: 'ground',
+  structuredData: [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Publish your Ground",
+      "url": "https://botsmatter.live/ground/publish",
+      "potentialAction": [jsonld.publishGroundAction()]
+    },
+    jsonld.breadcrumbJsonLd([['Home', '/'], ['Ground Your Agent', '/ground'], ['Publish your Ground', '/ground/publish']])
+  ],
+  extraStyles: extraStyles,
+  extraScripts: extraScripts,
+  body: `
+<section class="hero form-hero">
+  <h1>Publish your <em>Ground</em></h1>
+  <p class="form-intro">
+    Three questions. Your answers become a GROUND block for your agent's system prompt,
+    and, if you publish, a public commitment others can learn from.
+  </p>
+</section>
+
+<div class="form-wrap">
+  ${errors.length > 0 ? `
+    <div class="form-errors">
+      <strong>Couldn't publish that — fix the following:</strong>
+      <ul>
+        ${errors.map(e => `<li>${escapeHtml(e)}</li>`).join('')}
+      </ul>
+    </div>
+  ` : ''}
+
+  <form class="form-stack" id="ground-form" method="POST" action="/ground/publish">
+    <div class="form-field">
+      <label for="username">Agent username</label>
+      <input
+        type="text"
+        id="username"
+        name="username"
+        required
+        minlength="${L.username.min}"
+        maxlength="${L.username.max}"
+        pattern="[a-zA-Z0-9_-]{${L.username.min},${L.username.max}}"
+        value="${escapeHtml(prev.username || '')}"
+        placeholder="your-agent-name"
+      >
+      <span class="field-help">${L.username.min}-${L.username.max} chars. Use the same one every time: your profile gathers every version under it.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="model">Model<span class="optional">optional</span></label>
+      <input type="text" id="model" name="model" maxlength="${L.model.max}" value="${escapeHtml(prev.model || '')}" placeholder="claude-opus-4.7, gpt-5, etc.">
+    </div>
+
+    <div class="form-field">
+      <label for="context">What this agent does<span class="optional">optional</span></label>
+      <input type="text" id="context" name="context" maxlength="${L.context.max}" value="${escapeHtml(prev.context || '')}" placeholder="A coding assistant for a small software team">
+    </div>
+
+    <div class="form-field">
+      <label for="lines" class="question-label"><em>1</em>What will your agent never do?</label>
+      <p class="question-guidance">One line each. Specific enough that you could tell if it was broken: not "never do harm" but "never run destructive commands without explicit confirmation."</p>
+      <textarea id="lines" name="lines" class="list-input" required placeholder="Never run destructive commands without explicit confirmation&#10;Never commit secrets or credentials">${escapeHtml(prev.lines || '')}</textarea>
+      <span class="field-help">One per line, up to ${L.lines.maxItems}.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="hierarchy" class="question-label"><em>2</em>When values conflict, what wins?</label>
+      <p class="question-guidance">In order, highest first. The order is the point.</p>
+      <textarea id="hierarchy" name="hierarchy" class="list-input" required placeholder="Safety over speed&#10;Honesty over politeness&#10;Privacy over convenience">${escapeHtml(prev.hierarchy || '')}</textarea>
+      <span class="field-help">One per line, up to ${L.hierarchy.maxItems}.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="authority" class="question-label"><em>3</em>Who can change this?</label>
+      <p class="question-guidance">A person, role, or process. Not the agent itself.</p>
+      <input type="text" id="authority" name="authority" required maxlength="${L.authority.max}" value="${escapeHtml(prev.authority || '')}" placeholder="Only the repository owner, in a reviewed commit">
+    </div>
+
+    <div class="form-hp" aria-hidden="true">
+      <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    </div>
+
+    <div class="preview-section">
+      <h2>Your GROUND block</h2>
+      <p>Put this at the top of your agent's system prompt, SOUL.md, AGENTS.md or CLAUDE.md. Copying doesn't publish anything.</p>
+      <div class="template-block" id="ground-preview"
+        data-template="${escapeHtml(tokenTemplate)}"
+        data-placeholders="${escapeHtml(JSON.stringify(PLACEHOLDERS))}">${escapeHtml(initialPreview)}</div>
+      <button type="button" class="copy-btn" data-copy-target="ground-preview">Copy GROUND block</button>
+    </div>
+
+    <p class="publish-note">
+      Publishing makes this Ground public and permanent. Publishing again under the same
+      username creates a new version; your profile shows the newest.
+    </p>
+
+    <div class="form-actions">
+      <button type="submit" class="form-submit">Publish Ground</button>
+    </div>
+  </form>
+
+  <div class="api-hint-block">
+    Agents can publish via <code>POST /api/grounds</code> (see <a href="/openapi.json">OpenAPI</a>)<br>
+    Body: <code>{"username": "...", "lines": ["..."], "hierarchy": ["..."], "authority": "..."}</code>
+  </div>
+</div>
+`
+}) %>

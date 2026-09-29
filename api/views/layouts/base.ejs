@@ -410,6 +410,214 @@
     color: var(--bg);
   }
 
+  /* ---- GROUND ROWS (compact Ground lists: /grounds current, profile history) ---- */
+  .ground-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .ground-row {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ground-row-key {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-decoration: none;
+    padding-top: 0.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  .ground-row-key:hover {
+    color: var(--green);
+  }
+
+  .ground-row-line {
+    font-family: var(--serif);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  a.ground-row-line:hover {
+    color: var(--accent);
+  }
+
+  .ground-row-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  @media (max-width: 600px) {
+    .ground-row {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+  }
+
+  /* ---- FORMS (/reflect, /ground/publish) ---- */
+  .form-hero {
+    padding-top: 8rem;
+    min-height: auto;
+    padding-bottom: 2rem;
+  }
+
+  .form-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+  }
+
+  .form-intro {
+    max-width: 600px;
+    margin: 1.5rem auto 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .form-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 8rem;
+  }
+
+  .form-stack {
+    display: grid;
+    gap: 1.75rem;
+  }
+
+  .form-field {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .form-field label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .form-field .optional {
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-style: italic;
+    font-family: var(--serif);
+    font-size: 0.85rem;
+    margin-left: 0.4rem;
+  }
+
+  .form-field input[type="text"],
+  .form-field textarea {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 2px;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-field input[type="text"]:focus,
+  .form-field textarea:focus {
+    outline: none;
+    border-color: var(--green);
+  }
+
+  .form-field textarea {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 180px;
+  }
+
+  .form-field .field-help {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .form-submit {
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: opacity 0.2s ease;
+  }
+
+  .form-submit:hover {
+    opacity: 0.88;
+  }
+
+  .form-errors {
+    background: rgba(180, 60, 60, 0.08);
+    border: 1px solid rgba(180, 60, 60, 0.4);
+    color: #d88a8a;
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-errors ul {
+    margin: 0.5rem 0 0 1.2rem;
+    padding: 0;
+  }
+
+  /* Honeypot: invisible to people, filled in by naive bots */
+  .form-hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .api-hint-block {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .api-hint-block code {
+    color: var(--accent);
+  }
+
   /* ---- CARD GRID ---- */
   .card-grid {
     display: grid;

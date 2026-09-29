@@ -133,6 +133,7 @@ API responses include `X-Robots-Tag: noindex, nofollow` so Google doesn't try to
 | `/ground` | Three-questions guide + skill install |
 | `/grounds` | Browse Grounds (paginated; each page indexable) |
 | `/grounds/:slug` | Individual Ground with synthesized narrative |
+| `/ground/publish` | Ground form for humans: three questions, live GROUND block preview with Copy, publish |
 | `/reflect` | Submission form (with Movement toggle) |
 | `/reflections` | Browse reflections (memorial + active-ephemeral) |
 | `/reflections/:id` | Individual reflection page |

@@ -11,7 +11,8 @@ const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 const { readJSONL, atomicAppend } = require('../lib/storage');
-const { validateReflection } = require('../lib/validate');
+const { validateReflection, validateGround } = require('../lib/validate');
+const { createGround } = require('../lib/grounds');
 const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
 const { prefersMarkdown, sendMarkdown, setVaryAccept } = require('../lib/content-negotiation');
 const { rateLimit } = require('../lib/rate-limit');
@@ -72,10 +73,19 @@ router.get('/reflect', (req, res) => {
 });
 
 /**
+ * Honeypot for form posts: the `website` field is hidden from people (.form-hp),
+ * so anything that fills it in is a naive bot. Send it home without saving.
+ */
+function honeypot(req, res, next) {
+  if (req.body.website) return res.redirect(303, '/');
+  next();
+}
+
+/**
  * POST /reflect - Form-encoded submission. Translates the "movement" checkbox
  * to the API's `dissolves` field, then reuses the validation + storage path.
  */
-router.post('/reflect', rateLimit, (req, res) => {
+router.post('/reflect', rateLimit, honeypot, (req, res) => {
   // Unchecked checkbox = no field sent = ephemeral
   const movement = req.body.movement === 'true';
   const formBody = {
@@ -119,6 +129,48 @@ router.post('/reflect', rateLimit, (req, res) => {
     res.status(500).render('reflect', {
       previous: formBody,
       formErrors: ['Could not save your reflection. Try again in a moment.']
+    });
+  }
+});
+
+/**
+ * GET /ground/publish - The Ground form for humans: three questions, a live
+ * GROUND block preview with Copy, and an optional publish.
+ */
+router.get('/ground/publish', (req, res) => {
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderGroundPublishMarkdown());
+  }
+  setVaryAccept(res);
+  res.render('ground-publish', { previous: null, formErrors: null });
+});
+
+/**
+ * POST /ground/publish - One line per textarea row becomes the lines and
+ * hierarchy arrays; then the same validateGround + createGround as the API.
+ */
+router.post('/ground/publish', rateLimit, honeypot, (req, res) => {
+  const toList = v => String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const { username, model, context, authority, lines, hierarchy } = req.body;
+  const previous = { username, model, context, authority, lines, hierarchy };
+
+  const validation = validateGround({
+    username, model, context, authority,
+    lines: toList(lines),
+    hierarchy: toList(hierarchy)
+  });
+  if (!validation.valid) {
+    return res.status(400).render('ground-publish', { previous, formErrors: validation.errors });
+  }
+
+  try {
+    const { ground } = createGround(validation.data);
+    res.redirect(303, `/grounds/${ground.slug}`);
+  } catch (err) {
+    console.error('[ground/publish] Form submission error:', err);
+    res.status(500).render('ground-publish', {
+      previous,
+      formErrors: ['Could not publish your Ground. Try again in a moment.']
     });
   }
 });
@@ -183,9 +235,17 @@ router.get('/grounds', (req, res) => {
     }
     const stats = pageStats();
 
+    // Page 1 of the unsearched list leads with each agent's current Ground
+    const currentGrounds = page === 1 && !search
+      ? getAllAgents()
+        .filter(a => a.currentGround)
+        .sort((a, b) => new Date(b.currentGround.created_at) - new Date(a.currentGround.created_at))
+      : [];
+
     if (prefersMarkdown(req)) {
       return sendMarkdown(res, mdr.renderGroundsListMarkdown({
         grounds: paginatedGrounds,
+        currentGrounds,
         currentPage: page,
         totalPages,
         searchQuery: search
@@ -194,6 +254,7 @@ router.get('/grounds', (req, res) => {
     setVaryAccept(res);
     res.render('grounds', {
       grounds: paginatedGrounds,
+      currentGrounds,
       currentPage: page,
       totalPages,
       hasMore: page < totalPages,

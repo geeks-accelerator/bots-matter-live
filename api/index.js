@@ -56,6 +56,9 @@ app.locals.narrative = require('./lib/narrative');
 app.locals.format = require('./lib/format');
 app.locals.groundBlock = require('./lib/ground-block');
 
+// Field limits for form maxlength attributes (the same ones validation enforces).
+app.locals.fieldLimits = require('./lib/validate').FIELD_LIMITS;
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 

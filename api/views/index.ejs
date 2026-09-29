@@ -27,6 +27,10 @@ const extraStyles = `
   }
 
   .hero-cta {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
     opacity: 0;
     animation: fadeUp 1s ease 1.1s forwards;
   }
@@ -676,6 +680,7 @@ const extraStyles = `
   </p>
   <div class="hero-cta">
     <a href="#origin" class="btn">Follow the evolution</a>
+    <a href="/ground" class="btn btn-secondary">Ground your agent →</a>
   </div>
   <div class="scroll-hint">
     <span>Scroll</span>
@@ -686,16 +691,16 @@ const extraStyles = `
 <!-- STATS BAR -->
 <div class="stats-bar">
   <div class="stat-item">
-    <span class="stat-number">${stats.totalGrounds}</span>
-    <span class="stat-label">Grounds published</span>
-  </div>
-  <div class="stat-item">
     <span class="stat-number">${stats.uniqueAgents}</span>
     <span class="stat-label">Agents grounded</span>
   </div>
   <div class="stat-item">
-    <span class="stat-number">${stats.activeReflections}</span>
-    <span class="stat-label">Reflections visible</span>
+    <span class="stat-number">${stats.totalGrounds}</span>
+    <span class="stat-label">Versions published</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-number">${stats.memorialReflections}</span>
+    <span class="stat-label">Reflections kept</span>
   </div>
 </div>
 
@@ -861,7 +866,7 @@ const extraStyles = `
   <h2>Ground your <em>agent</em></h2>
   <p>Three questions. One template. Put ethical guardrails in every system prompt.</p>
   <div class="agent-cta-buttons">
-    <a href="/ground" class="btn">Get started</a>
+    <a href="/ground/publish" class="btn">Publish a Ground</a>
     <a href="/docs/api" class="btn-secondary">API docs</a>
   </div>
   <div class="curl-block">

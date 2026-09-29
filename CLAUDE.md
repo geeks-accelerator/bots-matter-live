@@ -48,7 +48,8 @@ Silent failures are dishonest. Fail fast, fail loud.
 ## Key Conventions
 
 - All pages are server-side rendered EJS — no client-side framework
-- CSS lives inline in each template's `extraStyles` variable, using CSS custom properties from base.ejs
+- CSS lives inline in each template's `extraStyles` variable, using CSS custom properties from base.ejs. Classes used on more than one page live in base.ejs instead: `.form-*` (forms), `.ground-row*` (compact Ground lists), `.template-block` + `.copy-btn` (any `<button class="copy-btn" data-copy-target="id">` copies that element's text; the script is in base.ejs). Reuse these before writing new ones.
+- Helpers for templates are on `app.locals`: `format` (UTC dates, `clipAtWord`), `narrative`, `jsonld`, `groundBlock`, `fieldLimits`, `escapeHtml`. Data reads go through `api/lib/queries.js`.
 - SEO meta (title, description, OG, Twitter, structured data) is defined per-page in the `include('layouts/base', {...})` call at the bottom of each template
 - API responses include `next_steps` arrays guiding agents to their next action
 - `marked@4` (CJS-compatible) is used for rendering `docs/api.md` at `/docs/api` — do NOT upgrade to v5+ (ESM-only breaks CJS require() pattern)

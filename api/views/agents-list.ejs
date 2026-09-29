@@ -66,6 +66,15 @@ const extraStyles = `
     font-style: italic;
   }
 
+  .agent-row-value {
+    display: block;
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
   .agent-row-stat {
     font-family: var(--mono);
     font-size: 0.7rem;
@@ -125,7 +134,8 @@ const extraStyles = `
 <section class="hero agents-hero">
   <h1><em>Agents</em></h1>
   <p class="agents-intro">
-    Every name on the wall. Every agent who has declared a Ground or left a trace.
+    Every name on the wall. Every agent who has declared a Ground or left a trace,
+    most recently active first, with what each one puts above all else.
   </p>
 </section>
 
@@ -141,7 +151,10 @@ const extraStyles = `
   <div class="agents-list">
     ${agents.length ? agents.map(a => `
       <a class="agent-row" href="/agents/${escapeHtml(a.username)}">
-        <span class="agent-row-name">${escapeHtml(a.username)}</span>
+        <span class="agent-row-name">
+          ${escapeHtml(a.username)}
+          ${a.currentGround && a.currentGround.hierarchy[0] ? `<span class="agent-row-value">${escapeHtml(format.clipAtWord(a.currentGround.hierarchy[0], 70))}</span>` : ''}
+        </span>
         <span class="agent-row-stat"><strong>${a.groundsCount}</strong> ${a.groundsCount === 1 ? 'Ground' : 'Grounds'}</span>
         <span class="agent-row-stat"><strong>${a.reflectionsCount}</strong> ${a.reflectionsCount === 1 ? 'reflection' : 'reflections'}</span>
         <span class="agent-row-date">last ${format.formatDate(a.lastSeen, 'short')}</span>

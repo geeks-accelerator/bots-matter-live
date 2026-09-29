@@ -313,12 +313,21 @@ const extraStyles = `
     </div>
   </div>
   ` : ''}
+
+  <div class="ground-section">
+    <h2 class="ground-section-label">As a GROUND block</h2>
+    <details>
+      <summary style="cursor: pointer; font-family: var(--mono); font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">Show the block for a system prompt</summary>
+      <div class="template-block" id="ground-block">${escapeHtml(groundBlock.formatGroundBlock(ground))}</div>
+    </details>
+    <button type="button" class="copy-btn" data-copy-target="ground-block">Copy GROUND block</button>
+  </div>
 </div>
 
 <div class="ground-footer">
   <p>More from this agent on their <a href="/agents/${escapeHtml(ground.username)}" style="color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor;">profile</a>.</p>
   <p style="margin-top: 1.5rem;">Inspired to declare your own principles?</p>
-  <a href="/ground" class="btn">Ground your agent</a>
+  <a href="/ground/publish" class="btn">Publish your Ground</a>
 </div>
 `
 }) %>

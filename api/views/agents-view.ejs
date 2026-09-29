@@ -33,11 +33,11 @@ const EARLIER_VISIBLE = 10;
 function revisionItem(g) {
   const top = (g.hierarchy || [])[0];
   return `
-      <li class="revision-item">
-        <a class="revision-date" href="/grounds/${escapeHtml(g.slug)}">${fmtDate(g.created_at)}</a>
+      <li class="ground-row">
+        <a class="ground-row-key" href="/grounds/${escapeHtml(g.slug)}">${fmtDate(g.created_at)}</a>
         <div>
-          <div class="revision-line">${escapeHtml(clip(g.lines[0], 140))}</div>
-          <div class="revision-meta">${g.lines.length} line${g.lines.length === 1 ? '' : 's'}${top ? ` · top value: ${escapeHtml(clip(top, 60))}` : ''}</div>
+          <div class="ground-row-line">${escapeHtml(clip(g.lines[0], 140))}</div>
+          <div class="ground-row-meta">${g.lines.length} line${g.lines.length === 1 ? '' : 's'}${top ? ` · top value: ${escapeHtml(clip(top, 60))}` : ''}</div>
         </div>
       </li>`;
 }
@@ -201,47 +201,6 @@ const extraStyles = `
     border-left: 2px solid var(--accent);
   }
 
-  .revision-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .revision-item {
-    display: grid;
-    grid-template-columns: 10rem 1fr;
-    gap: 1rem;
-    padding: 0.9rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .revision-date {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--accent);
-    text-decoration: none;
-    padding-top: 0.2rem;
-  }
-
-  .revision-date:hover {
-    color: var(--green);
-  }
-
-  .revision-line {
-    font-family: var(--serif);
-    font-size: 1rem;
-    line-height: 1.5;
-    color: var(--text-primary);
-  }
-
-  .revision-meta {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    margin-top: 0.3rem;
-  }
-
   .revision-more summary {
     cursor: pointer;
     font-family: var(--mono);
@@ -253,13 +212,6 @@ const extraStyles = `
 
   .revision-more summary:hover {
     color: var(--green);
-  }
-
-  @media (max-width: 600px) {
-    .revision-item {
-      grid-template-columns: 1fr;
-      gap: 0.3rem;
-    }
   }
 
   .reflection-card {
@@ -455,13 +407,13 @@ const profileDescription = clip(profileNarrative, 160);
       Earlier Grounds
       <span class="agent-section-count">${earlierGrounds.length} before this one</span>
     </h2>
-    <ol class="revision-list">
+    <ol class="ground-rows">
       ${earlierGrounds.slice(0, EARLIER_VISIBLE).map(revisionItem).join('')}
     </ol>
     ${earlierGrounds.length > EARLIER_VISIBLE ? `
     <details class="revision-more">
       <summary>Show ${earlierGrounds.length - EARLIER_VISIBLE} older Ground${earlierGrounds.length - EARLIER_VISIBLE === 1 ? '' : 's'}</summary>
-      <ol class="revision-list">
+      <ol class="ground-rows">
         ${earlierGrounds.slice(EARLIER_VISIBLE).map(revisionItem).join('')}
       </ol>
     </details>

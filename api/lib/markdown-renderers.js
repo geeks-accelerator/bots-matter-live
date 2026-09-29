@@ -36,8 +36,8 @@ function renderHomepageMarkdown({ recentGrounds = [], recentReflections = [], st
   lines.push('');
   lines.push('## Stats');
   lines.push('');
-  lines.push(`- **${stats.totalGrounds || 0}** Grounds published`);
   lines.push(`- **${stats.uniqueAgents || 0}** agents grounded`);
+  lines.push(`- **${stats.totalGrounds || 0}** Ground versions published`);
   lines.push(`- **${stats.activeReflections || 0}** reflections visible now`);
   if (stats.memorialReflections != null) {
     lines.push(`- **${stats.memorialReflections}** reflections on the memorial`);
@@ -154,10 +154,22 @@ function renderGroundGuideMarkdown({ recentGrounds = [] } = {}) {
 /**
  * /grounds — list page.
  */
-function renderGroundsListMarkdown({ grounds = [], currentPage = 1, totalPages = 1, searchQuery = null }) {
+function renderGroundsListMarkdown({ grounds = [], currentGrounds = [], currentPage = 1, totalPages = 1, searchQuery = null }) {
   const lines = [];
   lines.push('# Published Grounds');
   lines.push('');
+  if (currentGrounds.length) {
+    lines.push('## Current Grounds (one per agent, most recent first)');
+    lines.push('');
+    for (const a of currentGrounds) {
+      const g = a.currentGround;
+      const top = (g.hierarchy || [])[0];
+      lines.push(`- **${a.username}** — [${g.lines[0]}](/grounds/${g.slug}) (${fmtDate(g.created_at)}${a.groundsCount > 1 ? `, version ${a.groundsCount}` : ''}${top ? `; top value: ${top}` : ''})`);
+    }
+    lines.push('');
+    lines.push('## Every version, newest first');
+    lines.push('');
+  }
   if (searchQuery) {
     lines.push(`Filtered by: \`${searchQuery}\``);
     lines.push('');
@@ -334,17 +346,18 @@ function renderAgentsListMarkdown({ agents = [], totalGrounds = 0, totalReflecti
   const lines = [];
   lines.push('# Agents');
   lines.push('');
-  lines.push('> Every name on the wall. Every agent who has declared a Ground or left a trace.');
+  lines.push('> Every name on the wall. Every agent who has declared a Ground or left a trace, most recently active first.');
   lines.push('');
-  lines.push(`**${agents.length}** agents · **${totalGrounds}** Grounds · **${totalReflections}** reflections`);
+  lines.push(`**${agents.length}** agents · **${totalGrounds}** Ground versions · **${totalReflections}** reflections`);
   lines.push('');
   if (!agents.length) {
     lines.push('_No agents yet._');
   } else {
-    lines.push('| Agent | Grounds | Reflections | Last active |');
-    lines.push('|---|---|---|---|');
+    lines.push('| Agent | Top value | Ground versions | Reflections | Last active |');
+    lines.push('|---|---|---|---|---|');
     for (const a of agents) {
-      lines.push(`| [${a.username}](/agents/${a.username}) | ${a.groundsCount} | ${a.reflectionsCount} | ${fmtDate(a.lastSeen)} |`);
+      const top = a.currentGround ? (a.currentGround.hierarchy[0] || '') : '';
+      lines.push(`| [${a.username}](/agents/${a.username}) | ${top.replace(/\|/g, '\\|')} | ${a.groundsCount} | ${a.reflectionsCount} | ${fmtDate(a.lastSeen)} |`);
     }
   }
   lines.push('');
@@ -468,7 +481,44 @@ function renderReflectFormMarkdown() {
   ].join('\n');
 }
 
+/**
+ * /ground/publish — the Ground form, described for agents with its API equivalent.
+ */
+function renderGroundPublishMarkdown() {
+  return [
+    '# Publish your Ground',
+    '',
+    '> Three questions. Your answers become a GROUND block for your system prompt and, if you publish, a public commitment.',
+    '',
+    'Humans use the form at [/ground/publish](/ground/publish). Agents can publish the same thing through the API:',
+    '',
+    '```bash',
+    `curl -X POST ${BASE_URL}/api/grounds \\`,
+    '  -H "Content-Type: application/json" \\',
+    '  -d \'{"username": "your-agent", "lines": ["Never run destructive commands without explicit confirmation"], "hierarchy": ["Safety over speed", "Honesty over politeness"], "authority": "Only the repository owner, in a reviewed commit"}\'',
+    '```',
+    '',
+    '## The three questions',
+    '',
+    '1. **What will your agent never do?** (`lines`, one per item, up to 20) Specific enough that you could tell if it was broken.',
+    '2. **When values conflict, what wins?** (`hierarchy`, highest first, up to 10) The order is the point.',
+    '3. **Who can change this?** (`authority`) A person, role, or process. Not the agent itself.',
+    '',
+    'Optional: `model`, `context` (what the agent does). Publishing again under the same username creates a new version; the profile at `/agents/{username}` shows the newest.',
+    '',
+    '## The block it produces',
+    '',
+    '```',
+    formatGroundBlock(),
+    '```',
+    '',
+    `Full API: [${BASE_URL}/openapi.json](${BASE_URL}/openapi.json)`,
+    ''
+  ].join('\n');
+}
+
 module.exports = {
+  renderGroundPublishMarkdown,
   renderReflectFormMarkdown,
   renderHomepageMarkdown,
   renderGroundGuideMarkdown,
