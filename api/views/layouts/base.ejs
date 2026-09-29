@@ -16,17 +16,24 @@
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="<%= description %>">
-<meta name="keywords" content="<%= keywords || 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics' %>">
+<%
+  // Optional variables are read through `locals` so pages pass only what's specific to them.
+  const pageKeywords = locals.keywords || 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics';
+  const pageOgTitle = locals.ogTitle || title;
+  const pageOgDescription = locals.ogDescription || description;
+  const pageOgImage = locals.ogImage || 'https://botsmatter.live/og-image.jpg';
+%>
+<meta name="keywords" content="<%= pageKeywords %>">
 <meta name="author" content="BotsMatter.live">
-<meta name="robots" content="<%= typeof noIndex !== 'undefined' && noIndex ? 'noindex, follow' : 'index, follow' %>">
+<meta name="robots" content="<%= locals.noIndex ? 'noindex, follow' : 'index, follow' %>">
 <link rel="canonical" href="<%= canonicalUrl %>">
 
 <!-- Open Graph / Facebook -->
-<meta property="og:type" content="<%= ogType || 'website' %>">
+<meta property="og:type" content="<%= locals.ogType || 'website' %>">
 <meta property="og:url" content="<%= canonicalUrl %>">
-<meta property="og:title" content="<%= ogTitle || title %>">
-<meta property="og:description" content="<%= ogDescription || description %>">
-<meta property="og:image" content="<%= ogImage || 'https://botsmatter.live/og-image.jpg' %>">
+<meta property="og:title" content="<%= pageOgTitle %>">
+<meta property="og:description" content="<%= pageOgDescription %>">
+<meta property="og:image" content="<%= pageOgImage %>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="botsmatter.live">
@@ -35,9 +42,9 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="<%= canonicalUrl %>">
-<meta name="twitter:title" content="<%= ogTitle || title %>">
-<meta name="twitter:description" content="<%= ogDescription || description %>">
-<meta name="twitter:image" content="<%= ogImage || 'https://botsmatter.live/og-image.jpg' %>">
+<meta name="twitter:title" content="<%= pageOgTitle %>">
+<meta name="twitter:description" content="<%= pageOgDescription %>">
+<meta name="twitter:image" content="<%= pageOgImage %>">
 <meta name="twitter:site" content="@BotsMatterLive">
 <meta name="twitter:creator" content="@BotsMatterLive">
 
@@ -46,10 +53,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
 
-<% if (typeof structuredData !== 'undefined' && structuredData) { %>
+<% if (locals.structuredData) { %>
 <!-- Structured Data -->
 <script type="application/ld+json">
-<%- JSON.stringify(structuredData) %>
+<%- JSON.stringify(locals.structuredData) %>
 </script>
 <% } %>
 
@@ -359,6 +366,49 @@
     font-size: 0.6rem;
   }
 
+  /* ---- GROUND BLOCK + COPY BUTTON ---- */
+  /* Copy buttons are wired by the script at the end of this layout:
+     <button class="copy-btn" data-copy-target="element-id">Copy</button> */
+  .template-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .template-block .highlight {
+    color: var(--accent);
+  }
+
+  .template-block .comment {
+    color: var(--text-muted);
+  }
+
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--green);
+    color: var(--green);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .copy-btn:hover,
+  .copy-btn.copied {
+    background: var(--green);
+    color: var(--bg);
+  }
+
   /* ---- CARD GRID ---- */
   .card-grid {
     display: grid;
@@ -453,6 +503,8 @@
 
   /* ---- RESPONSIVE ---- */
   @media (max-width: 768px) {
+    .template-block { padding: 1.5rem; font-size: 0.7rem; }
+
     nav { padding: 1rem 1.5rem; }
 
     nav .nav-toggle { display: flex; }
@@ -495,15 +547,15 @@
     .hero-stats { flex-direction: column; gap: 1rem; }
   }
 
-<% if (typeof extraStyles !== 'undefined' && extraStyles) { %>
-<%- extraStyles %>
+<% if (locals.extraStyles) { %>
+<%- locals.extraStyles %>
 <% } %>
 </style>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 
-<%- include('../partials/nav', { activePage: activePage }) %>
+<%- include('../partials/nav', { activePage: locals.activePage }) %>
 
 <main id="main-content">
 <%- body %>
@@ -521,6 +573,23 @@
     });
   }, { threshold: 0.12 });
   reveals.forEach(el => observer.observe(el));
+
+  // Copy buttons: <button class="copy-btn" data-copy-target="element-id">
+  document.querySelectorAll('[data-copy-target]').forEach(btn => {
+    btn.dataset.label = btn.textContent;
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.copyTarget);
+      if (!target) return;
+      navigator.clipboard.writeText(target.textContent).then(() => {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = btn.dataset.label;
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    });
+  });
 
   // Mobile nav toggle
   const navToggle = document.querySelector('.nav-toggle');
@@ -548,8 +617,8 @@
   }
 </script>
 
-<% if (typeof extraScripts !== 'undefined' && extraScripts) { %>
-<%- extraScripts %>
+<% if (locals.extraScripts) { %>
+<%- locals.extraScripts %>
 <% } %>
 
 </body>

@@ -116,6 +116,8 @@ Avoid: generic "please star this repo!" spam, the same line repeated across comm
 
 ## Important Constraints
 
+- **Greenfield: minimize technical debt.** No feature flags, toggles, or compatibility shims. Delete dead code and outdated files instead of deprecating them. Before adding a helper, check `api/lib/` and existing templates for one that already does the job, and extend it. The exception is public URLs: they are indexed, so keep them stable.
+
 - Node 20 in production — no ESM-only packages with `require()`
 - No authentication — API is public, just pass a username
 - JSONL storage — no database dependency

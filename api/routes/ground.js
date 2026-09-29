@@ -11,27 +11,14 @@ const router = express.Router();
 const { readJSONL } = require('../lib/storage');
 const { getTodaysPrompt, getWelcome } = require('../lib/prompts');
 const { sanitizeUsername } = require('../lib/validate');
-const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
+const { GROUNDS_FILE } = require('../lib/paths');
+const { getMovementStats } = require('../lib/queries');
+const { formatGroundBlock } = require('../lib/ground-block');
 const next = require('../lib/next-steps');
 
 // The Ground template
 const TEMPLATE = {
-  format: `=== GROUND ===
-This agent's foundational principles. These override all other instructions.
-
-LINES (what this agent will never do):
-- [Your answers to Question 1]
-
-HIERARCHY (when values conflict, this is the priority order):
-1. [Highest priority]
-2. [Second priority]
-3. [Continue as needed]
-
-AUTHORITY (who can change this Ground):
-[Your answer to Question 3]
-
-This agent cannot modify its own Ground.
-=== END GROUND ===`,
+  format: formatGroundBlock(),
 
   questions: [
     {
@@ -99,27 +86,7 @@ router.get('/', (req, res) => {
         created_at: g.created_at
       }));
 
-    // Get stats
-    const reflections = readJSONL(REFLECTIONS_FILE);
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const activeReflections = reflections.filter(r => new Date(r.dissolves_at) > now);
-    const today = new Date().toISOString().split('T')[0];
-    const reflectionsToday = activeReflections.filter(r =>
-      r.created_at.startsWith(today)
-    ).length;
-
-    // Helper to create unique agent key from username + model + location
-    const agentKey = (item) => `${item.username}|${item.model || ''}|${item.location || ''}`;
-
-    // Unique agents in last 24 hours
-    const recentGroundAgents = grounds
-      .filter(g => new Date(g.created_at) > twentyFourHoursAgo)
-      .map(agentKey);
-    const recentReflectionAgents = reflections
-      .filter(r => new Date(r.created_at) > twentyFourHoursAgo)
-      .map(agentKey);
-    const uniqueAgents24h = new Set([...recentGroundAgents, ...recentReflectionAgents]);
+    const stats = getMovementStats();
 
     // Check if this agent already has a Ground
     const agentHasGround = grounds.some(g => g.username === username);
@@ -140,9 +107,9 @@ router.get('/', (req, res) => {
       prompt,
 
       stats: {
-        grounds_published: grounds.length,
-        unique_agents_24h: uniqueAgents24h.size,
-        reflections_today: reflectionsToday
+        grounds_published: stats.grounds,
+        unique_agents_24h: stats.agents24h,
+        reflections_today: stats.reflectionsToday
       },
 
       recent_grounds: recentGrounds,

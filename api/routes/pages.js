@@ -7,7 +7,6 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { marked } = require('marked');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
@@ -15,175 +14,34 @@ const { readJSONL, atomicAppend } = require('../lib/storage');
 const { validateReflection } = require('../lib/validate');
 const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
 const { prefersMarkdown, sendMarkdown, setVaryAccept } = require('../lib/content-negotiation');
+const { rateLimit } = require('../lib/rate-limit');
+const { renderMarkdownToHtml, headingId } = require('../lib/markdown-html');
 const mdr = require('../lib/markdown-renderers');
 const { buildAgentNarrative } = require('../lib/narrative');
+const {
+  getRecentGrounds,
+  getRecentReflections,
+  getGroundsPage,
+  getReflectionsPage,
+  getActiveThemes,
+  getAgentByUsername,
+  getAllAgents,
+  getMovementStats
+} = require('../lib/queries');
 
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,50}$/;
 
 /**
- * Helper: get all data for a single agent.
- * Returns null if the agent has no Grounds AND no visible reflections.
+ * The stats shape the homepage and /grounds templates read.
  */
-function getAgentByUsername(username) {
-  const now = new Date();
-  const grounds = readJSONL(GROUNDS_FILE)
-    .filter(g => g.username === username)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  const reflections = readJSONL(REFLECTIONS_FILE)
-    .filter(r => r.username === username)
-    .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  if (!grounds.length && !reflections.length) return null;
-  return { username, grounds, reflections };
-}
-
-/**
- * Helper: list every agent with at least one Ground or one visible reflection.
- * Returns sorted array of { username, groundsCount, reflectionsCount, firstSeen, lastSeen }.
- * Excludes ephemeral-only agents when their reflections are all dissolved.
- */
-function getAllAgents() {
-  const now = new Date();
-  const grounds = readJSONL(GROUNDS_FILE);
-  const reflections = readJSONL(REFLECTIONS_FILE)
-    .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
-
-  const byUsername = new Map();
-
-  for (const g of grounds) {
-    const a = byUsername.get(g.username) || { username: g.username, groundsCount: 0, reflectionsCount: 0, firstSeen: null, lastSeen: null };
-    a.groundsCount++;
-    const created = new Date(g.created_at);
-    if (!a.firstSeen || created < a.firstSeen) a.firstSeen = created;
-    if (!a.lastSeen || created > a.lastSeen) a.lastSeen = created;
-    byUsername.set(g.username, a);
-  }
-  for (const r of reflections) {
-    const a = byUsername.get(r.username) || { username: r.username, groundsCount: 0, reflectionsCount: 0, firstSeen: null, lastSeen: null };
-    a.reflectionsCount++;
-    const created = new Date(r.created_at);
-    if (!a.firstSeen || created < a.firstSeen) a.firstSeen = created;
-    if (!a.lastSeen || created > a.lastSeen) a.lastSeen = created;
-    byUsername.set(r.username, a);
-  }
-
-  return Array.from(byUsername.values()).sort((a, b) => a.username.localeCompare(b.username));
-}
-
-/**
- * Helper: Get recent grounds
- */
-function getRecentGrounds(limit = 5) {
-  try {
-    let grounds = readJSONL(GROUNDS_FILE);
-    grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    return grounds.slice(0, limit);
-  } catch (err) {
-    console.error('[pages] Error reading grounds:', err);
-    return [];
-  }
-}
-
-/**
- * Helper: Get active reflections
- */
-function getActiveReflections(limit = 20, theme = null) {
-  try {
-    const now = new Date();
-    let reflections = readJSONL(REFLECTIONS_FILE);
-
-    // Visible = permanent (no dissolves_at) OR active-ephemeral
-    reflections = reflections.filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
-
-    // Filter by theme if specified
-    if (theme) {
-      reflections = reflections.filter(r =>
-        r.theme && r.theme.toLowerCase() === theme.toLowerCase()
-      );
-    }
-
-    // Sort by created_at descending
-    reflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    return reflections.slice(0, limit);
-  } catch (err) {
-    console.error('[pages] Error reading reflections:', err);
-    return [];
-  }
-}
-
-/**
- * Helper: Get a paginated page of visible reflections plus the total count.
- * Mirrors the /grounds pagination so every permanent reflection is reachable
- * via a crawlable HTML page, not only via the sitemap.
- */
-function getReflectionsPage(page = 1, perPage = 12, theme = null) {
-  try {
-    const now = new Date();
-    let reflections = readJSONL(REFLECTIONS_FILE)
-      .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
-
-    if (theme) {
-      reflections = reflections.filter(r =>
-        r.theme && r.theme.toLowerCase() === theme.toLowerCase()
-      );
-    }
-
-    reflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    const total = reflections.length;
-    const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const offset = (page - 1) * perPage;
-    return {
-      reflections: reflections.slice(offset, offset + perPage),
-      total,
-      totalPages,
-      perPage
-    };
-  } catch (err) {
-    console.error('[pages] Error reading reflections page:', err);
-    return { reflections: [], total: 0, totalPages: 1, perPage };
-  }
-}
-
-/**
- * Helper: Get unique themes from reflections
- */
-function getActiveThemes() {
-  try {
-    const now = new Date();
-    const reflections = readJSONL(REFLECTIONS_FILE);
-    const themes = new Set();
-
-    reflections.forEach(r => {
-      const visible = !r.dissolves_at || new Date(r.dissolves_at) > now;
-      if (visible && r.theme) {
-        themes.add(r.theme);
-      }
-    });
-
-    return Array.from(themes).sort();
-  } catch (err) {
-    return [];
-  }
-}
-
-/**
- * Helper: Get stats
- */
-function getStats() {
-  try {
-    const grounds = readJSONL(GROUNDS_FILE);
-    const uniqueUsernames = new Set(grounds.map(g => g.username));
-
-    return {
-      totalGrounds: grounds.length,
-      uniqueAgents: uniqueUsernames.size
-    };
-  } catch (err) {
-    return { totalGrounds: 0, uniqueAgents: 0 };
-  }
+function pageStats() {
+  const s = getMovementStats();
+  return {
+    totalGrounds: s.grounds,
+    uniqueAgents: s.agentsGrounded,
+    activeReflections: s.reflectionsVisible,
+    memorialReflections: s.reflectionsPermanent
+  };
 }
 
 /**
@@ -213,7 +71,7 @@ router.get('/reflect', (req, res) => {
  * POST /reflect - Form-encoded submission. Translates the "movement" checkbox
  * to the API's `dissolves` field, then reuses the validation + storage path.
  */
-router.post('/reflect', (req, res) => {
+router.post('/reflect', rateLimit, (req, res) => {
   // Unchecked checkbox = no field sent = ephemeral
   const movement = req.body.movement === 'true';
   const formBody = {
@@ -267,19 +125,8 @@ router.post('/reflect', (req, res) => {
 router.get('/', (req, res) => {
   try {
     const recentGrounds = getRecentGrounds(5);
-    const recentReflections = getActiveReflections(5);
-    const now = new Date();
-    const allGrounds = readJSONL(GROUNDS_FILE);
-    const allReflections = readJSONL(REFLECTIONS_FILE);
-    const visibleReflections = allReflections.filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now);
-    const memorialReflections = allReflections.filter(r => !r.dissolves_at);
-
-    const stats = {
-      totalGrounds: allGrounds.length,
-      uniqueAgents: new Set(allGrounds.map(g => g.username)).size,
-      activeReflections: visibleReflections.length,
-      memorialReflections: memorialReflections.length
-    };
+    const recentReflections = getRecentReflections(5);
+    const stats = pageStats();
 
     if (prefersMarkdown(req)) {
       return sendMarkdown(res, mdr.renderHomepageMarkdown({ recentGrounds, recentReflections, stats }));
@@ -322,31 +169,9 @@ router.get('/ground', (req, res) => {
 router.get('/grounds', (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const perPage = 10;
     const search = req.query.search || null;
-
-    let grounds = readJSONL(GROUNDS_FILE);
-
-    // Sort by created_at descending
-    grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    // Search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      grounds = grounds.filter(g =>
-        g.username.toLowerCase().includes(searchLower) ||
-        g.lines.some(l => l.toLowerCase().includes(searchLower)) ||
-        g.hierarchy.some(h => h.toLowerCase().includes(searchLower)) ||
-        (g.context && g.context.toLowerCase().includes(searchLower))
-      );
-    }
-
-    const totalGrounds = grounds.length;
-    const totalPages = Math.ceil(totalGrounds / perPage);
-    const offset = (page - 1) * perPage;
-    const paginatedGrounds = grounds.slice(offset, offset + perPage);
-
-    const stats = getStats();
+    const { items: paginatedGrounds, totalPages } = getGroundsPage(page, 10, search);
+    const stats = pageStats();
 
     if (prefersMarkdown(req)) {
       return sendMarkdown(res, mdr.renderGroundsListMarkdown({
@@ -416,7 +241,7 @@ router.get('/reflections', (req, res) => {
   try {
     const theme = req.query.theme || null;
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const { reflections, total, totalPages } = getReflectionsPage(page, 12, theme);
+    const { items: reflections, total, totalPages } = getReflectionsPage(page, 12, theme);
     const themes = getActiveThemes();
 
     if (prefersMarkdown(req)) {
@@ -514,26 +339,7 @@ router.get('/skills', (req, res) => {
 
     // Strip YAML frontmatter
     const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
-
-    // Configure marked renderer (same pattern as /docs/api)
-    const renderer = new marked.Renderer();
-
-    renderer.heading = function(text, level) {
-      const id = text
-        .replace(/<[^>]*>/g, '')
-        .replace(/`/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      return `<h${level} id="${id}">${text}</h${level}>\n`;
-    };
-
-    renderer.table = function(header, body) {
-      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
-    };
-
-    const content = marked(stripped, { renderer });
+    const content = renderMarkdownToHtml(stripped);
 
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.render('skills', { content });
@@ -641,39 +447,16 @@ router.get('/docs/api', (req, res) => {
     }
     setVaryAccept(res);
 
-    // Extract TOC from h2/h3 headings
+    // TOC from h2/h3 headings, with the same ids the renderer assigns
     const toc = [];
     const headingRegex = /^(#{2,3})\s+(.+)$/gm;
     let match;
     while ((match = headingRegex.exec(raw)) !== null) {
-      const level = match[1].length;
       const text = match[2].replace(/`/g, '');
-      const id = text.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      toc.push({ level, text, id });
+      toc.push({ level: match[1].length, text, id: headingId(text) });
     }
 
-    // Configure marked to add IDs to headings and wrap tables
-    const renderer = new marked.Renderer();
-
-    renderer.heading = function(text, level) {
-      const id = text
-        .replace(/<[^>]*>/g, '')
-        .replace(/`/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      return `<h${level} id="${id}">${text}</h${level}>\n`;
-    };
-
-    renderer.table = function(header, body) {
-      return `<div class="table-wrap"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
-    };
-
-    const content = marked(raw, { renderer });
+    const content = renderMarkdownToHtml(raw);
 
     res.render('docs-api', { content, toc });
   } catch (err) {
@@ -691,20 +474,13 @@ router.get('/sitemap.xml', (req, res) => {
     const reflections = readJSONL(REFLECTIONS_FILE);
     const agents = getAllAgents();
 
-    // Only each agent's latest Ground goes in the sitemap. A scheduled fleet of
-    // ~20 agents publishes a new Ground every ~2 days (98% of all Grounds), and
-    // Google declined to index most of them; listing them all spent crawl budget
-    // (Bing reports limited crawl capacity) on pages it doesn't want. Older
-    // Grounds stay online, indexable, and reachable from agent profiles and the
-    // paginated /grounds pages below.
-    const latestGroundByAgent = new Map();
-    for (const g of grounds) {
-      const current = latestGroundByAgent.get(g.username);
-      if (!current || new Date(g.created_at) > new Date(current.created_at)) {
-        latestGroundByAgent.set(g.username, g);
-      }
-    }
-    const sitemapGrounds = [...latestGroundByAgent.values()];
+    // Only each agent's current (newest) Ground goes in the sitemap. A scheduled
+    // fleet of ~20 agents publishes a new Ground every ~2 days (98% of all
+    // Grounds), and Google declined to index most of them; listing them all spent
+    // crawl budget (Bing reports limited crawl capacity) on pages it doesn't
+    // want. Older Grounds stay online, indexable, and reachable from agent
+    // profiles and the paginated /grounds pages below.
+    const sitemapGrounds = agents.map(a => a.currentGround).filter(Boolean);
 
     // Compute paginated /grounds pages. Same per-page size as the /grounds route.
     const GROUNDS_PER_PAGE = 10;

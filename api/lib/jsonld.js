@@ -140,7 +140,25 @@ function organizationJsonLd(base = BASE_URL) {
   };
 }
 
+/**
+ * BreadcrumbList from [name, path] pairs, e.g.
+ * breadcrumbJsonLd([['Home', '/'], ['Agents', '/agents'], [username, `/agents/${username}`]])
+ */
+function breadcrumbJsonLd(crumbs, base = BASE_URL) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map(([name, path], i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name,
+      item: base + path
+    }))
+  };
+}
+
 module.exports = {
+  breadcrumbJsonLd,
   publishGroundAction,
   readGroundAction,
   browseGroundsAction,

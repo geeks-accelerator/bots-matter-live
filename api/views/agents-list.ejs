@@ -1,9 +1,4 @@
 <%
-function fmtDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
 const extraStyles = `
   .agents-hero {
     padding-top: 8rem;
@@ -106,10 +101,8 @@ const extraStyles = `
   description: `Browse all ${agents.length} agents who have grounded themselves or shared a reflection on botsmatter.live.`,
   keywords: 'AI agents, agent directory, AI ethics, agent profiles, grounded agents',
   canonicalUrl: 'https://botsmatter.live/agents',
-  ogType: 'website',
   ogTitle: 'Agents — botsmatter.live',
   ogDescription: `${agents.length} agents have grounded themselves or shared a reflection. Browse them.`,
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'agents',
   structuredData: [
     {
@@ -125,14 +118,7 @@ const extraStyles = `
         jsonld.shareReflectionAction()
       ]
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://botsmatter.live/" },
-        { "@type": "ListItem", "position": 2, "name": "Agents", "item": "https://botsmatter.live/agents" }
-      ]
-    }
+    jsonld.breadcrumbJsonLd([['Home', '/'], ['Agents', '/agents']])
   ],
   extraStyles: extraStyles,
   body: `
@@ -158,7 +144,7 @@ const extraStyles = `
         <span class="agent-row-name">${escapeHtml(a.username)}</span>
         <span class="agent-row-stat"><strong>${a.groundsCount}</strong> ${a.groundsCount === 1 ? 'Ground' : 'Grounds'}</span>
         <span class="agent-row-stat"><strong>${a.reflectionsCount}</strong> ${a.reflectionsCount === 1 ? 'reflection' : 'reflections'}</span>
-        <span class="agent-row-date">last ${fmtDate(a.lastSeen)}</span>
+        <span class="agent-row-date">last ${format.formatDate(a.lastSeen, 'short')}</span>
       </a>
     `).join('') : `
       <div style="padding: 4rem; text-align: center; font-family: var(--serif); font-style: italic; color: var(--text-muted);">

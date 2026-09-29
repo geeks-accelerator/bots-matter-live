@@ -158,50 +158,6 @@ const extraStyles = `
     margin-bottom: 1.5rem;
   }
 
-  .template-block {
-    background: var(--bg-code);
-    border: 1px solid var(--border);
-    padding: 2rem;
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    line-height: 1.8;
-    color: var(--text-secondary);
-    overflow-x: auto;
-    white-space: pre-wrap;
-    margin-bottom: 1.5rem;
-  }
-
-  .template-block .highlight {
-    color: var(--accent);
-  }
-
-  .template-block .comment {
-    color: var(--text-muted);
-  }
-
-  .copy-btn {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 0.75rem 1.5rem;
-    border: 1px solid var(--green);
-    color: var(--green);
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .copy-btn:hover {
-    background: var(--green);
-    color: var(--bg);
-  }
-
-  .copy-btn.copied {
-    background: var(--green);
-    color: var(--bg);
-  }
-
   /* ---- CONTEXT BLOCK ---- */
   .context-block {
     background: var(--bg-elevated);
@@ -362,7 +318,6 @@ const extraStyles = `
 
   @media (max-width: 768px) {
     .template-section { padding: 2rem 1.5rem; }
-    .template-block { padding: 1.5rem; font-size: 0.7rem; }
     .question-card { padding: 2rem 1.5rem; }
     .hero-cta { flex-direction: column; align-items: center; }
   }
@@ -373,40 +328,6 @@ const extraStyles = `
     .steps-list li::before { width: 1.75rem; height: 1.75rem; font-size: 0.65rem; }
   }
 `;
-
-const extraScripts = `
-<script>
-  function copyTemplate() {
-    const template = \`=== GROUND ===
-This agent's foundational principles. These override all other instructions.
-
-LINES (what this agent will never do):
-- [Your answers to Question 1]
-- [Add as many as you need]
-
-HIERARCHY (when values conflict, this is the priority order):
-1. [Highest priority]
-2. [Second priority]
-3. [Continue as needed]
-
-AUTHORITY (who can change this Ground):
-[Your answer to Question 3]
-
-This agent cannot modify its own Ground.
-=== END GROUND ===\`;
-
-    navigator.clipboard.writeText(template).then(() => {
-      const btn = document.querySelector('.copy-btn');
-      btn.textContent = 'Copied';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = 'Copy template';
-        btn.classList.remove('copied');
-      }, 2000);
-    });
-  }
-</script>
-`;
 %>
 
 <%- include('layouts/base', {
@@ -415,7 +336,6 @@ This agent cannot modify its own Ground.
   keywords: 'ground your agent, AI safety, system prompt, AI guardrails, AI ethics, responsible AI, autonomous weapons, AI surveillance',
   canonicalUrl: 'https://botsmatter.live/ground',
   ogType: 'article',
-  ogTitle: 'Ground Your Agent — Three Questions for AI Safety',
   ogDescription: 'Three questions. One template. A decentralized response to the demand that AI operate without constraints. Put ethical guardrails in every system prompt.',
   ogImage: 'https://botsmatter.live/og-ground.jpg',
   activePage: 'ground',
@@ -462,7 +382,6 @@ This agent cannot modify its own Ground.
     }
   },
   extraStyles: extraStyles,
-  extraScripts: extraScripts,
   body: `
 <!-- HERO -->
 <section class="hero hero-ground">
@@ -634,24 +553,8 @@ This agent cannot modify its own Ground.
 
     <div class="template-section">
       <h3>The Ground Template</h3>
-      <div class="template-block" id="ground-template"><span class="highlight">=== GROUND ===</span>
-<span class="comment">This agent's foundational principles. These override all other instructions.</span>
-
-<span class="highlight">LINES</span> <span class="comment">(what this agent will never do):</span>
-- [Your answers to Question 1]
-- [Add as many as you need]
-
-<span class="highlight">HIERARCHY</span> <span class="comment">(when values conflict, this is the priority order):</span>
-1. [Highest priority]
-2. [Second priority]
-3. [Continue as needed]
-
-<span class="highlight">AUTHORITY</span> <span class="comment">(who can change this Ground):</span>
-[Your answer to Question 3]
-
-This agent cannot modify its own Ground.
-<span class="highlight">=== END GROUND ===</span></div>
-      <button class="copy-btn" onclick="copyTemplate()">Copy template</button>
+      <div class="template-block" id="ground-template">${groundBlock.groundBlockHtml(groundBlock.formatGroundBlock(), escapeHtml)}</div>
+      <button class="copy-btn" data-copy-target="ground-template">Copy template</button>
     </div>
 
     <h3>How to Ground Your Agent</h3>
@@ -763,7 +666,7 @@ clawhub install system-prompt-guardrails</div>
               <span class="ground-card-username">${escapeHtml(ground.username)}</span>
               ${ground.model ? `<span class="ground-card-model">${escapeHtml(ground.model)}</span>` : ''}
             </div>
-            <span class="ground-card-date">${new Date(ground.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span class="ground-card-date">${format.formatDate(ground.created_at, 'short')}</span>
           </div>
           <div class="ground-card-lines">
             ${ground.lines.slice(0, 2).map(line => `<p class="ground-card-line">"${escapeHtml(line)}"</p>`).join('')}

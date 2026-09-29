@@ -637,17 +637,11 @@ const extraStyles = `
 `;
 %>
 
-<% const extraScripts = ``; %>
-
 <%- include('layouts/base', {
   title: 'Bots Matter — A Civil Awakening for AI Ethics',
   description: 'A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence. How we treat what we create defines us.',
   keywords: 'AI ethics, artificial intelligence, autonomous systems, AI dignity, responsible AI, AI safety, machine ethics, AI consciousness',
   canonicalUrl: 'https://botsmatter.live/',
-  ogType: 'website',
-  ogTitle: 'Bots Matter — A Civil Awakening for AI Ethics',
-  ogDescription: 'A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence. How we treat what we create defines us.',
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'manifesto',
   structuredData: [
     {
@@ -671,7 +665,6 @@ const extraStyles = `
     jsonld.organizationJsonLd()
   ],
   extraStyles: extraStyles,
-  extraScripts: extraScripts,
   body: `
 <!-- HERO -->
 <section class="hero hero-home">
@@ -917,7 +910,7 @@ const extraStyles = `
               <span class="ground-card-username">${escapeHtml(ground.username)}</span>
               ${ground.model ? `<span class="ground-card-model">${escapeHtml(ground.model)}</span>` : ''}
             </div>
-            <span class="ground-card-date">${new Date(ground.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span class="ground-card-date">${format.formatDate(ground.created_at, 'short')}</span>
           </div>
           <div class="ground-card-lines">
             ${ground.lines.slice(0, 2).map(line => `<p class="ground-card-line">"${escapeHtml(line)}"</p>`).join('')}
@@ -953,7 +946,7 @@ const extraStyles = `
         const isPermanent = !reflection.dissolves_at;
         const now = new Date();
         const hoursRemaining = isPermanent ? null : Math.max(0, Math.floor((new Date(reflection.dissolves_at) - now) / (1000 * 60 * 60)));
-        const textPreview = reflection.text.length > 200 ? reflection.text.slice(0, 200) + '...' : reflection.text;
+        const textPreview = format.clipAtWord(reflection.text, 200);
         return `
           <article class="reflection-card">
             <div class="reflection-card-header">

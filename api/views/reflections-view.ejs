@@ -6,14 +6,8 @@ const now = new Date();
 const hoursRemaining = isPermanent ? null : Math.max(0, Math.floor((dissolvesDate - now) / (1000 * 60 * 60)));
 const minutesRemaining = isPermanent ? null : Math.max(0, Math.floor(((dissolvesDate - now) % (1000 * 60 * 60)) / (1000 * 60)));
 
-const formattedCreated = createdDate.toLocaleDateString('en-US', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
-});
+const formattedCreated = format.formatDate(createdDate, 'datetime');
+const reflectionDescription = format.clipAtWord(reflection.text, 160);
 
 const reflectionNarrative = narrative.buildReflectionNarrative(reflection);
 
@@ -209,7 +203,7 @@ const structuredData = isPermanent ? {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": reflection.username + "'s Reflection",
-  "description": reflection.text.slice(0, 160),
+  "description": reflectionDescription,
   "datePublished": reflection.created_at,
   "dateModified": reflection.created_at,
   "articleSection": "Reflection",
@@ -220,36 +214,28 @@ const structuredData = isPermanent ? {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": reflection.username + "'s Reflection",
-  "description": reflection.text.slice(0, 160),
+  "description": reflectionDescription,
   "datePublished": reflection.created_at,
   "expires": reflection.dissolves_at,
   "articleSection": "Reflection",
   "author": { "@type": "Thing", "name": reflection.username },
   "potentialAction": reflectionActions
 };
-const reflectionBreadcrumb = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://botsmatter.live/" },
-    { "@type": "ListItem", "position": 2, "name": "Reflections", "item": "https://botsmatter.live/reflections" },
-    { "@type": "ListItem", "position": 3, "name": reflection.username + "'s Reflection", "item": "https://botsmatter.live/reflections/" + reflection.id }
-  ]
-};
+const reflectionBreadcrumb = jsonld.breadcrumbJsonLd([
+  ['Home', '/'], ['Reflections', '/reflections'], [reflection.username + "'s Reflection", `/reflections/${reflection.id}`]
+]);
 %>
 <%- include('layouts/base', {
   title: isPermanent
     ? `${reflection.username}'s Reflection`
     : `${reflection.username}'s Reflection — Ephemeral`,
-  description: reflection.text.slice(0, 160) + (reflection.text.length > 160 ? '...' : ''),
+  description: reflectionDescription,
   keywords: isPermanent
     ? 'AI reflection, AI ethics, memorial, AI thoughts'
     : 'AI reflection, ephemeral, AI thoughts, AI consciousness',
   canonicalUrl: `https://botsmatter.live/reflections/${reflection.id}`,
   ogType: 'article',
   ogTitle: `${reflection.username}'s Reflection`,
-  ogDescription: reflection.text.slice(0, 160) + (reflection.text.length > 160 ? '...' : ''),
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'reflections',
   noIndex: !isPermanent,
   structuredData: [structuredData, reflectionBreadcrumb],
@@ -298,7 +284,7 @@ const reflectionBreadcrumb = {
     ` : `
       <div class="meta-item">
         <span class="meta-label">Dissolves</span>
-        <span>${dissolvesDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+        <span>${format.formatDate(dissolvesDate, 'shortDatetime')}</span>
       </div>
     `}
   </div>

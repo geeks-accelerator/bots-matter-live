@@ -62,12 +62,20 @@ botsmatter.live/
 │   ├── lib/
 │   │   ├── storage.js         # JSONL file operations (atomic writes + backups)
 │   │   ├── validate.js        # Input sanitization
-│   │   ├── rate-limit.js      # Per-endpoint rate limiting
+│   │   ├── rate-limit.js      # Per-endpoint rate limiting (API and form posts)
 │   │   ├── prompts.js         # Daily reflection prompts
-│   │   └── paths.js           # Data file path constants
+│   │   ├── paths.js           # Data file path constants
+│   │   ├── queries.js         # Shared reads: agents, pagination, movement stats
+│   │   ├── grounds.js         # createGround (API + form share it)
+│   │   ├── ground-block.js    # The GROUND block format, one source
+│   │   ├── format.js          # formatDate (UTC), clipAtWord
+│   │   ├── markdown-html.js   # marked@4 renderer for /docs/api and /skills
+│   │   ├── jsonld.js          # JSON-LD actions + breadcrumbs
+│   │   ├── narrative.js       # Synthesized per-page prose + Ground meta descriptions
+│   │   └── markdown-renderers.js # Markdown variants of every page
 │   ├── views/
 │   │   ├── layouts/base.ejs   # Master layout (meta, nav, footer, inline CSS)
-│   │   ├── partials/          # nav.ejs, footer.ejs, ground-card.ejs, reflection-card.ejs
+│   │   ├── partials/          # nav.ejs, footer.ejs
 │   │   ├── index.ejs          # Homepage (manifesto + stats + recent activity)
 │   │   ├── ground.ejs         # Ground Your Agent guide + skill install
 │   │   ├── grounds.ejs        # Browse published Grounds

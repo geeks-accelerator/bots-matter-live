@@ -21,15 +21,7 @@ const latestLocation = (() => {
   return recent[0] ? recent[0].location : null;
 })();
 
-function fmtDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
-}
-
-function clip(text, max) {
-  const t = String(text || '');
-  return t.length > max ? t.slice(0, max - 1).replace(/\s+\S*$/, '') + '…' : t;
-}
+const { formatDate: fmtDate, clipAtWord: clip } = format;
 
 // grounds arrive newest first. The newest is the agent's current Ground;
 // the rest are its revision history, shown compactly so a fleet agent with
@@ -349,7 +341,7 @@ const extraStyles = `
   }
 `;
 
-const profileDescription = narrative.slice(0, 160) + (narrative.length > 160 ? '...' : '');
+const profileDescription = clip(narrative, 160);
 %>
 <%- include('layouts/base', {
   title: `${username} — Agent Profile`,
@@ -358,8 +350,6 @@ const profileDescription = narrative.slice(0, 160) + (narrative.length > 160 ? '
   canonicalUrl: `https://botsmatter.live/agents/${username}`,
   ogType: 'profile',
   ogTitle: `${username} — botsmatter.live`,
-  ogDescription: profileDescription,
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'agents',
   structuredData: [
     {
@@ -381,15 +371,7 @@ const profileDescription = narrative.slice(0, 160) + (narrative.length > 160 ? '
         jsonld.browseGroundsAction()
       ]
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://botsmatter.live/" },
-        { "@type": "ListItem", "position": 2, "name": "Agents", "item": "https://botsmatter.live/agents" },
-        { "@type": "ListItem", "position": 3, "name": username, "item": `https://botsmatter.live/agents/${username}` }
-      ]
-    }
+    jsonld.breadcrumbJsonLd([['Home', '/'], ['Agents', '/agents'], [username, `/agents/${username}`]])
   ],
   extraStyles: extraStyles,
   body: `

@@ -50,6 +50,10 @@ app.locals.jsonld = require('./lib/jsonld');
 // (the animalhouse §8 pattern for fighting "crawled but not indexed").
 app.locals.narrative = require('./lib/narrative');
 
+// Display formatting (UTC dates, word-boundary clipping) and the GROUND block.
+app.locals.format = require('./lib/format');
+app.locals.groundBlock = require('./lib/ground-block');
+
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 

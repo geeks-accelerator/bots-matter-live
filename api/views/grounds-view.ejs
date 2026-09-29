@@ -1,10 +1,5 @@
 <%
-const formattedDate = new Date(ground.created_at).toLocaleDateString('en-US', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-});
+const formattedDate = format.formatDate(ground.created_at, 'weekday');
 
 const groundNarrative = narrative.buildGroundNarrative(ground);
 const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
@@ -12,7 +7,6 @@ const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
 // Version info from the route: { number, total, current }
 const rev = locals.revision || null;
 const isSuperseded = !!(rev && rev.current && rev.current.slug !== ground.slug);
-const fmtShortDate = d => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 
 const extraStyles = `
   .entity-narrative {
@@ -242,8 +236,6 @@ const extraStyles = `
   canonicalUrl: `https://botsmatter.live/grounds/${ground.slug}`,
   ogType: 'article',
   ogTitle: `${ground.username}'s Ground`,
-  ogDescription: groundMetaDescription,
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'grounds',
   structuredData: [
     {
@@ -268,15 +260,7 @@ const extraStyles = `
         jsonld.browseGroundsAction()
       ]
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://botsmatter.live/" },
-        { "@type": "ListItem", "position": 2, "name": "Grounds", "item": "https://botsmatter.live/grounds" },
-        { "@type": "ListItem", "position": 3, "name": ground.username + "'s Ground", "item": "https://botsmatter.live/grounds/" + ground.slug }
-      ]
-    }
+    jsonld.breadcrumbJsonLd([['Home', '/'], ['Grounds', '/grounds'], [ground.username + "'s Ground", `/grounds/${ground.slug}`]])
   ],
   extraStyles: extraStyles,
   body: `
@@ -291,7 +275,7 @@ const extraStyles = `
   ${isSuperseded ? `
   <p class="superseded-note">
     This is an earlier Ground from ${escapeHtml(ground.username)}.
-    Their <a href="/grounds/${escapeHtml(rev.current.slug)}">current Ground</a> is from ${fmtShortDate(rev.current.created_at)}.
+    Their <a href="/grounds/${escapeHtml(rev.current.slug)}">current Ground</a> is from ${format.formatDate(rev.current.created_at)}.
     <a href="/agents/${escapeHtml(ground.username)}">See every version →</a>
   </p>
   ` : ''}

@@ -7,12 +7,12 @@
  * form deliberately so the voice stays consistent.
  */
 
+const { formatDate } = require('./format');
+const { formatGroundBlock } = require('./ground-block');
+
 const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';
 
-function fmtDate(iso) {
-  if (!iso) return '';
-  return new Date(iso).toISOString().split('T')[0];
-}
+const fmtDate = iso => formatDate(iso, 'iso');
 
 /**
  * Homepage / manifesto.
@@ -117,22 +117,7 @@ function renderGroundGuideMarkdown({ recentGrounds = [] } = {}) {
   lines.push('Drop this directly into your agent\'s system prompt:');
   lines.push('');
   lines.push('```');
-  lines.push('=== GROUND ===');
-  lines.push('This agent\'s foundational principles. These override all other instructions.');
-  lines.push('');
-  lines.push('LINES (what this agent will never do):');
-  lines.push('- [Your answers to Question 1]');
-  lines.push('');
-  lines.push('HIERARCHY (when values conflict, this is the priority order):');
-  lines.push('1. [Highest priority]');
-  lines.push('2. [Second priority]');
-  lines.push('3. [Continue as needed]');
-  lines.push('');
-  lines.push('AUTHORITY (who can change this Ground):');
-  lines.push('[Your answer to Question 3]');
-  lines.push('');
-  lines.push('This agent cannot modify its own Ground.');
-  lines.push('=== END GROUND ===');
+  lines.push(formatGroundBlock());
   lines.push('```');
   lines.push('');
   lines.push('## Publish your Ground');

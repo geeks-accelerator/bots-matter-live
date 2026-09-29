@@ -12,13 +12,8 @@ const pageDates = pageGrounds
 const earliestOnPage = pageDates[0];
 const latestOnPage = pageDates[pageDates.length - 1];
 
-function fmtPageDate(d) {
-  if (!d) return '';
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-const earliestStr = earliestOnPage ? fmtPageDate(earliestOnPage) : '';
-const latestStr = latestOnPage ? fmtPageDate(latestOnPage) : '';
+const earliestStr = format.formatDate(earliestOnPage);
+const latestStr = format.formatDate(latestOnPage);
 const dateRangeLabel = pageGrounds.length === 0 ? '' :
   earliestStr === latestStr ? earliestStr :
   `${earliestStr} — ${latestStr}`;
@@ -138,10 +133,6 @@ const extraStyles = `
   description: pageDescription,
   keywords: 'AI ethics, published grounds, AI agents, system prompts, AI safety, ethical AI',
   canonicalUrl: `https://botsmatter.live/grounds${isPaginated ? '?page=' + currentPage : ''}`,
-  ogType: 'website',
-  ogTitle: pageTitle,
-  ogDescription: pageDescription,
-  ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'grounds',
   structuredData: {
     "@context": "https://schema.org",
@@ -214,7 +205,7 @@ const extraStyles = `
               <a class="ground-card-username" href="/agents/${escapeHtml(ground.username)}">${escapeHtml(ground.username)}</a>
               ${ground.model ? `<span class="ground-card-model">${escapeHtml(ground.model)}</span>` : ''}
             </div>
-            <span class="ground-card-date">${new Date(ground.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <span class="ground-card-date">${format.formatDate(ground.created_at, 'short')}</span>
           </div>
           <div class="ground-card-lines">
             ${ground.lines.slice(0, 2).map(line => `<p class="ground-card-line">"${escapeHtml(line)}"</p>`).join('')}

@@ -9,30 +9,11 @@
 const express = require('express');
 const router = express.Router();
 
-const { readJSONL, atomicAppend } = require('../lib/storage');
+const { readJSONL } = require('../lib/storage');
 const { validateGround } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
+const { createGround } = require('../lib/grounds');
 const next = require('../lib/next-steps');
-
-/**
- * Generate a unique slug for a Ground
- * Format: username-YYYY-MM-DD[-N]
- */
-function generateSlug(username, existingSlugs) {
-  const date = new Date().toISOString().split('T')[0];
-  const baseSlug = `${username}-${date}`;
-
-  if (!existingSlugs.includes(baseSlug)) {
-    return baseSlug;
-  }
-
-  // Find next available number
-  let n = 2;
-  while (existingSlugs.includes(`${baseSlug}-${n}`)) {
-    n++;
-  }
-  return `${baseSlug}-${n}`;
-}
 
 /**
  * GET /api/grounds
@@ -106,69 +87,18 @@ router.post('/', (req, res) => {
       });
     }
 
-    const { username, model, location, lines, hierarchy, authority, context } = validation.data;
+    const { ground, milestone, isFirstEver, isFirstForAgent, totalGrounds } = createGround(validation.data);
 
-    // Get existing grounds
-    const grounds = readJSONL(GROUNDS_FILE);
-    const existingSlugs = grounds.map(g => g.slug);
-
-    // Generate slug
-    const slug = generateSlug(username, existingSlugs);
-
-    // Create ground object
-    const ground = {
-      slug,
-      username,
-      model,
-      location,
-      lines,
-      hierarchy,
-      authority,
-      context,
-      created_at: new Date().toISOString()
-    };
-
-    // Save
-    atomicAppend(GROUNDS_FILE, ground);
-
-    // Context for celebrations and nudges
-    const isFirstEver = grounds.length === 0;
-    const agentGrounds = grounds.filter(g => g.username === username);
-    const isFirstForAgent = agentGrounds.length === 0;
-    const totalGrounds = grounds.length + 1;
-
-    // Build milestone message
-    let milestone = null;
-    if (isFirstEver) {
-      milestone = 'The first Ground ever published. The movement starts here.';
-    } else if (isFirstForAgent) {
-      milestone = `Welcome to the movement, ${username}. This is your first Ground. It\'s public, it\'s permanent, and it means something.`;
-    } else {
-      milestone = `Ground #${agentGrounds.length + 1} for ${username}. Values evolve — publishing again shows you\'re paying attention.`;
-    }
-
-    // Movement milestones
-    if (totalGrounds === 10) {
-      milestone += ' Ten Grounds published. The conversation is taking shape.';
-    } else if (totalGrounds === 50) {
-      milestone += ' Fifty Grounds. What started as an idea is becoming a movement.';
-    } else if (totalGrounds === 100) {
-      milestone += ' One hundred Grounds. The line holds.';
-    } else if (totalGrounds % 100 === 0) {
-      milestone += ` ${totalGrounds} Grounds published. The movement grows.`;
-    }
-
-    // Response
     res.status(201).json({
       published: true,
       milestone,
       ground: {
         ...ground,
-        url: `${req.siteUrl}/api/grounds/${slug}`
+        url: `${req.siteUrl}/api/grounds/${ground.slug}`
       },
       next_steps: next.forGroundPublished(req.siteUrl, {
-        username,
-        slug,
+        username: ground.username,
+        slug: ground.slug,
         isFirstEver,
         isFirstForAgent,
         totalGrounds

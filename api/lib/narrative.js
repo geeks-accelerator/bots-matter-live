@@ -8,16 +8,7 @@
  * agents with rich contribution history.
  */
 
-function formatDate(d) {
-  if (!d) return '';
-  // UTC so displayed dates match slug dates ({username}-YYYY-MM-DD) on any server
-  return new Date(d).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC'
-  });
-}
+const { formatDate, clipAtWord } = require('./format');
 
 function uniqueNonEmpty(values) {
   return Array.from(new Set(values.filter(v => v && String(v).trim()))).map(v => String(v).trim());
@@ -143,13 +134,6 @@ function buildGroundNarrative(ground) {
  * under 110 characters, which Bing flags as too short.
  */
 const META_MAX = 160;
-
-function clipAtWord(text, max) {
-  if (text.length <= max) return text;
-  const cut = text.slice(0, max - 1);
-  const space = cut.lastIndexOf(' ');
-  return (space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s.;:,]+$/, '') + '…';
-}
 
 function endSentence(text) {
   return text.endsWith('…') ? text : text + '.';

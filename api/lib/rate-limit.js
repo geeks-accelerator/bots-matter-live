@@ -20,7 +20,8 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// Rate limits by endpoint pattern
+// Rate limits by METHOD:full-path. Page-route form posts share the same
+// limits as their API equivalents.
 const LIMITS = {
   'GET:/api/ground': { max: 120, windowMs: 60000 },
   'GET:/api/grounds': { max: 120, windowMs: 60000 },
@@ -28,31 +29,27 @@ const LIMITS = {
   'GET:/api/stats': { max: 60, windowMs: 60000 },
   'POST:/api/grounds': { max: 10, windowMs: 60000 },
   'POST:/api/reflect': { max: 30, windowMs: 60000 },
+  'POST:/ground/publish': { max: 10, windowMs: 60000 },
+  'POST:/reflect': { max: 30, windowMs: 60000 },
   'DEFAULT': { max: 60, windowMs: 60000 }
 };
 
-/**
- * Get limit config for a request
- */
 function getLimit(method, path) {
-  // Normalize path (remove :slug params)
-  const normalizedPath = path.replace(/\/[^/]+$/, '/:slug');
-  const key = `${method}:${path}`;
-  const keyWithSlug = `${method}:${normalizedPath}`;
-
-  return LIMITS[key] || LIMITS[keyWithSlug] || LIMITS.DEFAULT;
+  return LIMITS[`${method}:${path}`] || LIMITS.DEFAULT;
 }
 
 /**
- * Rate limiting middleware
+ * Rate limiting middleware. Works both mounted (app.use('/api', rateLimit))
+ * and per-route: req.baseUrl + req.path is the full path either way.
  */
 function rateLimit(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  // Normalize path for rate limiting (collapse slug params into single bucket)
-  const normalizedPath = req.path
-    .replace(/^\/grounds\/[^/]+$/, '/grounds/:slug')
-    .replace(/^\/reflections\/[^/]+$/, '/reflections/:id');
-  const { max, windowMs } = getLimit(req.method, req.path);
+  const fullPath = (req.baseUrl || '') + req.path;
+  // Collapse slug/id params into one bucket per endpoint
+  const normalizedPath = fullPath
+    .replace(/^\/api\/grounds\/[^/]+$/, '/api/grounds/:slug')
+    .replace(/^\/api\/reflections\/[^/]+$/, '/api/reflections/:id');
+  const { max, windowMs } = getLimit(req.method, fullPath);
   const key = `${ip}:${req.method}:${normalizedPath}`;
   const now = Date.now();
 
@@ -72,6 +69,12 @@ function rateLimit(req, res, next) {
   if (entry.count > max) {
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
     res.set('Retry-After', retryAfter);
+    if (!fullPath.startsWith('/api')) {
+      return res.status(429).render('404', {
+        title: 'Slow down',
+        message: `Too many submissions from here in a short time. Wait ${retryAfter} seconds and try again.`
+      });
+    }
     return res.status(429).json({
       error: 'Rate limit exceeded',
       suggestion: `Wait ${retryAfter} seconds before trying again. Check the Retry-After header. The limits are generous — if you're hitting them, you might be looping.`,

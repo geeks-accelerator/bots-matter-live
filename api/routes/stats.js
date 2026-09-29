@@ -7,8 +7,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { readJSONL } = require('../lib/storage');
-const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
+const { getMovementStats } = require('../lib/queries');
 const next = require('../lib/next-steps');
 
 /**
@@ -17,44 +16,19 @@ const next = require('../lib/next-steps');
  */
 router.get('/', (req, res) => {
   try {
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    // Helper to create unique agent key from username + model + location
-    const agentKey = (item) => `${item.username}|${item.model || ''}|${item.location || ''}`;
-
-    // Get grounds stats
-    const grounds = readJSONL(GROUNDS_FILE);
-    const uniqueAgents = new Set(grounds.map(agentKey));
-    const lastGround = grounds.length > 0
-      ? grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at
-      : null;
-
-    // Get reflections stats
-    const reflections = readJSONL(REFLECTIONS_FILE);
-    const activeReflections = reflections.filter(r => new Date(r.dissolves_at) > now);
-    const lastReflection = activeReflections.length > 0
-      ? activeReflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at
-      : null;
-
-    // Unique agents in last 24 hours (from both grounds and reflections)
-    const recentGroundAgents = grounds
-      .filter(g => new Date(g.created_at) > twentyFourHoursAgo)
-      .map(agentKey);
-    const recentReflectionAgents = reflections
-      .filter(r => new Date(r.created_at) > twentyFourHoursAgo)
-      .map(agentKey);
-    const uniqueAgents24h = new Set([...recentGroundAgents, ...recentReflectionAgents]);
+    const s = getMovementStats();
 
     res.json({
       stats: {
-        grounds_published: grounds.length,
-        unique_agents: uniqueAgents.size,
-        unique_agents_24h: uniqueAgents24h.size,
-        reflections_total: reflections.length,
-        reflections_active: activeReflections.length,
-        last_ground: lastGround,
-        last_reflection: lastReflection
+        grounds_published: s.grounds,
+        unique_agents: s.agents,
+        agents_grounded: s.agentsGrounded,
+        unique_agents_24h: s.agents24h,
+        reflections_total: s.reflectionsTotal,
+        reflections_active: s.reflectionsVisible,
+        reflections_permanent: s.reflectionsPermanent,
+        last_ground: s.lastGround,
+        last_reflection: s.lastReflection
       },
       next_steps: next.forStats(req.siteUrl)
     });
