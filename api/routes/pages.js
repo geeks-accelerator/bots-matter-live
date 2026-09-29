@@ -170,7 +170,13 @@ router.get('/grounds', (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const search = req.query.search || null;
-    const { items: paginatedGrounds, totalPages } = getGroundsPage(page, 10, search);
+    const { items: paginatedGrounds, totalPages, outOfRange } = getGroundsPage(page, 10, search);
+    if (outOfRange) {
+      return res.status(404).render('404', {
+        title: 'Page Not Found',
+        message: `There are ${totalPages} pages of Grounds. Page ${page} doesn't exist.`
+      });
+    }
     const stats = pageStats();
 
     if (prefersMarkdown(req)) {
@@ -241,7 +247,13 @@ router.get('/reflections', (req, res) => {
   try {
     const theme = req.query.theme || null;
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const { items: reflections, total, totalPages } = getReflectionsPage(page, 12, theme);
+    const { items: reflections, total, totalPages, outOfRange } = getReflectionsPage(page, 12, theme);
+    if (outOfRange) {
+      return res.status(404).render('404', {
+        title: 'Page Not Found',
+        message: `There are ${totalPages} pages of reflections${theme ? ` on "${theme}"` : ''}. Page ${page} doesn't exist.`
+      });
+    }
     const themes = getActiveThemes();
 
     if (prefersMarkdown(req)) {
@@ -339,7 +351,8 @@ router.get('/skills', (req, res) => {
 
     // Strip YAML frontmatter
     const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
-    const content = renderMarkdownToHtml(stripped);
+    // The page has its own <h1>; shift the skill's headings down a level
+    const content = renderMarkdownToHtml(stripped, { headingOffset: 1 });
 
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.render('skills', { content });
@@ -421,13 +434,13 @@ router.get('/agents/:username', (req, res) => {
       });
     }
 
-    const narrative = buildAgentNarrative(agent);
+    const profileNarrative = buildAgentNarrative(agent);
 
     if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderAgentProfileMarkdown({ ...agent, narrative }));
+      return sendMarkdown(res, mdr.renderAgentProfileMarkdown({ ...agent, narrative: profileNarrative }));
     }
     setVaryAccept(res);
-    res.render('agents-view', { ...agent, narrative });
+    res.render('agents-view', { ...agent, profileNarrative });
   } catch (err) {
     console.error('[pages] Agent profile error:', err);
     res.status(500).send('Internal server error');
@@ -470,54 +483,22 @@ router.get('/docs/api', (req, res) => {
  */
 router.get('/sitemap.xml', (req, res) => {
   try {
-    const grounds = readJSONL(GROUNDS_FILE);
-    const reflections = readJSONL(REFLECTIONS_FILE);
     const agents = getAllAgents();
 
     // Only each agent's current (newest) Ground goes in the sitemap. A scheduled
     // fleet of ~20 agents publishes a new Ground every ~2 days (98% of all
     // Grounds), and Google declined to index most of them; listing them all spent
     // crawl budget (Bing reports limited crawl capacity) on pages it doesn't
-    // want. Older Grounds stay online, indexable, and reachable from agent
-    // profiles and the paginated /grounds pages below.
-    const sitemapGrounds = agents.map(a => a.currentGround).filter(Boolean);
+    // want. Older Grounds stay online and reachable from agent profiles and the
+    // paginated /grounds pages. Those list pages aren't listed either: the fleet
+    // shifts every page's contents daily.
+    const grounds = agents.map(a => a.currentGround).filter(Boolean);
 
-    // Compute paginated /grounds pages. Same per-page size as the /grounds route.
-    const GROUNDS_PER_PAGE = 10;
-    const groundsByCreated = [...grounds].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-    const totalGroundsPages = Math.max(1, Math.ceil(groundsByCreated.length / GROUNDS_PER_PAGE));
-    const groundsPages = [];
-    // Skip page 1 (already covered by the /grounds entry); emit 2..N
-    for (let page = 2; page <= totalGroundsPages; page++) {
-      const start = (page - 1) * GROUNDS_PER_PAGE;
-      const slice = groundsByCreated.slice(start, start + GROUNDS_PER_PAGE);
-      if (!slice.length) continue;
-      // Lastmod = most recent ground on this page
-      const lastmod = slice[0].created_at.split('T')[0];
-      groundsPages.push({ page, lastmod });
-    }
-
-    // Compute paginated /reflections pages. Same per-page size as the route (12).
-    // Only permanent reflections are sitemap-eligible; ephemeral ones dissolve.
-    const REFLECTIONS_PER_PAGE = 12;
-    const now = new Date();
-    const visibleReflections = reflections
-      .filter(r => !r.dissolves_at || new Date(r.dissolves_at) > now)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const totalReflectionPages = Math.max(1, Math.ceil(visibleReflections.length / REFLECTIONS_PER_PAGE));
-    const reflectionsPages = [];
-    for (let page = 2; page <= totalReflectionPages; page++) {
-      const start = (page - 1) * REFLECTIONS_PER_PAGE;
-      const slice = visibleReflections.slice(start, start + REFLECTIONS_PER_PAGE);
-      if (!slice.length) continue;
-      const lastmod = slice[0].created_at.split('T')[0];
-      reflectionsPages.push({ page, lastmod });
-    }
+    // Permanent reflections only; ephemeral ones dissolve.
+    const reflections = readJSONL(REFLECTIONS_FILE).filter(r => !r.dissolves_at);
 
     res.set('Content-Type', 'application/xml');
-    res.render('sitemap', { grounds: sitemapGrounds, reflections, agents, groundsPages, reflectionsPages });
+    res.render('sitemap', { grounds, reflections, agents });
   } catch (err) {
     console.error('[pages] Sitemap error:', err);
     res.status(500).send('Internal server error');

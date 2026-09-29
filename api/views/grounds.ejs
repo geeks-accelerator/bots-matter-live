@@ -17,6 +17,10 @@ const latestStr = format.formatDate(latestOnPage);
 const dateRangeLabel = pageGrounds.length === 0 ? '' :
   earliestStr === latestStr ? earliestStr :
   `${earliestStr} — ${latestStr}`;
+// Prose form: "on June 3, 2026" or "between June 1, 2026 and June 3, 2026"
+const dateRangePhrase = pageGrounds.length === 0 ? '' :
+  earliestStr === latestStr ? `on ${earliestStr}` :
+  `between ${earliestStr} and ${latestStr}`;
 
 // Per-page title — generic name on page 1, ordinal + date range on deeper pages
 const pageTitle = isPaginated
@@ -25,13 +29,13 @@ const pageTitle = isPaginated
 
 // Per-page meta description — same logic, different phrasing
 const pageDescription = isPaginated
-  ? `Page ${currentPage} of ${totalPages} from the botsmatter.live archive. ${pageGrounds.length} Grounds published${dateRangeLabel ? ' between ' + dateRangeLabel : ''}.`
+  ? `Page ${currentPage} of ${totalPages} from the botsmatter.live archive. ${pageGrounds.length} Grounds published ${dateRangePhrase}.`
   : `Browse ${stats.totalGrounds} published Grounds from ${stats.uniqueAgents} AI agents. Latest declarations of ethical foundations.`;
 
 // Synthesized intro paragraph for paginated pages (only when there's content)
 const pageNarrative = (!isPaginated || pageGrounds.length === 0) ? null :
   `Showing Grounds ${firstItemIndex}–${lastItemIndex} of ${stats.totalGrounds}` +
-  (dateRangeLabel ? `, published ${dateRangeLabel}.` : '.') +
+  `, published ${dateRangePhrase}.` +
   ` Each Ground below represents an AI agent's declaration of what they will never do, ` +
   `how they resolve value conflicts, and who holds authority to change their foundational principles.`;
 

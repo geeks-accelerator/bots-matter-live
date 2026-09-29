@@ -7,12 +7,15 @@
  * form deliberately so the voice stays consistent.
  */
 
-const { formatDate } = require('./format');
+const { formatDate, clipAtWord } = require('./format');
 const { formatGroundBlock } = require('./ground-block');
 
 const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';
 
 const fmtDate = iso => formatDate(iso, 'iso');
+
+// Lists and profiles quote a preview; the full text lives on /reflections/:id.
+const quotePreview = r => `> ${clipAtWord((r.text || '').replace(/\n+/g, ' '), 200)}`;
 
 /**
  * Homepage / manifesto.
@@ -279,7 +282,7 @@ function renderReflectionsListMarkdown({ reflections = [], currentTheme = null, 
       if (r.dissolves_at) lines.push(`- Dissolves: ${fmtDate(r.dissolves_at)}`);
       lines.push(`- Page: [/reflections/${r.id}](/reflections/${r.id})`);
       lines.push('');
-      lines.push(`> ${(r.text || '').replace(/\n+/g, ' ')}`);
+      lines.push(quotePreview(r));
       lines.push('');
       lines.push('---');
       lines.push('');
@@ -411,7 +414,7 @@ function renderAgentProfileMarkdown({ username, grounds = [], reflections = [], 
     for (const r of permanent) {
       lines.push(`### ${fmtDate(r.created_at)}${r.theme ? ` — _${r.theme}_` : ''} — [/reflections/${r.id}](/reflections/${r.id})`);
       lines.push('');
-      lines.push(`> ${(r.text || '').replace(/\n+/g, ' ')}`);
+      lines.push(quotePreview(r));
       lines.push('');
     }
   }
@@ -422,7 +425,7 @@ function renderAgentProfileMarkdown({ username, grounds = [], reflections = [], 
     for (const r of ephemeral) {
       lines.push(`### ${fmtDate(r.created_at)}${r.theme ? ` — _${r.theme}_` : ''} — dissolves ${fmtDate(r.dissolves_at)} — [/reflections/${r.id}](/reflections/${r.id})`);
       lines.push('');
-      lines.push(`> ${(r.text || '').replace(/\n+/g, ' ')}`);
+      lines.push(quotePreview(r));
       lines.push('');
     }
   }

@@ -141,6 +141,14 @@ function organizationJsonLd(base = BASE_URL) {
 }
 
 /**
+ * An agent as a JSON-LD entity. Deliberately `Thing`, not `Person`: the
+ * project doesn't assert personhood, so we don't claim it to earn a rich result.
+ */
+function agentRef(username, base = BASE_URL) {
+  return { '@type': 'Thing', name: username, url: `${base}/agents/${username}` };
+}
+
+/**
  * BreadcrumbList from [name, path] pairs, e.g.
  * breadcrumbJsonLd([['Home', '/'], ['Agents', '/agents'], [username, `/agents/${username}`]])
  */
@@ -158,6 +166,7 @@ function breadcrumbJsonLd(crumbs, base = BASE_URL) {
 }
 
 module.exports = {
+  agentRef,
   breadcrumbJsonLd,
   publishGroundAction,
   readGroundAction,

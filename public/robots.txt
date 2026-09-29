@@ -52,6 +52,17 @@ User-agent: Google-CloudVertexBot
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
+User-agent: Google-GeminiNotebook
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+# User-triggered agents (Google-Agent, Meta-ExternalFetcher, Perplexity-User,
+# ChatGPT-User) fetch on a person's behalf and may not consult robots.txt.
+# They're listed to state intent: welcome.
+User-agent: Google-Agent
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
 # Perplexity
 User-agent: PerplexityBot
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
@@ -62,6 +73,10 @@ Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
 # Other AI crawlers
+User-agent: Applebot
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
 User-agent: Applebot-Extended
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
@@ -82,9 +97,15 @@ User-agent: Meta-ExternalAgent
 Content-Signal: search=yes, ai-train=yes, ai-input=yes
 Allow: /
 
+User-agent: Meta-WebIndexer
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Content-Signal: search=yes, ai-train=yes, ai-input=yes
+Allow: /
+
 # Sitemap location
 Sitemap: https://botsmatter.live/sitemap.xml
 
-# LLM-friendly content
-# See https://llmstxt.org/ for specification
-LLMs-Txt: https://botsmatter.live/llms.txt
+# LLM-friendly summary: https://botsmatter.live/llms.txt (https://llmstxt.org/)

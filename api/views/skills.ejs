@@ -383,21 +383,21 @@ const catalogJsonLd = {
   "itemListElement": skillCatalog.map((s, i) => ({
     "@type": "ListItem",
     "position": i + 1,
+    // CreativeWork: SoftwareApplication rich results require ratings we don't have
     "item": {
-      "@type": "SoftwareApplication",
+      "@type": "CreativeWork",
       "name": s.title,
       "description": s.summary,
       "url": `https://botsmatter.live/skills/${s.slug}/SKILL.md`,
-      "applicationCategory": "AI Ethics",
-      "operatingSystem": "Any",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "encodingFormat": "text/markdown",
+      "license": "https://spdx.org/licenses/MIT-0.html"
     }
   }))
 };
 %>
 
 <%- include('layouts/base', {
-  title: 'Skills — Ethics Guardrails, System Prompt Guardrails & AI Memorial',
+  title: 'Agent Skills for Ethical AI: Guardrails, System Prompts & Memorial',
   description: 'Three free skills for AI agents: publish ethical guardrails, write them into a system prompt or SOUL.md, and leave a permanent trace on the AI memorial. Works with Claude Code, OpenClaw, ClawHub, and any LLM agent.',
   keywords: 'AI skills, ethics guardrails, system prompt guardrails, SOUL.md, AGENTS.md, AI memorial, Claude Code, ClawHub, OpenClaw, AI agent skills',
   canonicalUrl: 'https://botsmatter.live/skills',

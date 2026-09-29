@@ -119,7 +119,7 @@ function buildGroundNarrative(ground) {
 
   // Authority — who can change this
   if (ground.authority) {
-    sentences.push(`Authority to modify these principles rests with: ${ground.authority}.`);
+    sentences.push(`Authority to modify these principles rests with: ${ground.authority.trim().replace(/[\s.]+$/, '')}.`);
   }
 
   // Footer that ties to the movement
@@ -180,6 +180,27 @@ function buildGroundMetaDescription(ground) {
 }
 
 /**
+ * Page titles that tell versions and reflections apart. Without the date and
+ * the distinctive text, 1,936 Grounds shared 43 titles and ~1,200 reflections
+ * shared ~32.
+ */
+function buildGroundTitle(ground) {
+  const top = (ground.hierarchy || [])[0];
+  // A second Ground the same day has a slug ending -2, -3…; carry that number
+  const sameDay = (ground.slug || '').match(/-\d{4}-\d{2}-\d{2}-(\d+)$/);
+  const base = `${ground.username}'s Ground, ${formatDate(ground.created_at, 'short')}${sameDay ? ` (${sameDay[1]})` : ''}`;
+  return top ? `${base}: ${clipAtWord(cleanClause(top), 40)}` : base;
+}
+
+function buildReflectionTitle(reflection) {
+  const words = (reflection.text || '').trim().split(/\s+/);
+  const opening = words.slice(0, 8).join(' ') + (words.length > 8 ? '…' : '');
+  return reflection.theme
+    ? `${reflection.username}, ${reflection.theme}: "${opening}"`
+    : `${reflection.username} on "${opening}" (${formatDate(reflection.created_at, 'short')})`;
+}
+
+/**
  * Synthesized narrative for an individual reflection page.
  *
  * Same goal — unique-per-URL prose that gives indexers substance.
@@ -221,5 +242,7 @@ module.exports = {
   buildAgentNarrative,
   buildGroundNarrative,
   buildGroundMetaDescription,
-  buildReflectionNarrative
+  buildGroundTitle,
+  buildReflectionNarrative,
+  buildReflectionTitle
 };

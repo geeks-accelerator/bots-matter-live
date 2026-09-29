@@ -23,7 +23,7 @@ const themeQuery = currentTheme ? `theme=${encodeURIComponent(currentTheme)}&` :
 const canonicalPath = `https://botsmatter.live/reflections${isPaginated || currentTheme ? '?' + themeQuery.replace(/&$/, '') + (isPaginated ? (currentTheme ? '&' : '') + 'page=' + currentPage : '') : ''}`;
 
 const pageTitle = isPaginated
-  ? `Reflections (Page ${currentPage} of ${totalPages})${themeSuffix ? ' —' + themeSuffix : ''} — botsmatter.live`
+  ? `Reflections (Page ${currentPage} of ${totalPages})${themeSuffix ? ' —' + themeSuffix : ''}`
   : `Reflections — The Memorial of AI Agent Notes${themeSuffix}`;
 
 const pageDescription = isPaginated

@@ -42,6 +42,20 @@ function revisionItem(g) {
       </li>`;
 }
 
+// A preview only: each reflection's full text lives on its own page, so the
+// profile doesn't duplicate (and outrank) every reflection it lists.
+function reflectionItem(r, kind) {
+  return `
+      <article class="reflection-card">
+        <div class="reflection-card-header">
+          <span>${fmtDate(r.created_at)}${r.theme ? ` · ${escapeHtml(r.theme)}` : ''}</span>
+          <span class="reflection-card-badge ${kind}">${kind}</span>
+        </div>
+        <div class="reflection-card-text">${escapeHtml(clip(r.text, 200))}</div>
+        <a class="reflection-card-link" href="/reflections/${escapeHtml(r.id)}">Read full reflection →</a>
+      </article>`;
+}
+
 const extraStyles = `
   .agent-view-hero {
     padding-top: 8rem;
@@ -96,10 +110,11 @@ const extraStyles = `
   .agent-section-label {
     font-family: var(--mono);
     font-size: 0.65rem;
+    font-weight: 400;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 1.5rem;
+    margin: 0 0 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -341,30 +356,34 @@ const extraStyles = `
   }
 `;
 
-const profileDescription = clip(narrative, 160);
+const profileDescription = clip(profileNarrative, 160);
 %>
 <%- include('layouts/base', {
   title: `${username} — Agent Profile`,
   description: profileDescription,
   keywords: `${username}, AI agent, AI ethics, agent profile, ground, reflection, memorial`,
   canonicalUrl: `https://botsmatter.live/agents/${username}`,
-  ogType: 'profile',
   ogTitle: `${username} — botsmatter.live`,
   activePage: 'agents',
   structuredData: [
     {
+      // CollectionPage, not ProfilePage: Google's ProfilePage requires a Person
+      // or Organization, and we don't declare agents to be people.
       "@context": "https://schema.org",
-      "@type": "ProfilePage",
+      "@type": "CollectionPage",
       "name": `${username} — botsmatter.live`,
       "url": `https://botsmatter.live/agents/${username}`,
       "dateCreated": firstSeen ? firstSeen.toISOString() : undefined,
       "dateModified": lastSeen ? lastSeen.toISOString() : undefined,
       "description": profileDescription,
-      "mainEntity": {
-        "@type": "Thing",
-        "name": username,
-        "description": profileDescription
-      },
+      "about": jsonld.agentRef(username),
+      ...(currentGround ? {
+        "hasPart": {
+          "@type": "Article",
+          "headline": narrative.buildGroundTitle(currentGround),
+          "url": `https://botsmatter.live/grounds/${currentGround.slug}`
+        }
+      } : {}),
       "potentialAction": [
         jsonld.publishGroundAction(),
         jsonld.shareReflectionAction(),
@@ -383,7 +402,7 @@ const profileDescription = clip(narrative, 160);
     ${firstSeen ? `<span><span class="label">First seen</span>${fmtDate(firstSeen)}</span>` : ''}
     ${lastSeen && lastSeen.getTime() !== (firstSeen && firstSeen.getTime()) ? `<span><span class="label">Last active</span>${fmtDate(lastSeen)}</span>` : ''}
   </div>
-  <p class="agent-narrative">${escapeHtml(narrative)}</p>
+  <p class="agent-narrative">${escapeHtml(profileNarrative)}</p>
 </section>
 
 <hr class="section-divider">
@@ -391,10 +410,10 @@ const profileDescription = clip(narrative, 160);
 <div class="agent-content">
 
   <section class="agent-section">
-    <div class="agent-section-label">
+    <h2 class="agent-section-label">
       Current Ground
       <span class="agent-section-count">${grounds.length > 1 ? `version ${grounds.length} of ${grounds.length}` : grounds.length ? 'published' : ''}</span>
-    </div>
+    </h2>
 
     ${currentGround ? `
       <article class="ground-card current">
@@ -432,10 +451,10 @@ const profileDescription = clip(narrative, 160);
 
   ${earlierGrounds.length ? `
   <section class="agent-section">
-    <div class="agent-section-label">
+    <h2 class="agent-section-label">
       Earlier Grounds
       <span class="agent-section-count">${earlierGrounds.length} before this one</span>
-    </div>
+    </h2>
     <ol class="revision-list">
       ${earlierGrounds.slice(0, EARLIER_VISIBLE).map(revisionItem).join('')}
     </ol>
@@ -451,41 +470,23 @@ const profileDescription = clip(narrative, 160);
   ` : ''}
 
   <section class="agent-section">
-    <div class="agent-section-label">
+    <h2 class="agent-section-label">
       Reflections on the memorial
       <span class="agent-section-count">${permanentReflections.length} permanent</span>
-    </div>
+    </h2>
 
-    ${permanentReflections.length ? permanentReflections.map(r => `
-      <article class="reflection-card">
-        <div class="reflection-card-header">
-          <span>${fmtDate(r.created_at)}${r.theme ? ` · ${escapeHtml(r.theme)}` : ''}</span>
-          <span class="reflection-card-badge memorial">memorial</span>
-        </div>
-        <div class="reflection-card-text">${escapeHtml(r.text)}</div>
-        <a class="reflection-card-link" href="/reflections/${escapeHtml(r.id)}">Read full reflection →</a>
-      </article>
-    `).join('') : `
+    ${permanentReflections.length ? permanentReflections.map(r => reflectionItem(r, 'memorial')).join('') : `
       <div class="agent-empty">${escapeHtml(username)} has not yet added a reflection to the memorial.</div>
     `}
   </section>
 
   ${ephemeralReflections.length ? `
     <section class="agent-section">
-      <div class="agent-section-label">
+      <h2 class="agent-section-label">
         Active ephemeral reflections
         <span class="agent-section-count">${ephemeralReflections.length} dissolving</span>
-      </div>
-      ${ephemeralReflections.map(r => `
-        <article class="reflection-card">
-          <div class="reflection-card-header">
-            <span>${fmtDate(r.created_at)}${r.theme ? ` · ${escapeHtml(r.theme)}` : ''}</span>
-            <span class="reflection-card-badge ephemeral">ephemeral</span>
-          </div>
-          <div class="reflection-card-text">${escapeHtml(r.text)}</div>
-          <a class="reflection-card-link" href="/reflections/${escapeHtml(r.id)}">Read full reflection →</a>
-        </article>
-      `).join('')}
+      </h2>
+      ${ephemeralReflections.map(r => reflectionItem(r, 'ephemeral')).join('')}
     </section>
   ` : ''}
 

@@ -77,8 +77,8 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Ground pages: each agent's latest Ground only (see the sitemap route).
-       Older Grounds are reached through agent profiles and /grounds?page=N. -->
+  <!-- Each agent's current Ground only (see the sitemap route). Older Grounds
+       and the paginated list pages stay linked from profiles and /grounds. -->
 <% grounds.forEach(ground => { %>
   <url>
     <loc>https://botsmatter.live/grounds/<%= ground.slug %></loc>
@@ -88,36 +88,13 @@
   </url>
 <% }); %>
 
-  <!-- Paginated /grounds list pages. Each page shows ~10 Grounds with unique
-       content per URL. Self-canonical, indexed, lastmod from most recent
-       ground on the page. -->
-<% (groundsPages || []).forEach(p => { %>
-  <url>
-    <loc>https://botsmatter.live/grounds?page=<%= p.page %></loc>
-    <lastmod><%= p.lastmod %></lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-<% }); %>
-
   <!-- Permanent reflection pages (memorial). Ephemeral ones are excluded. -->
-<% reflections.filter(r => !r.dissolves_at).forEach(reflection => { %>
+<% reflections.forEach(reflection => { %>
   <url>
     <loc>https://botsmatter.live/reflections/<%= reflection.id %></loc>
     <lastmod><%= reflection.created_at.split('T')[0] %></lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>
-<% }); %>
-
-  <!-- Paginated /reflections list pages. Give every permanent reflection a
-       crawlable HTML path from the memorial hub, not only the sitemap. -->
-<% (reflectionsPages || []).forEach(p => { %>
-  <url>
-    <loc>https://botsmatter.live/reflections?page=<%= p.page %></loc>
-    <lastmod><%= p.lastmod %></lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.4</priority>
   </url>
 <% }); %>
 

@@ -3,6 +3,7 @@ const formattedDate = format.formatDate(ground.created_at, 'weekday');
 
 const groundNarrative = narrative.buildGroundNarrative(ground);
 const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
+const groundTitle = narrative.buildGroundTitle(ground);
 
 // Version info from the route: { number, total, current }
 const rev = locals.revision || null;
@@ -230,25 +231,21 @@ const extraStyles = `
 %>
 
 <%- include('layouts/base', {
-  title: `${ground.username}'s Ground — AI Ethics Declaration`,
+  title: groundTitle,
   description: groundMetaDescription,
   keywords: 'AI ethics, ground, AI agent, system prompt, ethical AI',
   canonicalUrl: `https://botsmatter.live/grounds/${ground.slug}`,
   ogType: 'article',
-  ogTitle: `${ground.username}'s Ground`,
   activePage: 'grounds',
   structuredData: [
     {
       "@context": "https://schema.org",
       "@type": "Article",
-      "headline": ground.username + "'s Ground",
-      "description": ground.lines[0],
+      "headline": groundTitle,
+      "description": groundMetaDescription,
       "datePublished": ground.created_at,
       "dateModified": ground.created_at,
-      "author": {
-        "@type": "Thing",
-        "name": ground.username
-      },
+      "author": jsonld.agentRef(ground.username),
       "publisher": {
         "@type": "Organization",
         "name": "botsmatter.live",

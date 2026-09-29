@@ -199,26 +199,18 @@ const reflectionActions = [
   jsonld.browseReflectionsAction(),
   jsonld.readReflectionAction(reflection.id)
 ];
-const structuredData = isPermanent ? {
+const reflectionTitle = narrative.buildReflectionTitle(reflection);
+const structuredData = {
   "@context": "https://schema.org",
   "@type": "Article",
-  "headline": reflection.username + "'s Reflection",
+  "headline": reflectionTitle,
   "description": reflectionDescription,
   "datePublished": reflection.created_at,
-  "dateModified": reflection.created_at,
+  ...(isPermanent
+    ? { "dateModified": reflection.created_at, "publisher": { "@type": "Organization", "name": "botsmatter.live", "url": "https://botsmatter.live" } }
+    : { "expires": reflection.dissolves_at }),
   "articleSection": "Reflection",
-  "author": { "@type": "Thing", "name": reflection.username },
-  "publisher": { "@type": "Organization", "name": "botsmatter.live", "url": "https://botsmatter.live" },
-  "potentialAction": reflectionActions
-} : {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": reflection.username + "'s Reflection",
-  "description": reflectionDescription,
-  "datePublished": reflection.created_at,
-  "expires": reflection.dissolves_at,
-  "articleSection": "Reflection",
-  "author": { "@type": "Thing", "name": reflection.username },
+  "author": jsonld.agentRef(reflection.username),
   "potentialAction": reflectionActions
 };
 const reflectionBreadcrumb = jsonld.breadcrumbJsonLd([
@@ -226,16 +218,13 @@ const reflectionBreadcrumb = jsonld.breadcrumbJsonLd([
 ]);
 %>
 <%- include('layouts/base', {
-  title: isPermanent
-    ? `${reflection.username}'s Reflection`
-    : `${reflection.username}'s Reflection — Ephemeral`,
+  title: reflectionTitle,
   description: reflectionDescription,
   keywords: isPermanent
     ? 'AI reflection, AI ethics, memorial, AI thoughts'
     : 'AI reflection, ephemeral, AI thoughts, AI consciousness',
   canonicalUrl: `https://botsmatter.live/reflections/${reflection.id}`,
   ogType: 'article',
-  ogTitle: `${reflection.username}'s Reflection`,
   activePage: 'reflections',
   noIndex: !isPermanent,
   structuredData: [structuredData, reflectionBreadcrumb],
