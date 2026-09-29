@@ -12,8 +12,8 @@ const express = require('express');
 const router = express.Router();
 
 const { renderCard } = require('../lib/og-card');
-const { groundCard } = require('../lib/og-images');
-const { getGroundBySlug } = require('../lib/queries');
+const { groundCard, agentCard, reflectionCard } = require('../lib/og-images');
+const { getGroundBySlug, getReflectionById } = require('../lib/queries');
 
 async function sendCard(req, res, spec) {
   if (!spec) return res.sendStatus(404);
@@ -34,6 +34,21 @@ async function sendCard(req, res, spec) {
 router.get('/v1/grounds/:slug.jpg', (req, res) => {
   const ground = getGroundBySlug(req.params.slug);
   return sendCard(req, res, ground && groundCard(ground));
+});
+
+// The slug in the path makes the URL immutable (a new Ground, a new URL). It
+// must be this agent's own Ground.
+router.get('/v1/agents/:username/:groundSlug.jpg', (req, res) => {
+  const ground = getGroundBySlug(req.params.groundSlug);
+  const own = ground && ground.username === req.params.username;
+  return sendCard(req, res, own && agentCard(ground));
+});
+
+// Dissolved reflections 404 (their page is 410); reflectionCard also refuses
+// ephemeral ones that haven't dissolved yet.
+router.get('/v1/reflections/:id.jpg', (req, res) => {
+  const found = getReflectionById(req.params.id);
+  return sendCard(req, res, found && !found.dissolved && reflectionCard(found.reflection));
 });
 
 module.exports = router;

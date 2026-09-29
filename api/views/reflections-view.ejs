@@ -200,11 +200,13 @@ const reflectionActions = [
   jsonld.readReflectionAction(reflection.id)
 ];
 const reflectionTitle = narrative.buildReflectionTitle(reflection);
+const reflectionOgImage = ogImages.forReflection(reflection);
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": reflectionTitle,
   "description": reflectionDescription,
+  "image": reflectionOgImage.url,
   "datePublished": reflection.created_at,
   ...(isPermanent
     ? { "dateModified": reflection.created_at, "publisher": { "@type": "Organization", "name": "botsmatter.live", "url": "https://botsmatter.live" } }
@@ -225,6 +227,7 @@ const reflectionBreadcrumb = jsonld.breadcrumbJsonLd([
     : 'AI reflection, ephemeral, AI thoughts, AI consciousness',
   canonicalUrl: `https://botsmatter.live/reflections/${reflection.id}`,
   ogType: 'article',
+  ogImage: reflectionOgImage,
   activePage: 'reflections',
   noIndex: !isPermanent,
   structuredData: [structuredData, reflectionBreadcrumb],

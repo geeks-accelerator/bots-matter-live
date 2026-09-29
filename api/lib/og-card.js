@@ -108,13 +108,13 @@ async function renderCard({ background, eyebrow, title, detail, date, italicTitl
           color: COLORS.accent, marginBottom: 24
         }, eyebrow.toUpperCase()),
         h('div', {
-          display: 'block', lineClamp: step.lines,
+          display: 'block', lineClamp: step.lines, wordBreak: 'break-word',
           fontFamily: 'Cormorant Garamond', fontWeight: 500,
           fontStyle: italicTitle ? 'italic' : 'normal',
           fontSize: step.size, lineHeight: 1.18, color: COLORS.text
         }, title),
         detail ? h('div', {
-          display: 'block', lineClamp: DETAIL_LINES, marginTop: 28,
+          display: 'block', lineClamp: DETAIL_LINES, wordBreak: 'break-word', marginTop: 28,
           fontFamily: 'DM Sans', fontSize: 22, lineHeight: 1.45, color: COLORS.muted
         }, detail) : null
       ].filter(Boolean)),

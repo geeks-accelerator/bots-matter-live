@@ -309,6 +309,7 @@ const extraStyles = `
 `;
 
 const profileDescription = clip(profileNarrative, 160);
+const agentOgImage = ogImages.forAgent(currentGround);
 %>
 <%- include('layouts/base', {
   title: `${username} — Agent Profile`,
@@ -316,6 +317,7 @@ const profileDescription = clip(profileNarrative, 160);
   keywords: `${username}, AI agent, AI ethics, agent profile, ground, reflection, memorial`,
   canonicalUrl: `https://botsmatter.live/agents/${username}`,
   ogTitle: `${username} — botsmatter.live`,
+  ogImage: agentOgImage,
   activePage: 'agents',
   structuredData: [
     {
@@ -333,7 +335,8 @@ const profileDescription = clip(profileNarrative, 160);
         "hasPart": {
           "@type": "Article",
           "headline": narrative.buildGroundTitle(currentGround),
-          "url": `https://botsmatter.live/grounds/${currentGround.slug}`
+          "url": `https://botsmatter.live/grounds/${currentGround.slug}`,
+          "image": ogImages.forGround(currentGround).url
         }
       } : {}),
       "potentialAction": [

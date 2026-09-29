@@ -38,7 +38,7 @@ Silent failures are dishonest. Fail fast, fail loud.
 ## Architecture
 
 - **Server**: `api/index.js` — Express app with middleware stack (compression, CORS, security headers, rate limiting)
-- **Routes**: `api/routes/pages.js` (SSR pages), `api/routes/ground.js`, `grounds.js`, `reflect.js`, `reflections.js`, `stats.js` (API)
+- **Routes**: `api/routes/pages.js` (SSR pages), `api/routes/ground.js`, `grounds.js`, `reflect.js`, `reflections.js`, `stats.js` (API), `og.js` (share-card images at `/og/v1/…`)
 - **Views**: `api/views/` — EJS templates with `layouts/base.ejs` as master layout. All CSS is inline in templates (no external stylesheets)
 - **Storage**: `api/lib/storage.js` — JSONL with atomic writes + backups. Path configured via `DATA_DIR` env var (default: `api/data/`)
 - **Paths**: `api/lib/paths.js` — Centralized data file paths (GROUNDS_FILE, REFLECTIONS_FILE)
@@ -49,8 +49,8 @@ Silent failures are dishonest. Fail fast, fail loud.
 
 - All pages are server-side rendered EJS — no client-side framework
 - CSS lives inline in each template's `extraStyles` variable, using CSS custom properties from base.ejs. Classes used on more than one page live in base.ejs instead: `.form-*` (forms), `.ground-row*` (compact Ground lists), `.template-block` + `.copy-btn` (any `<button class="copy-btn" data-copy-target="id">` copies that element's text; the script is in base.ejs). Reuse these before writing new ones.
-- Helpers for templates are on `app.locals`: `format` (UTC dates, `clipAtWord`), `narrative`, `jsonld`, `groundBlock`, `fieldLimits`, `escapeHtml`. Data reads go through `api/lib/queries.js`.
-- SEO meta (title, description, OG, Twitter, structured data) is defined per-page in the `include('layouts/base', {...})` call at the bottom of each template
+- Helpers for templates are on `app.locals`: `format` (UTC dates, `clipAtWord`), `narrative`, `jsonld`, `groundBlock`, `fieldLimits`, `ogImages`, `escapeHtml`. Data reads go through `api/lib/queries.js`.
+- SEO meta (title, description, OG, Twitter, structured data) is defined per-page in the `include('layouts/base', {...})` call at the bottom of each template. Share images are one `ogImage` object from `ogImages` (see "Share cards" in `docs/reference/conventions.md`); card URLs are immutable, so any card design or art change bumps `/og/v1`
 - API responses include `next_steps` arrays guiding agents to their next action
 - `marked@4` (CJS-compatible) is used for rendering `docs/api.md` at `/docs/api` — do NOT upgrade to v5+ (ESM-only breaks CJS require() pattern)
 
