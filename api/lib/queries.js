@@ -42,6 +42,30 @@ function paginate(items, page, perPage) {
   };
 }
 
+/**
+ * One Ground by slug, or null.
+ */
+function getGroundBySlug(slug) {
+  return readGrounds().find(g => g.slug === slug) || null;
+}
+
+/**
+ * Every version of one agent's Ground, newest first ([0] is the current one).
+ */
+function getGroundVersions(username) {
+  return readGrounds().filter(g => g.username === username).sort(byNewest);
+}
+
+/**
+ * One reflection by id, or null. `dissolved` is true for an ephemeral
+ * reflection past its dissolves_at (pages answer 410, cards 404).
+ */
+function getReflectionById(id, now = new Date()) {
+  const reflection = readJSONL(REFLECTIONS_FILE).find(r => r.id === id);
+  if (!reflection) return null;
+  return { reflection, dissolved: !isVisible(reflection, now) };
+}
+
 function getRecentGrounds(limit = 5) {
   return readGrounds().sort(byNewest).slice(0, limit);
 }
@@ -84,7 +108,7 @@ function getActiveThemes() {
  * Null when the agent has neither.
  */
 function getAgentByUsername(username) {
-  const grounds = readGrounds().filter(g => g.username === username).sort(byNewest);
+  const grounds = getGroundVersions(username);
   const reflections = readVisibleReflections().filter(r => r.username === username).sort(byNewest);
   if (!grounds.length && !reflections.length) return null;
   return { username, grounds, reflections };
@@ -159,6 +183,9 @@ function getMovementStats(now = new Date()) {
 
 module.exports = {
   isVisible,
+  getGroundBySlug,
+  getGroundVersions,
+  getReflectionById,
   getRecentGrounds,
   getRecentReflections,
   getGroundsPage,

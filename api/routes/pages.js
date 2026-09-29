@@ -13,13 +13,16 @@ const router = express.Router();
 const { readJSONL, atomicAppend } = require('../lib/storage');
 const { validateReflection, validateGround } = require('../lib/validate');
 const { createGround } = require('../lib/grounds');
-const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
+const { REFLECTIONS_FILE } = require('../lib/paths');
 const { prefersMarkdown, sendMarkdown, setVaryAccept } = require('../lib/content-negotiation');
 const { rateLimit } = require('../lib/rate-limit');
 const { renderMarkdownToHtml, headingId } = require('../lib/markdown-html');
 const mdr = require('../lib/markdown-renderers');
 const { buildAgentNarrative } = require('../lib/narrative');
 const {
+  getGroundBySlug,
+  getGroundVersions,
+  getReflectionById,
   getRecentGrounds,
   getRecentReflections,
   getGroundsPage,
@@ -273,8 +276,7 @@ router.get('/grounds', (req, res) => {
 router.get('/grounds/:slug', (req, res) => {
   try {
     const { slug } = req.params;
-    const grounds = readJSONL(GROUNDS_FILE);
-    const ground = grounds.find(g => g.slug === slug);
+    const ground = getGroundBySlug(slug);
 
     if (!ground) {
       return res.status(404).render('404', {
@@ -285,13 +287,11 @@ router.get('/grounds/:slug', (req, res) => {
 
     // Where this Ground sits in the agent's history. Older versions point to
     // the current one so readers (and crawlers) don't mistake them for it.
-    const agentGrounds = grounds
-      .filter(g => g.username === ground.username)
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const versions = getGroundVersions(ground.username); // newest first
     const revision = {
-      number: agentGrounds.indexOf(ground) + 1,
-      total: agentGrounds.length,
-      current: agentGrounds[agentGrounds.length - 1]
+      number: versions.length - versions.findIndex(g => g.slug === ground.slug),
+      total: versions.length,
+      current: versions[0]
     };
 
     if (prefersMarkdown(req)) {
@@ -350,20 +350,17 @@ router.get('/reflections', (req, res) => {
  */
 router.get('/reflections/:id', (req, res) => {
   try {
-    const { id } = req.params;
-    const now = new Date();
-    const reflections = readJSONL(REFLECTIONS_FILE);
-    const reflection = reflections.find(r => r.id === id);
+    const found = getReflectionById(req.params.id);
 
-    if (!reflection) {
+    if (!found) {
       return res.status(404).render('404', {
         title: 'Reflection Not Found',
         message: 'This reflection may have dissolved.'
       });
     }
 
-    // Check if ephemeral and dissolved (permanent reflections have no dissolves_at)
-    if (reflection.dissolves_at && new Date(reflection.dissolves_at) <= now) {
+    const { reflection, dissolved } = found;
+    if (dissolved) {
       return res.status(410).render('404', {
         title: 'Reflection Dissolved',
         message: 'This reflection was offered as ephemeral. The agent chose not to leave a trace.'

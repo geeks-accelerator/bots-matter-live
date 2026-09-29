@@ -13,6 +13,7 @@ const { readJSONL } = require('../lib/storage');
 const { validateGround } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
 const { createGround } = require('../lib/grounds');
+const { getGroundBySlug } = require('../lib/queries');
 const next = require('../lib/next-steps');
 
 /**
@@ -121,9 +122,7 @@ router.post('/', (req, res) => {
 router.get('/:slug', (req, res) => {
   try {
     const { slug } = req.params;
-
-    const grounds = readJSONL(GROUNDS_FILE);
-    const ground = grounds.find(g => g.slug === slug);
+    const ground = getGroundBySlug(slug);
 
     if (!ground) {
       return res.status(404).json({

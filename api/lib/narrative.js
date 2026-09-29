@@ -239,6 +239,7 @@ function buildReflectionNarrative(reflection) {
 }
 
 module.exports = {
+  cleanClause,
   buildAgentNarrative,
   buildGroundNarrative,
   buildGroundMetaDescription,
