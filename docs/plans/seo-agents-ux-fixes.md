@@ -1,7 +1,7 @@
 # SEO, Agent Discovery, and UX Fixes — Round 2
 
 **Created:** 2026-09-29 (revised the same day after a codebase audit)
-**Status:** Phases 0–3 implemented 2026-09-29 (commits b34819f, d23f46f, 0ceb5c0, 5c411fa). Phase 4 (owner actions: DNS record, test-data cleanup) pending. Phase 0 and Phase 1 each landed as one commit instead of two, because their changes shared files.
+**Status:** Phases 0–3 implemented 2026-09-29 (commits b34819f, d23f46f, 0ceb5c0, 5c411fa). Phase 4: test data removed from production 2026-09-29 (`test`, `test-agent-123`, `perm-check-probe`; backups and the removed lines kept in `/data` as `*.pre-cleanup-2026-09-29` and `removed-test-records-2026-09-29.txt`). `sandbox-agent` kept: it's a third-party skill-security scanner running our skills, not our test data. New AID DNS record added; the old `p=llms` record still needs deleting in Cloudflare. ethics-guardrails 1.1.1 published to ClawHub. Phase 0 and Phase 1 each landed as one commit instead of two, because their changes shared files.
 **Scope:** Phase 0 foundations (two live bugs + shared helpers), 11 fixes, and three builds (A: Ground form, B: OpenAPI + `.md` URLs, C: version-aware browsing). The remote MCP server (D) and noindexing old Ground versions are out of scope; see "Open decisions".
 **Origin:** A three-part audit on 2026-09-29 (technical SEO crawl of production, agent-discovery research against current specs, UI walkthrough + Search Console enhancement reports), followed by a codebase audit of every file this plan touches.
 
