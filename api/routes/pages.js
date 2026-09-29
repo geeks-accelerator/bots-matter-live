@@ -64,6 +64,10 @@ router.get('/browse', (req, res) => {
  * GET /reflect - Submission form for human reflections
  */
 router.get('/reflect', (req, res) => {
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderReflectFormMarkdown());
+  }
+  setVaryAccept(res);
   res.render('reflect', { previous: null, formErrors: null });
 });
 
@@ -323,7 +327,6 @@ router.get('/reflections/:id', (req, res) => {
 router.get('/skills/raw', (req, res) => {
   const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
   res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
   res.sendFile(skillPath, (err) => {
     if (err) {
@@ -378,7 +381,6 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
 
   const skillPath = path.join(__dirname, '../../skills', skill, 'SKILL.md');
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.sendFile(skillPath, (err) => {
     if (err) {

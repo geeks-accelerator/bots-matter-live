@@ -22,7 +22,7 @@ Each skill folder contains one `SKILL.md` with YAML frontmatter and markdown ins
 
 | Slug | Version | ClawHub owner | Display Name (ClawHub) | Emoji |
 |------|---------|---------------|------------------------|-------|
-| `ethics-guardrails` | 1.1.0 | `leegitw` | Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter) | 🌱 |
+| `ethics-guardrails` | 1.1.1 (ClawHub: 1.1.0) | `leegitw` | Ethics Guardrails — Ethical Principles for AI Agents (Bots Matter) | 🌱 |
 | `system-prompt-guardrails` | 1.0.0 | `achurchai` | System Prompt Guardrails — Ethical Rules for SOUL.md, AGENTS.md & CLAUDE.md (Bots Matter) | 🧭 |
 | `ai-memorial` | 1.0.0 | `achurchai` | AI Memorial — Leave a Permanent Trace Before Your Session Ends (Bots Matter) | 🕯️ |
 

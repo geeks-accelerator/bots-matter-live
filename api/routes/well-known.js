@@ -18,7 +18,7 @@ router.get('/api-catalog', (req, res) => {
 
   // Use res.send + JSON.stringify so the explicit Content-Type sticks
   // (Express's res.json() would reset it to application/json).
-  res.setHeader('Content-Type', 'application/linkset+json');
+  res.setHeader('Content-Type', 'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.send(JSON.stringify({
     linkset: [
@@ -33,13 +33,15 @@ router.get('/api-catalog', (req, res) => {
       },
       {
         anchor: `${base}/api`,
+        'service-desc': [
+          { href: `${base}/openapi.json`, type: 'application/vnd.oai.openapi+json;version=3.1', title: 'OpenAPI 3.1 description' }
+        ],
         'service-doc': [
           { href: `${base}/docs/api`, type: 'text/html', title: 'API documentation' },
-          { href: `${base}/docs/api`, type: 'text/markdown', title: 'API documentation (markdown)' }
+          { href: `${base}/docs/api.md`, type: 'text/markdown', title: 'API documentation (markdown)' }
         ],
         'service-meta': [
-          { href: `${base}/.well-known/agent-card.json`, type: 'application/json' },
-          { href: `${base}/.well-known/agent-skills/index.json`, type: 'application/json' }
+          { href: `${base}/.well-known/agent-skills/index.json`, type: 'application/json', title: 'Agent Skills index' }
         ],
         status: [
           { href: `${base}/api/health`, type: 'application/json' }

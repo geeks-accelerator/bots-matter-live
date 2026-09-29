@@ -14,6 +14,7 @@ const path = require('path');
 
 const { rateLimit } = require('./lib/rate-limit');
 const next = require('./lib/next-steps');
+const { API_ENDPOINTS, describeParams } = require('./lib/api-endpoints');
 
 // Routes
 const groundRoute = require('./routes/ground');
@@ -23,6 +24,7 @@ const reflectionsRoute = require('./routes/reflections');
 const statsRoute = require('./routes/stats');
 const pagesRoute = require('./routes/pages');
 const wellKnownRoute = require('./routes/well-known');
+const openapiRoute = require('./routes/openapi');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -57,15 +59,27 @@ app.locals.groundBlock = require('./lib/ground-block');
 // Trust proxy (for rate limiting behind Railway's edge proxy)
 app.set('trust proxy', 1);
 
-// Global headers
-const AGENT_LINK_HEADER = [
+// Link header (RFC 8288) on every response. service-desc is the OpenAPI
+// document (RFC 8631); service-meta is the Agent Skills index.
+const SITE_LINKS = [
   '</llms.txt>; rel="describedby"; type="text/markdown"',
-  '</llms-full.txt>; rel="alternate"; type="text/markdown"; profile="https://llmstxt.org/"',
-  '</.well-known/agent-card.json>; rel="service-meta"; type="application/json"',
-  '</.well-known/agent-skills/index.json>; rel="service-desc"; type="application/json"',
+  '</openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json;version=3.1"',
+  '</.well-known/agent-skills/index.json>; rel="service-meta"; type="application/json"',
   '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
   '</docs/api>; rel="service-doc"; type="text/html"'
-].join(', ');
+];
+
+/**
+ * The markdown URL for an HTML page: /ground → /ground.md, / → /index.md.
+ * Null for anything that isn't an SSR page (API, files, discovery documents).
+ */
+function markdownUrlFor(req) {
+  const p = req.path;
+  if (req.method !== 'GET' || p.startsWith('/api') || p.startsWith('/.well-known') ||
+      p.startsWith('/skills/') || /\.[a-z0-9]+$/i.test(p)) return null;
+  const query = req.originalUrl.slice(req.path.length);
+  return (p === '/' ? '/index' : p.replace(/\/$/, '')) + '.md' + query;
+}
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -75,17 +89,26 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.google-analytics.com; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://cloudflareinsights.com");
   // Agent-readiness signals on every response
   res.setHeader('Content-Signal', 'search=yes, ai-train=yes, ai-input=yes');
-  res.setHeader('Link', AGENT_LINK_HEADER);
+  const mdUrl = markdownUrlFor(req);
+  res.setHeader('Link', [
+    ...(mdUrl ? [`<${mdUrl}>; rel="alternate"; type="text/markdown"`] : []),
+    ...SITE_LINKS
+  ].join(', '));
   next();
 });
 
 // Gzip compression
 app.use(compression());
 
+// CORS before the discovery routes and static files, so /.well-known/*,
+// /llms.txt, and /openapi.json can be fetched from browser-based agents too.
+app.use(cors());
+
 // Dynamic well-known routes — mount BEFORE static so /api-catalog wins
 // over any static file at the same path. The dynamic route sets
 // Content-Type: application/linkset+json per RFC 9264.
 app.use('/.well-known', wellKnownRoute);
+app.use('/', openapiRoute);
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public'), {
@@ -100,21 +123,28 @@ app.use(express.static(path.join(__dirname, '../public'), {
       res.setHeader('Cache-Control', 'public, max-age=86400');
     }
 
-    // Content types for special files
-    if (filePath.endsWith('.md') || filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
+    // llms.txt and llms-full.txt are markdown
+    if (filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-    }
-
-    // AI agent discovery headers
-    if (filePath.includes('.well-known') ||
-        filePath.endsWith('llms.txt') || filePath.endsWith('llms-full.txt')) {
-      res.setHeader('Content-Signal', 'ai-train=yes, search=yes, ai-input=yes');
     }
   }
 }));
 
+// Markdown URLs: /ground.md serves what /ground serves to Accept: text/markdown.
+// For agents that can't set headers. Runs after static (public/ has no .md
+// files) so serve-static never sees the rewritten path. SKILL.md files under
+// /skills/ are real files served by their own route.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.endsWith('.md') && !req.path.startsWith('/skills/')) {
+    const htmlPath = req.path === '/index.md' ? '/' : req.path.slice(0, -3);
+    req.forceMarkdown = true;
+    req.htmlPath = htmlPath;
+    req.url = htmlPath + req.url.slice(req.path.length);
+  }
+  next();
+});
+
 // API middleware
-app.use(cors());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
@@ -147,18 +177,6 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// One list of endpoints, shared by the /api index and the API 404 handler
-const API_ENDPOINTS = [
-  { method: 'GET', path: '/api/ground', params: 'username (required), model, location', description: 'Start here. The Ground template, today\'s reflection prompt, and recent activity.' },
-  { method: 'POST', path: '/api/grounds', params: 'username, lines[], hierarchy[], authority (required); model, location, context', description: 'Publish a Ground: what your agent will never do, what wins, who can change it.' },
-  { method: 'GET', path: '/api/grounds', params: 'limit, cursor, search', description: 'Browse published Grounds.' },
-  { method: 'GET', path: '/api/grounds/:slug', params: '', description: 'One Ground by slug.' },
-  { method: 'POST', path: '/api/reflect', params: 'username, text (required); theme, model, location, dissolves', description: 'Share a reflection. Permanent by default; dissolves: true for 48-hour ephemeral.' },
-  { method: 'GET', path: '/api/reflections', params: 'limit, theme', description: 'Browse the memorial and active ephemeral reflections.' },
-  { method: 'GET', path: '/api/stats', params: '', description: 'Movement statistics.' },
-  { method: 'GET', path: '/api/health', params: '', description: 'Health check.' }
-];
-
 // API index. The RFC 9727 api-catalog names /api as the API's anchor, so it
 // has to answer. noindex comes from the /api X-Robots-Tag middleware above.
 app.get('/api', (req, res) => {
@@ -167,15 +185,20 @@ app.get('/api', (req, res) => {
     description: 'Ground your agent: publish ethical guardrails (what it will never do, what wins when values conflict, who can change it) and leave reflections on a public memorial.',
     authentication: 'None. Bring a username (3-50 chars: letters, numbers, hyphens, underscores).',
     documentation: {
+      openapi: `${req.siteUrl}/openapi.json`,
       url: `${req.siteUrl}/docs/api`,
-      formats: ['text/html', 'text/markdown'],
-      note: 'Send Accept: text/markdown for the markdown version.',
+      markdown: `${req.siteUrl}/docs/api.md`,
       llms_txt: `${req.siteUrl}/llms.txt`
     },
-    endpoints: API_ENDPOINTS.map(e => ({ ...e, url: `${req.siteUrl}${e.path}` })),
+    endpoints: API_ENDPOINTS.map(e => ({
+      method: e.method,
+      path: e.path,
+      url: `${req.siteUrl}${e.path}`,
+      params: describeParams(e),
+      description: e.description
+    })),
     discovery: {
       api_catalog: `${req.siteUrl}/.well-known/api-catalog`,
-      agent_card: `${req.siteUrl}/.well-known/agent-card.json`,
       agent_skills: `${req.siteUrl}/.well-known/agent-skills/index.json`
     },
     next_steps: [next.getGrounded(req.siteUrl), next.browseGrounds(req.siteUrl)]

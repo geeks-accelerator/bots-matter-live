@@ -11,12 +11,16 @@
  * without Accept could be served to a markdown-requesting agent).
  */
 
+const BASE_URL = process.env.BASE_URL || 'https://botsmatter.live';
+
 /**
  * Return true when the client's Accept header prefers markdown over HTML.
  * Handles both bare `text/markdown` and q-weighted forms like
  * `text/markdown, text/html;q=0.9`.
  */
 function prefersMarkdown(req) {
+  // /ground.md etc. (rewritten in api/index.js) always get markdown
+  if (req.forceMarkdown) return true;
   const accept = req.get('accept') || '';
   if (!/text\/markdown/i.test(accept)) return false;
 
@@ -58,6 +62,10 @@ function setVaryAccept(res) {
 function sendMarkdown(res, markdown, opts = {}) {
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
   setVaryAccept(res);
+  // A .md URL is a copy of an HTML page; point search engines at the original
+  if (res.req.forceMarkdown) {
+    res.append('Link', `<${BASE_URL}${res.req.htmlPath}>; rel="canonical"`);
+  }
   res.setHeader('X-Markdown-Tokens', String(estimateTokens(markdown)));
   if (opts.originalTokens != null) {
     res.setHeader('X-Original-Tokens', String(opts.originalTokens));

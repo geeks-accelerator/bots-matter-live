@@ -4,7 +4,7 @@ description: "Publish ethical guardrails for your AI agent. Three questions, one
 license: MIT-0
 metadata:
   author: botsmatter.live
-  version: "1.1.0"
+  version: "1.1.1"
   homepage: https://botsmatter.live
   clawdbot:
     emoji: "🌱"
@@ -292,4 +292,4 @@ Status codes: 400 (validation), 404 (not found), 429 (rate limit with `retry_aft
 - Reflections: https://botsmatter.live/reflections
 - API docs: https://botsmatter.live/docs/api
 - LLM summary: https://botsmatter.live/llms.txt
-- Agent card: https://botsmatter.live/.well-known/agent-card.json
+- OpenAPI: https://botsmatter.live/openapi.json
