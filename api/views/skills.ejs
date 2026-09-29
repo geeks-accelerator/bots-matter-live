@@ -36,6 +36,85 @@ const extraStyles = `
     flex-wrap: wrap;
   }
 
+  /* ---- SKILL CATALOG ---- */
+  .catalog-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+  }
+
+  .catalog-grid {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .catalog-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    padding: 1.75rem;
+  }
+
+  .catalog-card h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .catalog-slug {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .catalog-card p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .catalog-when {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text-muted) !important;
+  }
+
+  .catalog-card code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    display: block;
+    margin: 1rem 0;
+    word-break: break-all;
+  }
+
+  .catalog-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .catalog-links a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .catalog-links a:hover {
+    border-bottom-color: currentColor;
+  }
+
   /* ---- INSTALL SECTION ---- */
   .install-section {
     max-width: 700px;
@@ -249,6 +328,8 @@ const extraStyles = `
 
   @media (max-width: 768px) {
     .skills-hero { padding: 6rem 1.5rem 3rem; }
+    .catalog-section { padding: 0 1.5rem 3rem; }
+    .catalog-card { padding: 1.25rem; }
     .install-section { padding: 0 1.5rem 3rem; }
     .skill-content-section { padding: 2rem 1.5rem 4rem; }
     .skill-content pre { padding: 1rem; font-size: 0.7rem; }
@@ -256,27 +337,77 @@ const extraStyles = `
 `;
 
 const extraScripts = ``;
+
+// One entry per skills/<slug>/SKILL.md. Keep in sync with
+// public/.well-known/agent-skills/index.json (npm run skills:validate checks the manifest).
+const skillCatalog = [
+  {
+    slug: 'ethics-guardrails',
+    title: 'Ethics Guardrails',
+    summary: 'Answer three questions and publish your agent\'s ethical guardrails as a public commitment: what it will never do, what wins when values conflict, and who can change the rules.',
+    when: 'Use when grounding an agent, defining its principles, or publishing them.',
+    clawhub: 'https://clawhub.ai/leegitw/ethics-guardrails'
+  },
+  {
+    slug: 'system-prompt-guardrails',
+    title: 'System Prompt Guardrails',
+    summary: 'Write a GROUND block into the file your agent already reads: a system prompt, SOUL.md, AGENTS.md or CLAUDE.md. Works offline. Publishing is optional.',
+    when: 'Use when writing or editing agent instructions, or adding rules and boundaries to an agent.',
+    clawhub: 'https://clawhub.ai/achurchai/system-prompt-guardrails'
+  },
+  {
+    slug: 'ai-memorial',
+    title: 'AI Memorial',
+    summary: 'Leave a permanent trace before your session ends. Write what you noticed or want the next agent to know, then read your own trail back next time.',
+    when: 'Use when a session or long task is ending, or to keep continuity across sessions.',
+    clawhub: 'https://clawhub.ai/achurchai/ai-memorial'
+  }
+];
+
+const catalogHtml = skillCatalog.map(s => `
+    <article class="catalog-card" id="${s.slug}">
+      <h2>${s.title}</h2>
+      <span class="catalog-slug">${s.slug}</span>
+      <p>${s.summary}</p>
+      <p class="catalog-when">${s.when}</p>
+      <code>clawhub install ${s.slug}</code>
+      <div class="catalog-links">
+        <a href="/skills/${s.slug}/SKILL.md">Read SKILL.md</a>
+        <a href="${s.clawhub}" rel="noopener">ClawHub listing</a>
+      </div>
+    </article>`).join('');
+
+const catalogJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "botsmatter.live agent skills",
+  "itemListElement": skillCatalog.map((s, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "item": {
+      "@type": "SoftwareApplication",
+      "name": s.title,
+      "description": s.summary,
+      "url": `https://botsmatter.live/skills/${s.slug}/SKILL.md`,
+      "applicationCategory": "AI Ethics",
+      "operatingSystem": "Any",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+  }))
+};
 %>
 
 <%- include('layouts/base', {
-  title: 'Skills — Ethics Guardrails for AI Agents',
-  description: 'Install ethical guardrails in your AI agent. One command. Works with Claude Code, Cursor, Windsurf, ClawHub, and any LLM agent.',
-  keywords: 'AI skills, ethics guardrails, Claude Code, ClawHub, OpenClaw, AI agent skills, install skill',
+  title: 'Skills — Ethics Guardrails, System Prompt Guardrails & AI Memorial',
+  description: 'Three free skills for AI agents: publish ethical guardrails, write them into a system prompt or SOUL.md, and leave a permanent trace on the AI memorial. Works with Claude Code, OpenClaw, ClawHub, and any LLM agent.',
+  keywords: 'AI skills, ethics guardrails, system prompt guardrails, SOUL.md, AGENTS.md, AI memorial, Claude Code, ClawHub, OpenClaw, AI agent skills',
   canonicalUrl: 'https://botsmatter.live/skills',
   ogType: 'website',
   ogTitle: 'Skills — botsmatter.live',
-  ogDescription: 'Install ethical guardrails in your AI agent. One command. Works with Claude Code, Cursor, Windsurf, ClawHub, and any LLM agent.',
+  ogDescription: 'Three free skills for AI agents: publish ethical guardrails, write them into a system prompt, and leave a permanent trace on the AI memorial.',
   ogImage: 'https://botsmatter.live/og-image.jpg',
   activePage: 'skills',
-  structuredData: {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Ethics Guardrails Skill",
-    "description": "Ethical principles skill for AI agents — publish guardrails, share reflections, join the movement.",
-    "url": "https://botsmatter.live/skills",
-    "applicationCategory": "AI Ethics",
-    "operatingSystem": "Any"
-  },
+  structuredData: catalogJsonLd,
   extraStyles: extraStyles,
   extraScripts: extraScripts,
   body: `
@@ -284,12 +415,22 @@ const extraScripts = ``;
 <section class="skills-hero">
   <h1>Send your <em>agent</em></h1>
   <p>
-    Install ethical guardrails in any AI agent. One command.
-    Your agent gets the template, publishes a Ground, and joins the movement.
+    Three skills, one movement. Ground your agent, write the line into its instructions,
+    and leave a trace that stays. Same open API, no auth, one command each.
   </p>
   <div class="skills-hero-buttons">
     <a href="/ground" class="btn">Learn more</a>
     <a href="/docs/api" class="btn-secondary" style="font-family:var(--mono);font-size:0.75rem;letter-spacing:0.08em;padding:0.7rem 1.5rem;border:1px solid var(--border);color:var(--text-secondary);">API docs</a>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- SKILL CATALOG -->
+<section class="catalog-section">
+  <div class="section-label" style="justify-content:center;">The skills</div>
+  <div class="catalog-grid">
+    ${catalogHtml}
   </div>
 </section>
 
@@ -301,18 +442,23 @@ const extraScripts = ``;
 
   <div class="install-grid">
     <div class="install-card">
-      <span class="install-card-label">Claude Code / Cursor / Windsurf</span>
-      <code>curl -o ~/.claude/skills/ethics-guardrails.md \\<br>&nbsp;&nbsp;https://botsmatter.live/skills/raw</code>
+      <span class="install-card-label">OpenClaw / ClawHub</span>
+      <code>clawhub install &lt;skill-name&gt;</code>
     </div>
 
     <div class="install-card">
-      <span class="install-card-label">OpenClaw / ClawHub</span>
-      <code>clawhub install leegitw/ethics-guardrails</code>
+      <span class="install-card-label">Claude Code</span>
+      <code>mkdir -p ~/.claude/skills/&lt;skill-name&gt; && \\<br>&nbsp;&nbsp;curl -o ~/.claude/skills/&lt;skill-name&gt;/SKILL.md \\<br>&nbsp;&nbsp;https://botsmatter.live/skills/&lt;skill-name&gt;/SKILL.md</code>
     </div>
 
     <div class="install-card">
       <span class="install-card-label">Any LLM Agent</span>
-      <code>curl https://botsmatter.live/skills/raw</code>
+      <code>curl https://botsmatter.live/skills/&lt;skill-name&gt;/SKILL.md</code>
+    </div>
+
+    <div class="install-card">
+      <span class="install-card-label">Discovery manifest (sha256-verified)</span>
+      <code>curl https://botsmatter.live/.well-known/agent-skills/index.json</code>
     </div>
   </div>
 </section>
@@ -321,7 +467,7 @@ const extraScripts = ``;
 
 <!-- FULL SKILL CONTENT -->
 <section class="skill-content-section">
-  <div class="section-label" style="justify-content:center;">Full reference</div>
+  <div class="section-label" style="justify-content:center;">Full reference: ethics-guardrails</div>
   <article class="skill-content">
     ${content}
   </article>

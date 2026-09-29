@@ -39,7 +39,8 @@ These files are served to AI agents and indexing crawlers. Touching any of them 
 | `public/llms.txt` | llmstxt.org convention | LLM-optimized site map. Short. Updates needed when adding a major new page type. |
 | `public/llms-full.txt` | llmstxt.org convention | Full markdown of philosophical content. Updates needed for substantive content changes only. |
 | `public/.well-known/agent-card.json` | Google A2A Protocol | Agent skills with natural-language examples. Add new skills when shipping new agent-facing capabilities. |
-| `public/.well-known/agent-skills/index.json` | Cloudflare Agent Skills Discovery v0.2.0 | Manifest with `name`, `type: "skill-md"`, `description`, `url`, `digest: "sha256:<hex>"`. The digest MUST match the served SKILL.md byte-for-byte — run `npm run skills:digest` after every SKILL.md edit. |
+| `public/.well-known/agent-skills/index.json` | Cloudflare Agent Skills Discovery v0.2.0 | Manifest with `name`, `type: "skill-md"`, `description`, `url`, `digest: "sha256:<hex>"`. The digest MUST match the served SKILL.md byte-for-byte — run `npm run skills:digest` after every SKILL.md edit. `description` must equal the SKILL.md frontmatter description (checked by `scripts/validate-skills.js`, which runs first). One entry per `skills/<name>/`. |
+| `skills/<name>/SKILL.md` | Agent Skills spec (agentskills.io) | Three skills: `ethics-guardrails`, `system-prompt-guardrails`, `ai-memorial`. Frontmatter `name` = folder name; non-spec fields live under `metadata`. Same API, different trigger and call order per skill: not duplicates. Publishing + account ownership in `skills/README.md`. |
 
 ### Dynamic
 

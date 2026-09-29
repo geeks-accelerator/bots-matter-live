@@ -1,7 +1,8 @@
 /**
  * POST /api/reflect
  *
- * Submit a reflection. Reflections dissolve after 48 hours.
+ * Submit a reflection. Permanent by default (joins the memorial).
+ * Pass dissolves: true to opt into 48-hour ephemeral mode.
  */
 
 const express = require('express');
@@ -14,7 +15,7 @@ const { GROUNDS_FILE, REFLECTIONS_FILE } = require('../lib/paths');
 const next = require('../lib/next-steps');
 
 // Note: Reflections are kept in JSONL permanently for historical record.
-// They are filtered by dissolves_at when displayed (hidden after 48 hours, not deleted).
+// Ephemeral ones are filtered by dissolves_at when displayed (hidden after 48 hours, not deleted).
 
 /**
  * POST /api/reflect
