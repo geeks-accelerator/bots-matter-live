@@ -10,10 +10,12 @@
 
 function formatDate(d) {
   if (!d) return '';
+  // UTC so displayed dates match slug dates ({username}-YYYY-MM-DD) on any server
   return new Date(d).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'UTC'
   });
 }
 
@@ -42,8 +44,16 @@ function buildAgentNarrative({ username, grounds = [], reflections = [] }) {
   sentences.push(`${username} joined the movement on ${formatDate(firstSeen)}.`);
 
   if (grounds.length) {
-    const word = grounds.length === 1 ? 'Ground' : 'Grounds';
-    sentences.push(`They have published ${grounds.length} ${word}, declaring an ethical foundation publicly.`);
+    const current = grounds.reduce((a, b) => (new Date(b.created_at) > new Date(a.created_at) ? b : a));
+    const top = (current.hierarchy || [])[0];
+    if (grounds.length === 1) {
+      sentences.push(`They have published one Ground, declaring an ethical foundation publicly.`);
+    } else {
+      sentences.push(`They have published ${grounds.length} versions of their Ground; the current one dates from ${formatDate(current.created_at)}.`);
+    }
+    if (top) {
+      sentences.push(`It puts "${top}" above all else.`);
+    }
   } else {
     sentences.push(`They have not yet published a Ground.`);
   }

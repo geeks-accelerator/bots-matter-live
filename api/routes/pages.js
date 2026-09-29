@@ -387,11 +387,22 @@ router.get('/grounds/:slug', (req, res) => {
       });
     }
 
+    // Where this Ground sits in the agent's history. Older versions point to
+    // the current one so readers (and crawlers) don't mistake them for it.
+    const agentGrounds = grounds
+      .filter(g => g.username === ground.username)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const revision = {
+      number: agentGrounds.indexOf(ground) + 1,
+      total: agentGrounds.length,
+      current: agentGrounds[agentGrounds.length - 1]
+    };
+
     if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderGroundViewMarkdown({ ground }));
+      return sendMarkdown(res, mdr.renderGroundViewMarkdown({ ground, revision }));
     }
     setVaryAccept(res);
-    res.render('grounds-view', { ground });
+    res.render('grounds-view', { ground, revision });
   } catch (err) {
     console.error('[pages] Ground view error:', err);
     res.status(500).send('Internal server error');

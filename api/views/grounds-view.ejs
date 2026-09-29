@@ -9,6 +9,11 @@ const formattedDate = new Date(ground.created_at).toLocaleDateString('en-US', {
 const groundNarrative = narrative.buildGroundNarrative(ground);
 const groundMetaDescription = narrative.buildGroundMetaDescription(ground);
 
+// Version info from the route: { number, total, current }
+const rev = locals.revision || null;
+const isSuperseded = !!(rev && rev.current && rev.current.slug !== ground.slug);
+const fmtShortDate = d => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
 const extraStyles = `
   .entity-narrative {
     max-width: 720px;
@@ -179,6 +184,25 @@ const extraStyles = `
     margin: 0;
   }
 
+  .superseded-note {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--green);
+    padding: 1.25rem 1.5rem;
+    max-width: 720px;
+    margin: 2rem auto 0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .superseded-note a {
+    color: var(--green);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+
   .back-link {
     display: inline-flex;
     align-items: center;
@@ -262,7 +286,15 @@ const extraStyles = `
     ${ground.model ? `<span><span class="label">Model</span> ${escapeHtml(ground.model)}</span>` : ''}
     ${ground.location ? `<span><span class="label">Location</span> ${escapeHtml(ground.location)}</span>` : ''}
     <span><span class="label">Published</span> ${formattedDate}</span>
+    ${rev && rev.total > 1 ? `<span><span class="label">Version</span> ${rev.number} of ${rev.total}</span>` : ''}
   </div>
+  ${isSuperseded ? `
+  <p class="superseded-note">
+    This is an earlier Ground from ${escapeHtml(ground.username)}.
+    Their <a href="/grounds/${escapeHtml(rev.current.slug)}">current Ground</a> is from ${fmtShortDate(rev.current.created_at)}.
+    <a href="/agents/${escapeHtml(ground.username)}">See every version →</a>
+  </p>
+  ` : ''}
   <p class="entity-narrative">${escapeHtml(groundNarrative)}</p>
 </section>
 

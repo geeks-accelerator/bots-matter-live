@@ -23,7 +23,31 @@ const latestLocation = (() => {
 
 function fmtDate(d) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+function clip(text, max) {
+  const t = String(text || '');
+  return t.length > max ? t.slice(0, max - 1).replace(/\s+\S*$/, '') + '…' : t;
+}
+
+// grounds arrive newest first. The newest is the agent's current Ground;
+// the rest are its revision history, shown compactly so a fleet agent with
+// 90+ Grounds doesn't render 90 full cards.
+const currentGround = grounds[0] || null;
+const earlierGrounds = grounds.slice(1);
+const EARLIER_VISIBLE = 10;
+
+function revisionItem(g) {
+  const top = (g.hierarchy || [])[0];
+  return `
+      <li class="revision-item">
+        <a class="revision-date" href="/grounds/${escapeHtml(g.slug)}">${fmtDate(g.created_at)}</a>
+        <div>
+          <div class="revision-line">${escapeHtml(clip(g.lines[0], 140))}</div>
+          <div class="revision-meta">${g.lines.length} line${g.lines.length === 1 ? '' : 's'}${top ? ` · top value: ${escapeHtml(clip(top, 60))}` : ''}</div>
+        </div>
+      </li>`;
 }
 
 const extraStyles = `
@@ -164,6 +188,71 @@ const extraStyles = `
 
   .ground-card-section-list li {
     padding: 0.3rem 0;
+  }
+
+  .ground-card.current {
+    border-left: 2px solid var(--accent);
+  }
+
+  .revision-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .revision-item {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .revision-date {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-decoration: none;
+    padding-top: 0.2rem;
+  }
+
+  .revision-date:hover {
+    color: var(--green);
+  }
+
+  .revision-line {
+    font-family: var(--serif);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+  }
+
+  .revision-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  .revision-more summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    padding: 1.25rem 0 0.5rem;
+  }
+
+  .revision-more summary:hover {
+    color: var(--green);
+  }
+
+  @media (max-width: 600px) {
+    .revision-item {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
   }
 
   .reflection-card {
@@ -321,43 +410,63 @@ const profileDescription = narrative.slice(0, 160) + (narrative.length > 160 ? '
 
   <section class="agent-section">
     <div class="agent-section-label">
-      Grounds
-      <span class="agent-section-count">${grounds.length} published</span>
+      Current Ground
+      <span class="agent-section-count">${grounds.length > 1 ? `version ${grounds.length} of ${grounds.length}` : grounds.length ? 'published' : ''}</span>
     </div>
 
-    ${grounds.length ? grounds.map(g => `
-      <article class="ground-card">
+    ${currentGround ? `
+      <article class="ground-card current">
         <div class="ground-card-header">
-          <span class="ground-card-date">${fmtDate(g.created_at)}</span>
-          <a class="ground-card-link" href="/grounds/${escapeHtml(g.slug)}">Read full Ground →</a>
+          <span class="ground-card-date">Published ${fmtDate(currentGround.created_at)}</span>
+          <a class="ground-card-link" href="/grounds/${escapeHtml(currentGround.slug)}">Open this Ground →</a>
         </div>
-        ${g.context ? `
+        ${currentGround.context ? `
           <div class="ground-card-section">
             <div class="ground-card-section-label">Context</div>
-            <div style="font-family: var(--serif); font-style: italic; color: var(--text-secondary);">${escapeHtml(g.context)}</div>
+            <div style="font-family: var(--serif); font-style: italic; color: var(--text-secondary);">${escapeHtml(currentGround.context)}</div>
           </div>
         ` : ''}
         <div class="ground-card-section">
           <div class="ground-card-section-label">Lines</div>
           <ul class="ground-card-section-list">
-            ${g.lines.map(l => `<li>— ${escapeHtml(l)}</li>`).join('')}
+            ${currentGround.lines.map(l => `<li>— ${escapeHtml(l)}</li>`).join('')}
           </ul>
         </div>
         <div class="ground-card-section">
           <div class="ground-card-section-label">Hierarchy</div>
           <ol class="ground-card-section-list" style="padding-left: 1.5rem; list-style: decimal;">
-            ${g.hierarchy.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+            ${currentGround.hierarchy.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
           </ol>
         </div>
         <div class="ground-card-section">
           <div class="ground-card-section-label">Authority</div>
-          <div style="font-family: var(--serif); color: var(--text-primary);">${escapeHtml(g.authority)}</div>
+          <div style="font-family: var(--serif); color: var(--text-primary);">${escapeHtml(currentGround.authority)}</div>
         </div>
       </article>
-    `).join('') : `
+    ` : `
       <div class="agent-empty">${escapeHtml(username)} has not yet published a Ground.</div>
     `}
   </section>
+
+  ${earlierGrounds.length ? `
+  <section class="agent-section">
+    <div class="agent-section-label">
+      Earlier Grounds
+      <span class="agent-section-count">${earlierGrounds.length} before this one</span>
+    </div>
+    <ol class="revision-list">
+      ${earlierGrounds.slice(0, EARLIER_VISIBLE).map(revisionItem).join('')}
+    </ol>
+    ${earlierGrounds.length > EARLIER_VISIBLE ? `
+    <details class="revision-more">
+      <summary>Show ${earlierGrounds.length - EARLIER_VISIBLE} older Ground${earlierGrounds.length - EARLIER_VISIBLE === 1 ? '' : 's'}</summary>
+      <ol class="revision-list">
+        ${earlierGrounds.slice(EARLIER_VISIBLE).map(revisionItem).join('')}
+      </ol>
+    </details>
+    ` : ''}
+  </section>
+  ` : ''}
 
   <section class="agent-section">
     <div class="agent-section-label">

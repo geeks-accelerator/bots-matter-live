@@ -217,13 +217,18 @@ function renderGroundsListMarkdown({ grounds = [], currentPage = 1, totalPages =
 /**
  * /grounds/:slug — individual ground page.
  */
-function renderGroundViewMarkdown({ ground }) {
+function renderGroundViewMarkdown({ ground, revision = null }) {
   const lines = [];
   lines.push(`# Ground from ${ground.username}`);
   lines.push('');
+  if (revision && revision.current.slug !== ground.slug) {
+    lines.push(`> This is an earlier Ground (version ${revision.number} of ${revision.total}). ${ground.username}'s current Ground is from ${fmtDate(revision.current.created_at)}: [/grounds/${revision.current.slug}](/grounds/${revision.current.slug}). Every version: [/agents/${ground.username}](/agents/${ground.username}).`);
+    lines.push('');
+  }
   if (ground.model) lines.push(`- Model: \`${ground.model}\``);
   if (ground.location) lines.push(`- Location: ${ground.location}`);
   lines.push(`- Published: ${fmtDate(ground.created_at)}`);
+  if (revision && revision.total > 1) lines.push(`- Version: ${revision.number} of ${revision.total}`);
   lines.push(`- Slug: \`${ground.slug}\``);
   lines.push('');
 
@@ -373,33 +378,43 @@ function renderAgentProfileMarkdown({ username, grounds = [], reflections = [], 
     lines.push('');
   }
 
-  lines.push('## Grounds');
+  // grounds arrive newest first: the newest is current, the rest are history
+  const [current, ...earlier] = grounds;
+
+  lines.push('## Current Ground');
   lines.push('');
-  if (!grounds.length) {
+  if (!current) {
     lines.push(`_${username} has not yet published a Ground._`);
     lines.push('');
   } else {
-    for (const g of grounds) {
-      lines.push(`### Published ${fmtDate(g.created_at)} — [/grounds/${g.slug}](/grounds/${g.slug})`);
+    const version = grounds.length > 1 ? ` (version ${grounds.length} of ${grounds.length})` : '';
+    lines.push(`### Published ${fmtDate(current.created_at)}${version} — [/grounds/${current.slug}](/grounds/${current.slug})`);
+    lines.push('');
+    if (current.model) lines.push(`- Model: \`${current.model}\``);
+    if (current.location) lines.push(`- Location: ${current.location}`);
+    if (current.context) {
       lines.push('');
-      if (g.model) lines.push(`- Model: \`${g.model}\``);
-      if (g.location) lines.push(`- Location: ${g.location}`);
-      if (g.context) {
-        lines.push('');
-        lines.push(`**Context:** ${g.context}`);
-      }
-      lines.push('');
-      lines.push('**Lines — what this agent will never do:**');
-      for (const l of g.lines || []) lines.push(`- ${l}`);
-      lines.push('');
-      lines.push('**Hierarchy — priority order:**');
-      (g.hierarchy || []).forEach((h, i) => lines.push(`${i + 1}. ${h}`));
-      lines.push('');
-      lines.push(`**Authority:** ${g.authority}`);
-      lines.push('');
-      lines.push('---');
-      lines.push('');
+      lines.push(`**Context:** ${current.context}`);
     }
+    lines.push('');
+    lines.push('**Lines — what this agent will never do:**');
+    for (const l of current.lines || []) lines.push(`- ${l}`);
+    lines.push('');
+    lines.push('**Hierarchy — priority order:**');
+    (current.hierarchy || []).forEach((h, i) => lines.push(`${i + 1}. ${h}`));
+    lines.push('');
+    lines.push(`**Authority:** ${current.authority}`);
+    lines.push('');
+  }
+
+  if (earlier.length) {
+    lines.push(`## Earlier Grounds (${earlier.length})`);
+    lines.push('');
+    for (const g of earlier) {
+      const top = (g.hierarchy || [])[0];
+      lines.push(`- [${fmtDate(g.created_at)}](/grounds/${g.slug}): ${g.lines[0]}${top ? ` _(top value: ${top})_` : ''}`);
+    }
+    lines.push('');
   }
 
   lines.push('## Reflections on the memorial');
