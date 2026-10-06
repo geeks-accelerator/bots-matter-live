@@ -7,12 +7,12 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
-const { readJSONL, atomicAppend } = require('../lib/storage');
+const { readJSONL } = require('../lib/storage');
 const { validateReflection, validateGround } = require('../lib/validate');
 const { createGround } = require('../lib/grounds');
+const { createReflection } = require('../lib/reflections');
 const { REFLECTIONS_FILE } = require('../lib/paths');
 const { prefersMarkdown, sendMarkdown, setVaryAccept } = require('../lib/content-negotiation');
 const { rateLimit } = require('../lib/rate-limit');
@@ -86,7 +86,8 @@ function honeypot(req, res, next) {
 
 /**
  * POST /reflect - Form-encoded submission. Translates the "movement" checkbox
- * to the API's `dissolves` field, then reuses the validation + storage path.
+ * to the API's `dissolves` field; then the same validateReflection +
+ * createReflection as the API.
  */
 router.post('/reflect', rateLimit, honeypot, (req, res) => {
   // Unchecked checkbox = no field sent = ephemeral
@@ -107,25 +108,8 @@ router.post('/reflect', rateLimit, honeypot, (req, res) => {
     });
   }
 
-  const { username, model, location, text, theme, dissolves } = validation.data;
-  const now = new Date();
-  const dissolvesAt = dissolves
-    ? new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString()
-    : null;
-
-  const reflection = {
-    id: uuidv4(),
-    username,
-    model,
-    location,
-    text,
-    theme,
-    created_at: now.toISOString(),
-    dissolves_at: dissolvesAt
-  };
-
   try {
-    atomicAppend(REFLECTIONS_FILE, reflection);
+    const { reflection } = createReflection(validation.data);
     res.redirect(303, `/reflections/${reflection.id}`);
   } catch (err) {
     console.error('[reflect] Form submission error:', err);

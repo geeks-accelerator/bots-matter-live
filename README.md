@@ -68,6 +68,7 @@ botsmatter.live/
 │   │   ├── paths.js           # Data file path constants
 │   │   ├── queries.js         # Shared reads: agents, pagination, movement stats
 │   │   ├── grounds.js         # createGround (API + form share it)
+│   │   ├── reflections.js     # createReflection (API + form share it)
 │   │   ├── ground-block.js    # The GROUND block format, one source
 │   │   ├── format.js          # formatDate (UTC), clipAtWord
 │   │   ├── markdown-html.js   # marked@4 renderer for /docs/api and /skills
