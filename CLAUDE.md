@@ -43,7 +43,7 @@ Silent failures are dishonest. Fail fast, fail loud.
 - **Storage**: `api/lib/storage.js` — JSONL with atomic writes + backups. Path configured via `DATA_DIR` env var (default: `api/data/`)
 - **Paths**: `api/lib/paths.js` — Centralized data file paths (GROUNDS_FILE, REFLECTIONS_FILE)
 - **Validation**: `api/lib/validate.js` — Input sanitization (username, text, arrays)
-- **Rate Limiting**: `api/lib/rate-limit.js` — In-memory, per-endpoint with path normalization
+- **Rate Limiting**: `api/lib/rate-limit.js` — In-memory, per-endpoint with path normalization, one counter per client keyed on Railway's `X-Real-IP` (never `req.ip`, which is a Railway hop; see "Rate limiting" in conventions.md)
 
 ## Key Conventions
 
@@ -72,13 +72,14 @@ Fonts: Cormorant Garamond (serif), IBM Plex Mono (mono), DM Sans (sans)
 cp .env.example .env   # only needed once
 npm install            # installs root + api deps via postinstall
 npm run dev            # runs on port 3001 with file watching
+npm run smoke          # read-only HTTP checks of every surface (pages, .md, API, cards, rate limits)
 ```
 
 Dev server config for Claude Preview: `.claude/launch.json`
 
 ## Deployment
 
-Railway auto-deploys on push to `main`. Production runs Node.js 20.
+Railway auto-deploys on push to `main`. Production runs Node.js 20. After a deploy, run `npm run smoke -- https://botsmatter.live`; it exits 1 on any failure.
 
 **Volume setup for persistent data:**
 1. In Railway dashboard, attach a Volume to the service

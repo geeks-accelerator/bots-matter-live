@@ -1,7 +1,7 @@
 # Dynamic OG Share Images
 
 **Created:** 2026-09-29 (revised the same day after a codebase audit)
-**Status:** Phases 0–3 implemented. After deploy: the Railway smoke test and the platform debuggers (see Verification)
+**Status:** Shipped 2026-09-29 (commits 70b3957, c965071, b8a4299, 358fd93) and verified in production: the native renderer loads on Railway, and every page type's tags and cards check out. On 2026-10-05, Satori moved to ^0.35 (an escaping advisory) and resvg stopped loading system fonts; see `dependency-security-updates.md`. The platform debugger checks (Facebook, LinkedIn, X/Slack/Discord) need a logged-in browser and are the owner's.
 **Scope:** Per-entity 1200×630 share cards for Grounds, agent profiles, and reflections, rendered on demand on the site's existing brand art; complete and honest `og:image` meta tags on every page.
 **Origin:** Two guides from sibling projects: news-community's `docs/guides/og-image-generation.md` (Satori, visibility gates, degraded renders, no rate limit because caching bounds load) and obviously-not's `docs/guides/dynamic-og-share-images.md` (pure renderer, known-slugs-only route, static override lane, descriptive tags, versioned URLs). This plan takes the obviously-not architecture and the news-community lessons that apply, fitted to this codebase.
 

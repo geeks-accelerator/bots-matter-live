@@ -183,7 +183,7 @@ For paginated views (currently only `/grounds?page=N`):
 - **Per-page meta description** — same logic.
 - **CollectionPage JSON-LD with `isPartOf`** — links each paginated page back to the unparameterized collection.
 - **Synthesized narrative** — "Showing Grounds X-Y of N, published between [date] and [date]…"
-- **Sitemap entries** — each paginated page registered separately with its own `<lastmod>` from the most recent item on the page.
+- **Not in the sitemap** — paginated pages stay online and linked, but their contents shift daily, so the sitemap leaves them out (see "Sitemap scope and the agent fleet"). Pages past the last one return 404.
 
 Search filter URLs (`?search=X`) are different — they ARE near-duplicates and should canonicalize back to the unparameterized URL. The current grounds search canonical does this correctly.
 

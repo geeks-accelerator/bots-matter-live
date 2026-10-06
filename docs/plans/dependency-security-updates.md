@@ -1,7 +1,10 @@
 # Dependency Security Updates
 
 **Created:** 2026-10-05 (revised the same day after a codebase audit)
-**Status:** Implemented 2026-10-05 as local commits (the plan, steps 0–3, and the query fix found during verification); push on request, then the post-deploy checks. Owner's decisions: commit the smoke script, drop the dead milestones.
+**Status:** Shipped and verified in production on 2026-10-05.
+- **Commits:** `bb9534b` (plan), `ccc705e` (smoke script), `c444719` (dependencies), `b99df9a` (`createReflection`), `7906a79` (first rate-limit attempt), `f9db99b` (query fix), `bda7e48` (logger fix and temporary diagnostic), `26cd3ec` (rate-limit fix, diagnostic removed).
+- **Owner's decisions:** commit the smoke script; drop the dead milestones.
+- **Still open:** a memory check a day after deploy, and confirming `createReflection()` on the first real reflection (none had arrived by the end of the day).
 **Scope:**
 1. Satori to ≥0.33.5.
 2. The Express 4 dependency chain.
@@ -198,12 +201,13 @@ The project has no test suite. `npm run smoke` (step 0) covers what's visible ov
 - `grep -rn "require('uuid')" api` finds nothing.
 - **Node versions:** the server starts and serves pages and cards on Node 20 if available locally (production runs 20.19.5); otherwise on Node 22, with the production check below covering 20.
 
-**After deploy:**
-- `npm run smoke -- https://botsmatter.live` passes and matches the pre-deploy baseline.
+**After deploy** (results from 2026-10-05 in brackets):
+- `npm run smoke -- https://botsmatter.live` passes and matches the pre-deploy baseline. [Passes: three runs, every check, including one counter per client (58→51, 49→42, 40→33). The baseline failed only that check.]
 - **Rate limits:**
-  - Twelve plain `GET /api/stats` requests decrement **one** counter by one each.
-  - Requests with a forged `X-Forwarded-For` or `X-Real-IP` header continue that same counter.
-- **Memory:** `railway ssh … ps -eo pid,etime,rss,args` and `cat /sys/fs/cgroup/memory.peak` stay near the current 122 MB RSS / 277 MB peak a day after the deploy.
+  - Twelve plain `GET /api/stats` requests decrement **one** counter by one each. [Yes, per address. IPv4 and IPv6 are two addresses, so two counters, each strictly decreasing.]
+  - Requests with a forged `X-Forwarded-For` or `X-Real-IP` header continue that same counter. [Yes. A forged `X-Real-IP` through Cloudflare, and a forged `X-Real-IP` plus `CF-Connecting-IP` sent straight to Railway, continued it: 119, 118, 117.]
+- **Memory:** `railway ssh … ps -eo pid,etime,rss,args` and `cat /sys/fs/cgroup/memory.peak` stay near the current 122 MB RSS / 277 MB peak a day after the deploy. [9 minutes after the first deploy: 162 MB RSS, 159 MB peak. The day-after check is still open.]
+- **Also checked:** cards that weren't cached yet rendered fresh as 200 JPEGs on Node 20 with Satori 0.35, the deploy logs showed no errors, and `?search[]=` / `?theme[a]=` return 200.
 
 ---
 

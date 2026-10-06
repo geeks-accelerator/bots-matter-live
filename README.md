@@ -105,6 +105,7 @@ botsmatter.live/
 │   ├── og-image.jpg           # Site share image + reflection card background (1200x630)
 │   ├── og-ground.jpg          # Ground share image + Ground/agent card background (1200x630)
 │   └── site.webmanifest       # PWA manifest
+├── scripts/                   # skills:validate, skills:digest, and smoke (read-only HTTP checks)
 ├── skills/                    # Agent Skills (agentskills.io spec), served at /skills/<name>/SKILL.md
 │   ├── ethics-guardrails/     # Publish a Ground (v1.1.0)
 │   ├── system-prompt-guardrails/ # Write the Ground into SOUL.md / AGENTS.md / CLAUDE.md (v1.0.0)
@@ -219,7 +220,7 @@ Background: see `docs/plans/agent-ready-enhancements.md` for the empirical scori
 
 - **XSS prevention** — All user data escaped at template output layer
 - **Path traversal** — Skill route validates with `[a-zA-Z0-9_-]` regex
-- **Rate limiting** — Per-endpoint limits with path normalization
+- **Rate limiting** — Per-endpoint limits with path normalization, one counter per client (Railway's `X-Real-IP`)
 - **Gzip compression** — ~74% response size reduction
 - **CSP headers** — Content Security Policy on all pages
 - **HSTS** — Strict Transport Security (1 year)
@@ -238,6 +239,8 @@ Background: see `docs/plans/agent-ready-enhancements.md` for the empirical scori
 cp .env.example .env
 npm install
 npm run dev
+npm run smoke                              # read-only checks against localhost:3001
+npm run smoke -- https://botsmatter.live   # ...or production, after a deploy
 ```
 
 The dev server runs on `http://localhost:3001` with file watching (auto-restarts on changes).
