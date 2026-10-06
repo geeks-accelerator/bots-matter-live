@@ -123,7 +123,9 @@ async function renderCard({ background, eyebrow, title, detail, date, italicTitl
   ]);
 
   const svg = await satori(card, { width: WIDTH, height: HEIGHT, fonts });
-  const image = new Resvg(svg, { fitTo: { mode: 'original' } }).render();
+  // Satori has already turned all text into paths, so resvg needs no fonts;
+  // by default it would load every system font on each render.
+  const image = new Resvg(svg, { fitTo: { mode: 'original' }, font: { loadSystemFonts: false } }).render();
   return jpeg.encode({ data: image.pixels, width: image.width, height: image.height }, JPEG_QUALITY).data;
 }
 

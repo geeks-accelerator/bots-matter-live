@@ -151,7 +151,7 @@ GET /og/v1/reflections/:id.jpg
 - `ground.ejs` and `ground-publish.ejs` use `ogImages.ground()`.
 
 ### Phase 2 — Renderer and Ground cards
-- Add `satori` (^0.32: 0.33 adds a HarfBuzz WASM dependency we don't need), `@resvg/resvg-js` and `jpeg-js` to `api/package.json`, with an `overrides` pin of `fflate` to 0.7.5 (satori's `@shuding/opentype.js` pulls 0.7.3, GHSA-px8p-9vwx-vf98); commit the four WOFF fonts and three OFL licences to `api/assets/fonts/`.
+- Add `satori` (shipped on ^0.32 to avoid 0.33's HarfBuzz WASM dependency; moved to ^0.35 on 2026-10-05 because versions before 0.33.5 don't properly escape some values in generated SVG, GHSA-wx4j-mvgx-mqwp), `@resvg/resvg-js` and `jpeg-js` to `api/package.json`, with an `overrides` pin of `fflate` to 0.7.5 (satori's `@shuding/opentype.js` pulls 0.7.3, GHSA-px8p-9vwx-vf98); commit the four WOFF fonts and three OFL licences to `api/assets/fonts/`.
 - `og-card.js`, `groundCard`, the Ground route, `forGround`; wire `grounds-view.ejs` and its Article `image`.
 - Render samples (a short line, the longest line in the data, a same-day `-2` version) and review them before continuing. **Measure** file size and render time.
 - **Measured** (production snapshot, 1,936 of 1,937 Grounds drawable; the one CJK Ground keeps the static image): 108–137 KB per card, ~175 ms per render warm, ~270 ms for the first (asset load).
@@ -159,7 +159,7 @@ GET /og/v1/reflections/:id.jpg
 
 ### Phase 3 — Agent and reflection cards
 - `agentCard`, `reflectionCard`, their routes and `forAgent` / `forReflection`; wire `agents-view.ejs` and `reflections-view.ejs` and their Article `image`.
-- **Measured** (production snapshot): 42 of 43 agents and 98 of 100 memorial reflections get cards (the rest have CJK or Persian text and keep static images). Agent cards ~100–113 KB, reflection cards ~60–85 KB, ~170 ms per render.
+- **Measured** (production snapshot): 42 of 43 agents and 98 of 100 memorial reflections in the snapshot get cards (the rest have CJK or Persian text and keep static images). The snapshot held only part of the reflections; against all of production on 2026-10-05, 1,271 of 1,282 memorial reflections (99.1%) get cards. Agent cards ~100–113 KB, reflection cards ~60–85 KB, ~170 ms per render.
 - Docs: a "Share cards" section in `docs/reference/conventions.md` (URL shapes, the `v` rule, never edit art in place, visibility rules, normalization and coverage fallback, how to add a card type); README tree (`api/assets/fonts/`) and discovery table; the CLAUDE.md helpers line gains `ogImages`.
 
 ---
