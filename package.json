@@ -8,7 +8,8 @@
     "start": "cd api && node index.js",
     "dev": "cd api && node --watch index.js",
     "skills:validate": "node scripts/validate-skills.js",
-    "skills:digest": "node scripts/validate-skills.js && node scripts/compute-skill-digests.js"
+    "skills:digest": "node scripts/validate-skills.js && node scripts/compute-skill-digests.js",
+    "smoke": "node scripts/smoke.js"
   },
   "engines": {
     "node": ">=20.0.0"
