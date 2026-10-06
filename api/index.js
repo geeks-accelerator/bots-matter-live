@@ -180,9 +180,11 @@ app.use('/api', rateLimit);
 // Request logging
 app.use('/api', (req, res, next) => {
   const start = Date.now();
+  // Read the path now: by 'finish', routing has rewritten req.path to "/".
+  const path = req.baseUrl + req.path;
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${path} ${res.statusCode} ${duration}ms`);
   });
   next();
 });
@@ -217,6 +219,19 @@ app.get('/api', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
+  // TEMPORARY diagnostic (docs/plans/dependency-security-updates.md): which
+  // address headers reach the app, to see why one client lands in two
+  // rate-limit counters. Remove in the fix that follows.
+  console.log('[ip-diag]', JSON.stringify({
+    url: req.originalUrl,
+    ip: req.ip,
+    ips: req.ips,
+    socket: req.socket.remoteAddress,
+    xff: req.get('x-forwarded-for') || null,
+    xRealIp: req.get('x-real-ip') || null,
+    cfConnectingIp: req.get('cf-connecting-ip') || null,
+    headerNames: Object.keys(req.headers).sort()
+  }));
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
