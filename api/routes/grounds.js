@@ -10,7 +10,7 @@ const express = require('express');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
-const { validateGround } = require('../lib/validate');
+const { validateGround, sanitizeText } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
 const { createGround } = require('../lib/grounds');
 const { getGroundBySlug } = require('../lib/queries');
@@ -23,8 +23,8 @@ const next = require('../lib/next-steps');
 router.get('/', (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const cursor = req.query.cursor || null;
-    const search = req.query.search ? req.query.search.toLowerCase() : null;
+    const cursor = sanitizeText(req.query.cursor) || null;
+    const search = sanitizeText(req.query.search).toLowerCase() || null;
 
     let grounds = readJSONL(GROUNDS_FILE);
 

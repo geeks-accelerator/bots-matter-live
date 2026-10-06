@@ -9,6 +9,7 @@ const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { REFLECTIONS_FILE } = require('../lib/paths');
+const { sanitizeText } = require('../lib/validate');
 const next = require('../lib/next-steps');
 
 /**
@@ -18,7 +19,7 @@ const next = require('../lib/next-steps');
 router.get('/', (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const theme = req.query.theme || null;
+    const theme = sanitizeText(req.query.theme) || null;
 
     const now = new Date();
     let reflections = readJSONL(REFLECTIONS_FILE);

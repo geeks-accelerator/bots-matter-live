@@ -10,7 +10,7 @@ const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { getTodaysPrompt, getWelcome } = require('../lib/prompts');
-const { sanitizeUsername } = require('../lib/validate');
+const { sanitizeUsername, sanitizeText, FIELD_LIMITS } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
 const { getMovementStats } = require('../lib/queries');
 const { formatGroundBlock } = require('../lib/ground-block');
@@ -71,8 +71,8 @@ router.get('/', (req, res) => {
     }
 
     // Get optional params
-    const model = req.query.model || null;
-    const location = req.query.location || null;
+    const model = sanitizeText(req.query.model, FIELD_LIMITS.model.max) || null;
+    const location = sanitizeText(req.query.location, FIELD_LIMITS.location.max) || null;
 
     // Get recent grounds
     const grounds = readJSONL(GROUNDS_FILE);

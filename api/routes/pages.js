@@ -10,7 +10,7 @@ const fs = require('fs');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
-const { validateReflection, validateGround } = require('../lib/validate');
+const { validateReflection, validateGround, sanitizeText } = require('../lib/validate');
 const { createGround } = require('../lib/grounds');
 const { createReflection } = require('../lib/reflections');
 const { REFLECTIONS_FILE } = require('../lib/paths');
@@ -212,7 +212,7 @@ router.get('/ground', (req, res) => {
 router.get('/grounds', (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const search = req.query.search || null;
+    const search = sanitizeText(req.query.search) || null;
     const { items: paginatedGrounds, totalPages, outOfRange } = getGroundsPage(page, 10, search);
     if (outOfRange) {
       return res.status(404).render('404', {
@@ -294,7 +294,7 @@ router.get('/grounds/:slug', (req, res) => {
  */
 router.get('/reflections', (req, res) => {
   try {
-    const theme = req.query.theme || null;
+    const theme = sanitizeText(req.query.theme) || null;
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const { items: reflections, total, totalPages, outOfRange } = getReflectionsPage(page, 12, theme);
     if (outOfRange) {

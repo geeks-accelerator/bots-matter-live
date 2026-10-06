@@ -1,7 +1,7 @@
 # Dependency Security Updates
 
 **Created:** 2026-10-05 (revised the same day after a codebase audit)
-**Status:** Approved 2026-10-05 with the owner's decisions: commit the smoke script, drop the dead milestones. Being implemented (local commits; push on request).
+**Status:** Implemented 2026-10-05 as local commits (the plan, steps 0–3, and the query fix found during verification); push on request, then the post-deploy checks. Owner's decisions: commit the smoke script, drop the dead milestones.
 **Scope:**
 1. Satori to ≥0.33.5.
 2. The Express 4 dependency chain.
@@ -172,6 +172,18 @@ The form posts (`POST /reflect`, `POST /ground/publish`) use the same limiter.
 4. Push when the owner asks. Then run the post-deploy checks below.
 
 ---
+
+## Found during verification
+
+Exercising step 1's query parsing (`qs` 6.16) against a production snapshot turned up a pre-existing bug. Production on the old dependencies does the same.
+
+- **The bug:** a `search` or `theme` parameter sent as an array or object (`?search[]=a`, `?theme[a]=b`) reached `.toLowerCase()` and returned a 500. That covered `/grounds`, `/reflections`, `GET /api/grounds` and `GET /api/reflections`.
+- **Fixed in its own commit:** every free-text query read (`search`, `theme`, `cursor`, and `/api/ground`'s echoed `model` and `location`) goes through the existing `sanitizeText()`, which already returns `''` for non-strings. Malformed values now count as "no filter"; real queries behave as before.
+
+**Follow-ups, not in this plan:**
+- `GET /api/grounds` and `GET /api/reflections` re-implement the list logic `queries.js` already has (`getGroundsPage`, `readVisibleReflections`, `matchesTheme`).
+- `GET /api/reflections` has no cursor (newest 100 only).
+- Both belong in one small plan: move the API lists onto `queries.js` and add the reflections cursor.
 
 ## Verification
 
