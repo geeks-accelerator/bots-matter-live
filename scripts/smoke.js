@@ -88,8 +88,8 @@ async function image(url, label) {
 }
 
 // One request on its own connection: fetch would reuse one keep-alive
-// connection, which reaches the origin through a single Cloudflare server and
-// so can't show a limiter that keys on Cloudflare's addresses.
+// connection, which takes a single path through Cloudflare and Railway and
+// so can't show a limiter that keys on a proxy's address.
 function freshConnectionHeaders(path) {
   const url = new URL(base + path);
   const lib = url.protocol === 'https:' ? require('https') : require('http');

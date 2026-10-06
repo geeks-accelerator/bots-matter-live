@@ -113,33 +113,29 @@ Express 4.22.3's own ranges (`path-to-regexp ~0.1.13`, `body-parser ~1.20.5`, `q
   - `POST /reflect` (the form) does `const { reflection } = createReflection(validation.data)` and redirects, like `/ground/publish`.
   - Remove `uuid` from `api/package.json`, and the unused `writeJSONL` import.
 
-### 4. Adjacent: the rate limiter keys on Cloudflare, not the client
+### 4. Adjacent: the rate limiter didn't key on the client
 
-Found while checking whether the `proxy-addr` advisory applies. `app.set('trust proxy', 1)` (`api/index.js:67`) dates from before Cloudflare sat in front of Railway. With one trusted hop, `req.ip` is the address Railway's proxy saw: a Cloudflare egress IP.
+Found while checking whether the `proxy-addr` advisory applies.
 
-**Evidence** (production, 2026-10-05, read-only `GET /api/stats` requests, limit 60/min):
-- Twelve plain requests from one client, all through the same Cloudflare location (GRU), landed in **two alternating counters**. One counted 56, 55, 54 … 48 while the other counted 57, 56, 55.
-- A request with a forged `X-Forwarded-For` continued an existing counter, so forging doesn't bypass the limit.
-- The site runs one instance (its JSONL volume can attach to only one), so the second counter isn't another replica.
+**Symptom** (production, 2026-10-05, read-only `GET /api/stats` requests, limit 60/min): twelve requests from one client landed in **two alternating counters**, one counting 56, 55 … 48 while the other counted 57, 56, 55.
+- **Not a second instance:** the service runs one replica (its JSONL volume allows only one).
+- **Not the client's network:** it had one stable IPv4 and one stable IPv6 address.
+- **Not routing:** every request went through the same Cloudflare location and Railway edge.
 
-**Effect:**
-- One client's requests spread across Cloudflare's egress addresses, multiplying its effective limit.
-- Unrelated clients that share an egress address share a counter, so they can throttle each other.
+**First diagnosis (wrong).** I assumed `req.ip` was a Cloudflare egress address and shipped `7906a79`, which trusted `CF-Connecting-IP` only when `req.ip` was in Cloudflare's published ranges. The smoke check still showed two counters after deploy. The change made nothing worse: it fell back to the old keying.
 
-The form posts (`POST /reflect`, `POST /ground/publish`) use the same limiter.
+**What a temporary diagnostic on `/api/health` showed** (`bda7e48`, removed in the fix):
+- `req.ip` was always one of Railway's two internal forwarding hops, `46.151.194.129` or `.130`, for every visitor. That's the two counters, and they were **shared by everyone**: one busy agent could push others into 429s.
+- `X-Forwarded-For` was `<Cloudflare egress>, <hop>`. Its first entry is what Railway's edge saw, not the client.
+- **`X-Real-IP` was the real client,** set by Railway's edge: the visitor behind Cloudflare (Railway reads `CF-Connecting-IP`), or the connecting address when Railway is reached directly. Forged `X-Real-IP` values were replaced on both paths.
+- **`CF-Connecting-IP` is forgeable:** a request sent straight to Railway's edge (69.46.46.77 answers our hostname, with an expired certificate a client can ignore) passed a forged value through. Through Cloudflare, a request carrying one is rejected with 403.
+- No Railway-provided domain is attached (`RAILWAY_PUBLIC_DOMAIN` is `www.botsmatter.live`; the default `*.up.railway.app` names return 404; confirmed in the Railway dashboard).
 
-**Change** (audit rows 6–8):
-- `rateLimit` keys on `CF-Connecting-IP` **only when the request came from Cloudflare**, meaning `req.ip` (the address Railway saw) is in Cloudflare's published ranges (cloudflare.com/ips-v4 and ips-v6, 15 IPv4 + 7 IPv6 blocks on 2026-10-05). Otherwise it keys on `req.ip`.
-  - The check uses Node's built-in `net.BlockList`, with no dependency.
-  - IPv4-mapped IPv6 forms (`::ffff:a.b.c.d`) are normalized first.
-  - The deprecated `req.connection.remoteAddress` fallback goes.
-- `rate-limit.js` exports only `rateLimit`, and its cleanup timer gets `.unref()`.
-- Update the comment at `app.set('trust proxy', 1)`. It now only covers the fallback for requests that reach Railway directly, since nothing else reads `req.ip`, `req.protocol` or `req.secure`.
-**Why not just trust `CF-Connecting-IP`** (checked 2026-10-05):
-- No Railway-provided domain is attached: `RAILWAY_PUBLIC_DOMAIN` is `www.botsmatter.live`, and `bots-matter-live-production.up.railway.app` returns Railway's 404.
-- But Railway's edge (69.46.46.77) serves `botsmatter.live` and `www.botsmatter.live` to anyone who connects to it directly: `200`, `server: railway-hikari`, no Cloudflare in the path. Its certificate for those names has expired, which a client can ignore.
-- So a request that skips Cloudflare could set any `CF-Connecting-IP` it likes. The Cloudflare-range check closes that: such requests are keyed by the address Railway saw, which is today's behaviour. The two direct test requests shared one counter (59, 58).
-- If Cloudflare adds ranges we don't list, requests from them fall back to today's per-edge keying. That's a degradation, not a hole.
+**Change (as shipped):**
+- `clientAddress()` is `req.get('x-real-ip') || req.ip`. The Cloudflare-range list and its `net.BlockList` code are deleted.
+- The deprecated `req.connection.remoteAddress` fallback is gone. `rate-limit.js` exports only `rateLimit`, and its cleanup timer is `.unref()`'d.
+- The `trust proxy` comment in `api/index.js` says what `req.ip` really is.
+- **Also fixed on the way:** the API request log printed every call as `GET /`, because it read `req.path` after routing had rewritten it. It now reads the path on arrival.
 
 **Side note for the owner (not in this plan):** because Railway's certificate for the custom domain has expired, Cloudflare must be connecting with SSL mode "Full" rather than "Full (strict)", which doesn't validate the origin certificate. That matches Railway's guidance for Cloudflare-proxied domains, but it's worth knowing.
 
@@ -165,7 +161,7 @@ The form posts (`POST /reflect`, `POST /ground/publish`) use the same limiter.
    - The dead milestone thresholds are deleted.
    - README's `api/lib/` tree gains the file.
 3. **Rate-limit client address** (audit rows 6–8):
-   - `rate-limit.js`: the `CF-Connecting-IP` key, a single export, `.unref()`.
+   - `rate-limit.js`: the client key (first `CF-Connecting-IP` from Cloudflare ranges, then Railway's `X-Real-IP`; see §4), a single export, `.unref()`.
    - The `trust proxy` comment is corrected.
    - `docs/api.md` "Rate Limits" wording.
    - The new "Rate limiting" section in `conventions.md`.
@@ -206,7 +202,7 @@ The project has no test suite. `npm run smoke` (step 0) covers what's visible ov
 - `npm run smoke -- https://botsmatter.live` passes and matches the pre-deploy baseline.
 - **Rate limits:**
   - Twelve plain `GET /api/stats` requests decrement **one** counter by one each.
-  - Requests with a forged `X-Forwarded-For` or `CF-Connecting-IP` header continue that same counter.
+  - Requests with a forged `X-Forwarded-For` or `X-Real-IP` header continue that same counter.
 - **Memory:** `railway ssh … ps -eo pid,etime,rss,args` and `cat /sys/fs/cgroup/memory.peak` stay near the current 122 MB RSS / 277 MB peak a day after the deploy.
 
 ---
@@ -227,8 +223,8 @@ The project has no test suite. `npm run smoke` (step 0) covers what's visible ov
 |---|---|
 | A transitive bump changes request parsing (`qs` 6.14 → 6.16, `body-parser`) | Semver minor and patch within Express 4's ranges. The local checks exercise JSON and form posts plus query strings (`?search=`, `?theme=`, `?cursor=`). |
 | Satori 0.35's HarfBuzz shaping changes a line break on some text | Compared on live cards and the stress card. Line clamps still bound the layout. |
-| `CF-Connecting-IP` can be forged when the origin is reached directly (it can be; see §4) | The header is trusted only when `req.ip` is a Cloudflare address. Direct requests are keyed by the address Railway saw. |
-| Cloudflare's published ranges change | Requests from unlisted ranges fall back to per-edge keying (today's behaviour). Re-check the two lists when touching the limiter. |
+| `CF-Connecting-IP` can be forged when the origin is reached directly (it can be; see §4) | Not used. The key is Railway's `X-Real-IP`, which Railway overwrites on every path. |
+| Railway changes how it sets `X-Real-IP` | `npm run smoke`'s one-counter check fails, as it did here. Re-run the §4 diagnostic. |
 | A behavioural difference between the two reflection paths gets lost when they're merged | `createReflection()` takes the shared part (record, ID, append, milestone), exactly as `createGround()` does. Each route keeps its own response: JSON with `recent_reflections` and `next_steps`, or the form's 303 redirect. Milestones and `isFirstReflection` are computed before the append (the `createGround` order), so their conditions shift by one; the local reflection checks compare the messages for a first, a later and an ephemeral reflection. |
 | `.unref()` lets the process exit while only the timer is pending | The HTTP server keeps the process alive; `.unref()` only stops the timer from blocking scripts that require `index.js`. |
 

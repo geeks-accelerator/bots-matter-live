@@ -7,8 +7,6 @@
  * Goal: Prevent abuse, not block legitimate agents.
  */
 
-const net = require('net');
-
 // Store: key -> { count, resetAt }
 const store = new Map();
 
@@ -23,30 +21,17 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000).unref();
 
-// Cloudflare's published ranges (cloudflare.com/ips-v4 and /ips-v6, checked
-// 2026-10-05). Traffic reaches Railway through Cloudflare, so req.ip (the
-// address Railway's proxy saw) is a Cloudflare egress address, shared by
-// many clients and different from request to request. Only then is
-// CF-Connecting-IP the real client: Railway's edge also answers our hostname
-// directly, and a request that skips Cloudflare could set that header itself.
-// An address missing from this list just falls back to per-address keying.
-const CLOUDFLARE = new net.BlockList();
-for (const cidr of [
-  '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18',
-  '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17',
-  '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
-  '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32',
-  '2a06:98c0::/29', '2c0f:f248::/32'
-]) {
-  const [address, prefix] = cidr.split('/');
-  CLOUDFLARE.addSubnet(address, Number(prefix), net.isIPv6(address) ? 'ipv6' : 'ipv4');
-}
-
+// Who the client is. Railway's edge sets X-Real-IP to the client's address
+// and replaces any value a client sends: behind Cloudflare it's the visitor
+// (Railway reads CF-Connecting-IP), and for a request that reaches Railway
+// directly it's the address that connected. req.ip is no use here: it's one
+// of Railway's internal forwarding hops, so keying on it put every visitor in
+// a couple of shared counters. CF-Connecting-IP isn't used either: a request
+// that skips Cloudflare can set it. (Measured in production 2026-10-05; see
+// "Rate limiting" in docs/reference/conventions.md.) Locally there's no
+// X-Real-IP, so req.ip applies.
 function clientAddress(req) {
-  const peer = (req.ip || '').replace(/^::ffff:/, '');
-  const family = net.isIP(peer);
-  const viaCloudflare = family !== 0 && CLOUDFLARE.check(peer, family === 6 ? 'ipv6' : 'ipv4');
-  return (viaCloudflare && req.get('cf-connecting-ip')) || peer || 'unknown';
+  return req.get('x-real-ip') || req.ip || 'unknown';
 }
 
 // Rate limits by METHOD:full-path. Page-route form posts share the same

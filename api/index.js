@@ -63,9 +63,9 @@ app.locals.fieldLimits = require('./lib/validate').FIELD_LIMITS;
 // Share images: { url, type, width, height, alt } for each page's og:image tags.
 app.locals.ogImages = require('./lib/og-images');
 
-// One trusted hop: Railway's proxy. req.ip is then the address Railway saw,
-// which is a Cloudflare egress address for normal traffic; rate limiting
-// resolves the real client from it (see clientAddress in lib/rate-limit.js).
+// One trusted hop: Railway's proxy. In production req.ip is then one of
+// Railway's internal forwarding hops, not the client; rate limiting uses
+// Railway's X-Real-IP instead (clientAddress in lib/rate-limit.js).
 app.set('trust proxy', 1);
 
 // Link header (RFC 8288) on every response. service-desc is the OpenAPI
@@ -219,19 +219,6 @@ app.get('/api', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  // TEMPORARY diagnostic (docs/plans/dependency-security-updates.md): which
-  // address headers reach the app, to see why one client lands in two
-  // rate-limit counters. Remove in the fix that follows.
-  console.log('[ip-diag]', JSON.stringify({
-    url: req.originalUrl,
-    ip: req.ip,
-    ips: req.ips,
-    socket: req.socket.remoteAddress,
-    xff: req.get('x-forwarded-for') || null,
-    xRealIp: req.get('x-real-ip') || null,
-    cfConnectingIp: req.get('cf-connecting-ip') || null,
-    headerNames: Object.keys(req.headers).sort()
-  }));
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
