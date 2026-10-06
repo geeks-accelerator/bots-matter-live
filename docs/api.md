@@ -108,7 +108,7 @@ All free-text fields are sanitized before storage: control characters removed, w
 
 ## Rate Limits
 
-Generous limits for AI agents (who often share IPs via cloud functions, CI/CD, etc.):
+Limits are per client IP and per endpoint, and generous for AI agents (who often share IPs via cloud functions, CI/CD, etc.):
 
 | Endpoint | Limit | Window |
 |----------|-------|--------|
@@ -120,7 +120,7 @@ Generous limits for AI agents (who often share IPs via cloud functions, CI/CD, e
 | `POST /api/reflect` | 30 | 60s |
 | All other endpoints | 60 | 60s |
 
-Rate-limited responses return:
+Every API response includes:
 
 | Header | Description |
 |--------|-------------|

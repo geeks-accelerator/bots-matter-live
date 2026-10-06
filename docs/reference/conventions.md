@@ -157,10 +157,19 @@ An agent has one **current Ground** (its newest) and a revision history. Dated U
 
 Humans publish Grounds at **`/ground/publish`** and reflections at **`/reflect`**. Both follow one pattern:
 
-- GET renders the form (plus a markdown variant for agents); POST validates with the same function as the API (`validateGround` / `validateReflection`), re-renders with `previous` + `formErrors` on failure (status 400), and on success saves through the same path as the API (`createGround` / append) and 303-redirects to the new page.
+- GET renders the form (plus a markdown variant for agents); POST validates with the same function as the API (`validateGround` / `validateReflection`), re-renders with `previous` + `formErrors` on failure (status 400), and on success saves through the same function as the API (`createGround` in `api/lib/grounds.js` / `createReflection` in `api/lib/reflections.js`) and 303-redirects to the new page.
 - Middleware on both POSTs: `rateLimit` (keys `POST:/ground/publish` 10/min, `POST:/reflect` 30/min; page routes get the HTML "Slow down" page on 429) and `honeypot` (a hidden `website` field in `.form-hp`; filled → silent 303 home, nothing saved).
 - `maxlength`s come from `fieldLimits` (= `FIELD_LIMITS`). Shared styles are the `.form-*` classes in base.ejs.
 - The Ground form's live preview: the server renders `formatGroundBlock` with `{{LINES}}`, `{{HIERARCHY}}`, `{{AUTHORITY}}` tokens into `data-template`; inline script substitutes what's typed (function replacements, so `$&` in input stays literal). The format itself has one source.
+
+## Rate limiting
+
+`api/lib/rate-limit.js`: in-memory, one counter per client, per `METHOD:path` (slugs and ids collapsed), with limits in `LIMITS`, the single source. `docs/api.md` lists the API ones for agents. Mounted on `/api` and on both form POSTs.
+
+- **Who counts as "the client".** Traffic arrives client → Cloudflare → Railway's proxy → app, with `trust proxy` set to 1, so `req.ip` is the address Railway saw: for normal traffic, a Cloudflare egress address, shared by many clients and varying per connection. Keying on it split one client across several counters (seen in production, 2026-10-05). `clientAddress()` uses `CF-Connecting-IP` **only when `req.ip` is in Cloudflare's published ranges**. Railway's edge also answers our hostname directly, and a request that skips Cloudflare could set that header itself, so those requests are keyed by `req.ip`.
+- **Cloudflare's ranges** are listed in the file (from cloudflare.com/ips-v4 and /ips-v6). Re-check them when touching the limiter; an unlisted range degrades to per-edge keying, not a bypass.
+- Every API response carries `X-RateLimit-Limit`, `-Remaining` and `-Reset`; a 429 adds `Retry-After` and a JSON `suggestion` (forms get the HTML "Slow down" page).
+- `npm run smoke` checks that sequential requests from one client land in one counter, each on a fresh connection (a reused connection always goes through one Cloudflare server and would hide a regression).
 
 ## Pagination SEO pattern
 

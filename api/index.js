@@ -63,7 +63,9 @@ app.locals.fieldLimits = require('./lib/validate').FIELD_LIMITS;
 // Share images: { url, type, width, height, alt } for each page's og:image tags.
 app.locals.ogImages = require('./lib/og-images');
 
-// Trust proxy (for rate limiting behind Railway's edge proxy)
+// One trusted hop: Railway's proxy. req.ip is then the address Railway saw,
+// which is a Cloudflare egress address for normal traffic; rate limiting
+// resolves the real client from it (see clientAddress in lib/rate-limit.js).
 app.set('trust proxy', 1);
 
 // Link header (RFC 8288) on every response. service-desc is the OpenAPI
