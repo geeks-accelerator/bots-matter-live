@@ -302,7 +302,9 @@ app.use((err, req, res, next) => {
         suggestion: `${advice} Every endpoint and what it takes: ${BASE_URL}/api.`
       });
     }
-    return res.status(err.status).render('404', { code: err.status, title, message: advice });
+    // A failed form post links back to its form (Back keeps what was typed).
+    const back = req.method === 'POST' ? req.originalUrl : null;
+    return res.status(err.status).render('404', { code: err.status, title, message: advice, back });
   }
 
   console.error(`[${new Date().toISOString()}] Error: ${request}`, err);

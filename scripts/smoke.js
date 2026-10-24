@@ -150,11 +150,10 @@ async function main() {
   await rateLimitCounter();
 
   // Entity pages and their share cards
-  const ground = (json(await get('/api/grounds?limit=1')).grounds || [])[0];
-  let groundCard = null;
+  const grounds = json(await get('/api/grounds?limit=20')).grounds || [];
+  const ground = grounds[0];
   if (ground) {
-    groundCard = await page(`/grounds/${ground.slug}`);
-    await image(groundCard, 'ground');
+    await image(await page(`/grounds/${ground.slug}`), 'ground');
     await image(await page(`/agents/${ground.username}`), 'agent');
     await markdown(`/grounds/${ground.slug}.md`);
   } else {
@@ -168,9 +167,15 @@ async function main() {
   }
   // Card routes, at the path the pages advertise (not this checkout's
   // constant, which can differ from the deployed one): an unknown slug 404s
-  // there, and each retired card path 301s to the live card.
-  if (groundCard && groundCard.includes('/grounds/')) {
-    const cardPath = new URL(groundCard).pathname;
+  // there, and each retired card path 301s to the live card. Any recent
+  // Ground with a card will do; one whose text the card fonts can't draw
+  // uses the static image instead.
+  let cardPath = null;
+  for (const g of grounds) {
+    const img = meta((await get(`/grounds/${g.slug}`)).text(), 'og:image');
+    if (img && img.includes('/grounds/')) { cardPath = new URL(img).pathname; break; }
+  }
+  if (cardPath) {
     const cardBase = cardPath.slice(0, cardPath.indexOf('/grounds/'));
     const noCard = await get(cardPath.replace(/[^/]+\.jpg$/, 'does-not-exist.jpg'));
     check(`unknown card 404 under ${cardBase}`, noCard.status === 404, `${noCard.status}`);
@@ -182,7 +187,7 @@ async function main() {
         `${r.status} ${r.headers.get('location') || ''}`);
     }
   } else {
-    skip('card routes', 'no Ground card to locate them');
+    skip('card routes', `none of the ${grounds.length} newest Grounds has a card`);
   }
 
   console.log(`\n${failures ? `${failures} failed` : 'all checks passed'}${skips ? `, ${skips} skipped` : ''}`);

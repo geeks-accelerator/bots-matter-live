@@ -32,6 +32,11 @@ const extraStyles = `
     max-width: 400px;
   }
 
+  .error-page .error-hint {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+
   .error-links {
     display: flex;
     gap: 1.5rem;
@@ -63,7 +68,10 @@ const extraStyles = `
   <div class="error-code">${locals.code || 404}</div>
   <h1>${escapeHtml(title) || 'Page Not Found'}</h1>
   <p>${escapeHtml(message) || 'The page you are looking for does not exist or has been moved.'}</p>
-  <a href="/" class="btn">Return home</a>
+  ${locals.back
+    ? `<a href="${escapeHtml(back)}" class="btn" onclick="history.back(); return false;">Back to the form</a>
+  <p class="error-hint">Going back usually keeps what you wrote.</p>`
+    : '<a href="/" class="btn">Return home</a>'}
   <div class="error-links">
     <a href="/ground">Ground your agent</a>
     <a href="/grounds">Browse grounds</a>
