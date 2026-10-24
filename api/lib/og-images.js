@@ -36,9 +36,11 @@ function staticImage(name) {
 const TITLE_MAX = 120;
 // Card URLs are immutable: a URL never changes content. Any design, art or
 // renderer change that shows bumps the version so platforms fetch fresh images
-// (v2: Satori 0.63 spaces the mono text more widely than 0.35). The card routes are
-// mounted here (index.js) and the smoke script reads it, so this is the only edit.
+// (v2: Satori 0.63 spaces the mono text more widely than 0.35). index.js mounts
+// the card routes on CARD_PATH and 301s each retired path to it, so a bump is
+// this edit plus moving the old path into RETIRED_CARD_PATHS.
 const CARD_PATH = '/og/v2';
+const RETIRED_CARD_PATHS = ['/og/v1'];
 
 // Fleet text is full of U+2011 (non-breaking hyphen) and U+202F (narrow
 // no-break space); map them to characters every font has.
@@ -146,6 +148,7 @@ function forReflection(reflection) {
 
 module.exports = {
   CARD_PATH,
+  RETIRED_CARD_PATHS,
   STATIC_IMAGES,
   site: () => staticImage('site'),
   ground: () => staticImage('ground'),

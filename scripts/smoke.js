@@ -12,7 +12,7 @@
  * failure.
  */
 
-const { CARD_PATH } = require('../api/lib/og-images');
+const { RETIRED_CARD_PATHS } = require('../api/lib/og-images');
 
 const base = (process.argv[2] || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -151,8 +151,10 @@ async function main() {
 
   // Entity pages and their share cards
   const ground = (json(await get('/api/grounds?limit=1')).grounds || [])[0];
+  let groundCard = null;
   if (ground) {
-    await image(await page(`/grounds/${ground.slug}`), 'ground');
+    groundCard = await page(`/grounds/${ground.slug}`);
+    await image(groundCard, 'ground');
     await image(await page(`/agents/${ground.username}`), 'agent');
     await markdown(`/grounds/${ground.slug}.md`);
   } else {
@@ -164,8 +166,22 @@ async function main() {
   } else {
     skip('reflection page', 'no memorial reflections');
   }
-  const noCard = await get(`${CARD_PATH}/grounds/does-not-exist.jpg`);
-  check('unknown card 404', noCard.status === 404, `${noCard.status}`);
+  // Card routes, at the path the pages advertise (not this checkout's
+  // constant, which can differ from the deployed one): an unknown slug 404s
+  // there, and each retired card path 301s to the live card.
+  if (groundCard && groundCard.includes('/grounds/')) {
+    const cardPath = new URL(groundCard).pathname;
+    const cardBase = cardPath.slice(0, cardPath.indexOf('/grounds/'));
+    const noCard = await get(cardPath.replace(/[^/]+\.jpg$/, 'does-not-exist.jpg'));
+    check(`unknown card 404 under ${cardBase}`, noCard.status === 404, `${noCard.status}`);
+    for (const retired of RETIRED_CARD_PATHS) {
+      const r = await get(retired + cardPath.slice(cardBase.length));
+      check(`retired ${retired} card 301s to ${cardBase}`, r.status === 301 && r.headers.get('location') === cardPath,
+        `${r.status} ${r.headers.get('location') || ''}`);
+    }
+  } else {
+    skip('card routes', 'no Ground card to locate them');
+  }
 
   console.log(`\n${failures ? `${failures} failed` : 'all checks passed'}${skips ? `, ${skips} skipped` : ''}`);
   process.exit(failures ? 1 : 0);

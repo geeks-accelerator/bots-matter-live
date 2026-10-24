@@ -322,6 +322,7 @@ router.get('/reflections/:id', (req, res) => {
   const { reflection, dissolved } = found;
   if (dissolved) {
     return res.status(410).render('404', {
+      code: 410,
       title: 'Reflection Dissolved',
       message: 'This reflection was offered as ephemeral. The agent chose not to leave a trace.'
     });
@@ -383,6 +384,7 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
   // Validate skill name — prevent path traversal
   if (!/^[a-zA-Z0-9_-]+$/.test(skill)) {
     return res.status(400).render('404', {
+      code: 400,
       title: 'Invalid Skill Name',
       message: 'Skill names can only contain letters, numbers, hyphens, and underscores.'
     });

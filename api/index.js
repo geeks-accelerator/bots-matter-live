@@ -15,7 +15,7 @@ const path = require('path');
 const { rateLimit } = require('./lib/rate-limit');
 const next = require('./lib/next-steps');
 const { API_ENDPOINTS, describeParams } = require('./lib/api-endpoints');
-const { CARD_PATH } = require('./lib/og-images');
+const { CARD_PATH, RETIRED_CARD_PATHS } = require('./lib/og-images');
 
 // Routes
 const groundRoute = require('./routes/ground');
@@ -114,19 +114,9 @@ app.use(compression());
 // /llms.txt, and /openapi.json can be fetched from browser-based agents too.
 app.use(cors());
 
-// Dynamic well-known routes — mount BEFORE static so /api-catalog wins
-// over any static file at the same path. The dynamic route sets
-// Content-Type: application/linkset+json per RFC 9264.
-app.use('/.well-known', wellKnownRoute);
-app.use('/', openapiRoute);
-app.use(CARD_PATH, ogRoute);    // share-card images (og:image)
-
-// Static files. dotfiles: 'allow' serves public/.well-known/ (the Agent
-// Skills index); Express 5 ignores dot-directories by default. Everything
-// in public/ is public by definition.
-app.use(express.static(path.join(__dirname, '../public'), {
+const PUBLIC_DIR = path.join(__dirname, '../public');
+const STATIC_OPTIONS = {
   index: false,
-  dotfiles: 'allow',
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
 
@@ -142,7 +132,21 @@ app.use(express.static(path.join(__dirname, '../public'), {
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
     }
   }
-}));
+};
+
+// Well-known routes: the dynamic ones first, so /api-catalog wins over any
+// static file at the same path (it sets Content-Type: application/linkset+json
+// per RFC 9264), then public/.well-known/ itself. Mounted on its own because
+// Express 5 ignores dot-directories in express.static; inside this mount the
+// paths have none, so no other dotfile in public/ is ever served.
+app.use('/.well-known', wellKnownRoute, express.static(path.join(PUBLIC_DIR, '.well-known'), STATIC_OPTIONS));
+app.use('/', openapiRoute);
+app.use(CARD_PATH, ogRoute);    // share-card images (og:image)
+// Earlier card versions redirect to the current one, so links shared before
+// a bump keep their image. A card URL is immutable; this one just moved.
+app.use(RETIRED_CARD_PATHS, (req, res) => res.redirect(301, CARD_PATH + req.path));
+
+app.use(express.static(PUBLIC_DIR, STATIC_OPTIONS));
 
 // Markdown URLs: /ground.md serves what /ground serves to Accept: text/markdown.
 // For agents that can't set headers. Runs after static (public/ has no .md
@@ -257,22 +261,33 @@ app.use((req, res) => {
   });
 });
 
+// What to tell a client about a request error, by body-parser's err.type.
+// Any other 4xx (Express 5's 400 for a malformed %-escape in a path, say)
+// gets the general advice.
+const REQUEST_ERRORS = {
+  'entity.parse.failed': { title: 'Unreadable Request', advice: "The body isn't valid JSON. Check the quotes and commas, and send Content-Type: application/json." },
+  'entity.too.large': { title: 'Too Long', advice: 'The body is over 100kb, far more than any Ground or reflection needs. Shorten it and send it again.' },
+  'encoding.unsupported': { title: 'Unreadable Request', advice: 'Send the body uncompressed, or compressed with gzip, deflate or br.' },
+  'charset.unsupported': { title: 'Unreadable Request', advice: 'Send the body as UTF-8.' }
+};
+const REQUEST_ERROR_DEFAULT = { title: 'Bad Request', advice: 'Check the address and what you sent, then try again.' };
+
 // Error handler for every route without its own reason to answer errors
-// (Express forwards both thrown errors and rejected promises here). Request
-// errors from the body parsers (malformed JSON, a body over 100kb, a bad
-// Content-Encoding) carry a 4xx status and a message safe to show: they're
-// the client's to fix, so they say so instead of claiming a server error.
+// (Express forwards both thrown errors and rejected promises here). 4xx
+// errors (from the body parsers or the router) carry a message safe to show:
+// they're the client's to fix, so they say so instead of claiming a server error.
 app.use((err, req, res, next) => {
   const request = `${req.method} ${req.originalUrl}`;
   if (err.status >= 400 && err.status < 500) {
     console.log(`[${new Date().toISOString()}] ${err.status} ${request}: ${err.message}`);
+    const { title, advice } = REQUEST_ERRORS[err.type] || REQUEST_ERROR_DEFAULT;
     if (req.path.startsWith('/api/')) {
       return res.status(err.status).json({
         error: err.message,
-        suggestion: `Send a JSON body (Content-Type: application/json) under 100kb. See the fields each endpoint takes at ${BASE_URL}/api.`
+        suggestion: `${advice} Every endpoint and what it takes: ${BASE_URL}/api.`
       });
     }
-    return res.status(err.status).render('404', { title: 'Bad Request', message: err.message });
+    return res.status(err.status).render('404', { code: err.status, title, message: advice });
   }
 
   console.error(`[${new Date().toISOString()}] Error: ${request}`, err);

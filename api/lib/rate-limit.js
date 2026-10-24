@@ -85,6 +85,7 @@ function rateLimit(req, res, next) {
     res.set('Retry-After', retryAfter);
     if (!fullPath.startsWith('/api')) {
       return res.status(429).render('404', {
+        code: 429,
         title: 'Slow down',
         message: `Too many submissions from here in a short time. Wait ${retryAfter} seconds and try again.`
       });
