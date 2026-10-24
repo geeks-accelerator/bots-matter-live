@@ -38,7 +38,7 @@ The patched versions are **26.12.1, 24.22.1 and 22.23.4**. End-of-life lines are
 
 | CVE | Severity | What it is | Reaches our code? |
 |---|---|---|---|
-| CVE-2026-111497 | high | Out-of-bounds write in the bundled Brotli decoder (crash, memory disclosure, possible RCE) when an app decompresses attacker-supplied Brotli with `node:zlib` | **Not today.** We never decode Brotli. `body-parser` inflates only `gzip` and `deflate` request bodies, and `compression` only *encodes* Brotli. |
+| CVE-2026-111497 | high | Out-of-bounds write in the bundled Brotli decoder (crash, memory disclosure, possible RCE) when an app decompresses attacker-supplied Brotli with `node:zlib` | **Not on Express 4, but yes on Express 5, until the 415 below.** `body-parser` 1.x inflated only `gzip` and `deflate`. body-parser 2, which comes with Express 5, also decodes `br` request bodies, so this was reachable on any unpatched Node. Production ran 26.11.1 with Express 5 for about six minutes (deployment `acaa857a`). Since the post-review fixes, a middleware answers `Content-Encoding: br` with 415 before any parser runs. `compression` only *encodes* Brotli. |
 | CVE-2026-105482 | high | `dns.resolve*()` / `dns.reverse()` truncate hostnames at a NUL byte | **No.** No DNS calls. |
 | CVE-2026-105483, CVE-2026-106069, CVE-2026-106072 | high, high, medium | TLS hostname checks fooled by fullwidth digits, leading-zero IPv4 and non-canonical IPv4 | **No.** No outbound TLS. `api/` has no `fetch`, `https.request` or `undici`. |
 | CVE-2026-105481 | medium | A reused keep-alive socket accepts a response from before the request | **No.** No outbound HTTP client. |

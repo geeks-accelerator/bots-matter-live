@@ -162,6 +162,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Brotli request bodies get a 415 before a parser can decode them: Node's
+// Brotli decoder has had a memory-safety flaw reachable this way
+// (CVE-2026-111497), and no body under 100kb needs it. gzip and deflate are
+// still accepted. The error goes through the shared handler like the
+// parsers' own encoding errors.
+app.use((req, res, next) => {
+  const encoding = (req.headers['content-encoding'] || '').toLowerCase();
+  if (!encoding.split(',').some(e => e.trim() === 'br')) return next();
+  const err = new Error(`unsupported content encoding "${encoding}"`);
+  err.status = 415;
+  err.type = 'encoding.unsupported';
+  next(err);
+});
+
 // API middleware
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
@@ -267,8 +281,9 @@ app.use((req, res) => {
 const REQUEST_ERRORS = {
   'entity.parse.failed': { title: 'Unreadable Request', advice: "The body isn't valid JSON. Check the quotes and commas, and send Content-Type: application/json." },
   'entity.too.large': { title: 'Too Long', advice: 'The body is over 100kb, far more than any Ground or reflection needs. Shorten it and send it again.' },
-  'encoding.unsupported': { title: 'Unreadable Request', advice: 'Send the body uncompressed, or compressed with gzip, deflate or br.' },
-  'charset.unsupported': { title: 'Unreadable Request', advice: 'Send the body as UTF-8.' }
+  'encoding.unsupported': { title: 'Unreadable Request', advice: 'Send the body uncompressed, or compressed with gzip or deflate.' },
+  'charset.unsupported': { title: 'Unreadable Request', advice: 'Send the body as UTF-8.' },
+  'parameters.too.many': { title: 'Too Many Fields', advice: 'The body has more than 1000 fields. Send only the fields the form or endpoint takes.' }
 };
 const REQUEST_ERROR_DEFAULT = { title: 'Bad Request', advice: 'Check the address and what you sent, then try again.' };
 

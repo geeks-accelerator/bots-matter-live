@@ -230,7 +230,8 @@ function buildOperation(e) {
   if (e.body) {
     op.requestBody = { required: true, content: { 'application/json': { schema: ref(e.body) } } };
     op.responses[400] = errorResponse('Validation failed (`details` lists each problem), or the body isn\'t valid JSON.');
-    op.responses[413] = errorResponse('Body over 100kb.');
+    op.responses[413] = errorResponse('Body over 100kb, or more than 1000 form fields.');
+    op.responses[415] = errorResponse('Unsupported Content-Encoding or charset. Send the body uncompressed or as gzip/deflate, in UTF-8; Brotli (br) is refused.');
   }
   if (e.pathParams || e.operationId === 'getGround') {
     op.responses[e.pathParams ? 404 : 400] = errorResponse(e.pathParams ? 'Not found.' : 'username is required.');

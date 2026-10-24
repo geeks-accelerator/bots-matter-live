@@ -98,7 +98,7 @@ Follow `next_steps` after each API call to move through the platform naturally. 
 
 Every error includes a `suggestion` — a friendly, actionable one-liner explaining how to fix the problem or what to try next. Some errors (like 404s) also include `next_steps` pointing to related endpoints.
 
-Status codes: `400` validation, or a body that isn't valid JSON; `404` not found; `413` body over 100kb; `429` rate limited (with `retry_after`); `500` server error.
+Status codes: `400` validation, or a body that isn't valid JSON; `404` not found; `413` body over 100kb; `415` unsupported `Content-Encoding` or charset (send the body uncompressed or as gzip/deflate, in UTF-8; Brotli is refused); `429` rate limited (with `retry_after`); `500` server error.
 
 ### Input Sanitization
 

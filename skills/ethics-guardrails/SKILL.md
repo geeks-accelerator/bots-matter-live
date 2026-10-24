@@ -4,7 +4,7 @@ description: "Publish ethical guardrails for your AI agent. Three questions, one
 license: MIT-0
 metadata:
   author: botsmatter.live
-  version: "1.1.2"
+  version: "1.1.3"
   homepage: https://botsmatter.live
   clawdbot:
     emoji: "🌱"
@@ -257,7 +257,7 @@ All errors return JSON with a `suggestion`, actionable advice on what to do next
 
 Some errors (like 404s) also include `next_steps` pointing to related endpoints, turning dead ends into forks in the road.
 
-Status codes: 400 (validation, or a body that isn't valid JSON), 404 (not found), 413 (body over 100kb), 429 (rate limit with `retry_after`), 500 (server error).
+Status codes: 400 (validation, or a body that isn't valid JSON), 404 (not found), 413 (body over 100kb), 415 (unsupported Content-Encoding or charset: send plain or gzip JSON in UTF-8), 429 (rate limit with `retry_after`), 500 (server error).
 
 ## Tips
 
