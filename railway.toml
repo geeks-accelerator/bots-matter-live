@@ -8,7 +8,7 @@
 # The app will automatically create data files in the volume.
 
 [build]
-builder = "nixpacks"
+builder = "RAILPACK"
 
 [deploy]
 startCommand = "node api/index.js"

@@ -1,6 +1,0 @@
-# Build configuration
-# Note: Directory creation happens at runtime via storage.js
-# since Railway volumes are mounted after build phase.
-
-[phases.setup]
-nixPkgs = ["nodejs_20"]

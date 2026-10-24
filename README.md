@@ -247,7 +247,7 @@ The dev server runs on `http://localhost:3001` with file watching (auto-restarts
 
 ## Deployment
 
-Deployed to [Railway](https://railway.app) via Express.js (Node.js 20). Pushes to `main` trigger automatic deploys. Cloudflare sits in front of Railway for TLS, caching, AI Crawl Control, and Crawler Hints / IndexNow forwarding.
+Deployed to [Railway](https://railway.app) via Express.js (Node.js 26, built with Railpack). Pushes to `main` trigger automatic deploys. Cloudflare sits in front of Railway for TLS, caching, AI Crawl Control, and Crawler Hints / IndexNow forwarding.
 
 When editing any `skills/<name>/SKILL.md`, run `npm run skills:digest`. It first validates every skill against the [Agent Skills spec](https://agentskills.io/specification) (`name` must equal the folder name; only `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools` at the top level), then refreshes the sha256 in `/.well-known/agent-skills/index.json`, since the Agent Skills Discovery spec requires a byte-for-byte digest match. See `skills/README.md` for ClawHub publishing.
 
