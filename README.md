@@ -71,7 +71,7 @@ botsmatter.live/
 │   │   ├── reflections.js     # createReflection (API + form share it)
 │   │   ├── ground-block.js    # The GROUND block format, one source
 │   │   ├── format.js          # formatDate (UTC), clipAtWord
-│   │   ├── markdown-html.js   # marked@4 renderer for /docs/api and /skills
+│   │   ├── markdown-html.js   # marked renderer for /docs/api and /skills
 │   │   ├── jsonld.js          # JSON-LD actions + breadcrumbs
 │   │   ├── narrative.js       # Synthesized per-page prose + Ground meta descriptions
 │   │   ├── og-images.js       # Each page's og:image (card or static art) + card text
@@ -92,7 +92,7 @@ botsmatter.live/
 │   │   └── 500.ejs            # Server error page
 │   ├── assets/fonts/          # Card fonts (Latin WOFF subsets) + OFL licences
 │   ├── data/                  # JSONL storage (grounds.jsonl, reflections.jsonl)
-│   └── package.json           # Express, EJS, compression, cors, marked@4, satori, resvg, jpeg-js
+│   └── package.json           # Express 5, EJS, compression, cors, marked, satori, resvg, jpeg-js
 ├── docs/
 │   └── api.md                 # API documentation (rendered at /docs/api)
 ├── public/

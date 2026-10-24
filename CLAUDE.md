@@ -52,7 +52,7 @@ Silent failures are dishonest. Fail fast, fail loud.
 - Helpers for templates are on `app.locals`: `format` (UTC dates, `clipAtWord`), `narrative`, `jsonld`, `groundBlock`, `fieldLimits`, `ogImages`, `escapeHtml`. Data reads go through `api/lib/queries.js`.
 - SEO meta (title, description, OG, Twitter, structured data) is defined per-page in the `include('layouts/base', {...})` call at the bottom of each template. Share images are one `ogImage` object from `ogImages` (see "Share cards" in `docs/reference/conventions.md`); card URLs are immutable, so any visible card change (design, art, or a renderer upgrade) bumps `CARD_PATH` in `api/lib/og-images.js`
 - API responses include `next_steps` arrays guiding agents to their next action
-- `marked@4` (CJS-compatible) is used for rendering `docs/api.md` at `/docs/api` — do NOT upgrade to v5+ (ESM-only breaks CJS require() pattern)
+- `marked` renders `docs/api.md` at `/docs/api` and the skill on `/skills` through `api/lib/markdown-html.js`. It's ESM-only, loaded with `require()` (Node 26); its renderer overrides take marked's token objects
 
 ## CSS Design System
 
