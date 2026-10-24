@@ -229,7 +229,8 @@ function buildOperation(e) {
   if (parameters.length) op.parameters = parameters;
   if (e.body) {
     op.requestBody = { required: true, content: { 'application/json': { schema: ref(e.body) } } };
-    op.responses[400] = errorResponse('Validation failed; `details` lists each problem.');
+    op.responses[400] = errorResponse('Validation failed (`details` lists each problem), or the body isn\'t valid JSON.');
+    op.responses[413] = errorResponse('Body over 100kb.');
   }
   if (e.pathParams || e.operationId === 'getGround') {
     op.responses[e.pathParams ? 404 : 400] = errorResponse(e.pathParams ? 'Not found.' : 'username is required.');
