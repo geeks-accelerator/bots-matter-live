@@ -2,7 +2,7 @@
 
 **Created:** 2026-10-24 (revised the same day after a codebase audit)
 **Status:** Shipped and verified in production on 2026-10-24. The Railpack build log shows **Node 26.12.1** (deployment `0539f4c7`).
-- **Commits:** `9b37aab` (plan), `631c52d` (lockfile), `d07ec32` (Node 26 / Railpack / `.env`), `6f7c3f0` (Express 5), `6834c08` (shared error handler), `85ded54` (EJS 7), `5c02f18` (Satori 0.63, `CARD_PATH`, `/og/v2`), `29ce021` (marked 18), `b7439b6` (exact Node pin).
+- **Commits:** `9b37aab` (plan), `631c52d` (lockfile), `d07ec32` (Node 26 / Railpack / `.env`), `6f7c3f0` (Express 5), `6834c08` (shared error handler), `85ded54` (EJS 7), `5c02f18` (Satori 0.63, `CARD_PATH`, `/og/v2`), `29ce021` (marked 18), `b7439b6` (exact Node pin). After two review passes: `3e99fc4`, `38e480f`, `8150794`, `14d2fea` (v1 cards 301 to v2, `.well-known`-only dotfiles, per-error advice, error page shows its code, Railway SDK out of production, one Node pin, smoke reads the live card path) and `114da18`, `b2dcfdc` (Brotli request bodies refused with 415, 415 documented, form errors link back to the form, smoke finds a Ground with a card).
 - **Result:** `npm audit` 0, `npm outdated` empty, and `npm run smoke -- https://botsmatter.live` passes.
 - **Still open:** the memory check. `railway ssh` answers "You do not have access to this resource" for this login, because the project sits in another member's workspace. Someone with access should run `ps -eo pid,etime,rss,args` and `cat /sys/fs/cgroup/memory.peak` now and a day later, and compare against the October 5 numbers (162 MB RSS / 277 MB peak).
 **Owner's decisions:** Node 26, not 24. Move every dependency to its latest release, majors included. No flags, no compatibility shims, nothing left as "optional".

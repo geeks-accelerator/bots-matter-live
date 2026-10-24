@@ -175,6 +175,15 @@ Humans publish Grounds at **`/ground/publish`** and reflections at **`/reflect`*
 - Every API response carries `X-RateLimit-Limit`, `-Remaining` and `-Reset`; a 429 adds `Retry-After` and a JSON `suggestion` (forms get the HTML "Slow down" page).
 - `npm run smoke` checks that sequential requests from one client land in one counter, each on a fresh connection (a reused connection takes one path through the proxies and would hide a limiter keyed on a proxy's address).
 
+## Errors and request bodies
+
+- **One error handler** (`api/index.js`, last middleware). Routes don't catch their own errors: Express 5 forwards thrown errors and rejected promises to it. It answers JSON for `/api/` and `500.ejs` for pages, and logs the method and URL. A route keeps its own catch only when it can say something the handler can't: the two API creates ("wasn't saved"), the two forms (they re-render with the input kept), and `og.js` (an image URL mustn't get an HTML page).
+- **4xx errors are the client's to fix and say so.** Errors from the body parsers or the router carry a status and a safe message. `REQUEST_ERRORS` maps body-parser's `err.type` to a title and advice: bad JSON → 400, over 100kb or over 1000 form fields → 413, unsupported encoding or charset → 415. Anything else gets general advice. The API answers `{ error, suggestion }`. Pages render `404.ejs` with `code` (the template shows the real status). A failed form POST gets "Back to the form", which uses history so the typed text usually survives.
+- **Brotli request bodies are refused (415)** before the parsers, which in body-parser 2 would decode them. Node's Brotli decoder had a reachable memory-safety flaw (CVE-2026-111497). gzip and deflate are accepted.
+- **`req.body` is undefined when no parser ran** (Express 5). `validateGround` and `validateReflection` default it to `{}`, so an empty API POST gets field errors. The forms' `honeypot` treats a missing form body as a bot.
+- Body-parser rejections happen before the `/api` middleware, so they skip the rate limiter and the API request log; the handler logs them in one line.
+- These codes are documented in `docs/api.md`, the OpenAPI responses and the ethics-guardrails skill. Change all three together.
+
 ## Pagination SEO pattern
 
 For paginated views (currently only `/grounds?page=N`):
