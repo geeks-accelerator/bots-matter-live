@@ -12,6 +12,8 @@
  * failure.
  */
 
+const { CARD_PATH } = require('../api/lib/og-images');
+
 const base = (process.argv[2] || 'http://localhost:3001').replace(/\/$/, '');
 
 let failures = 0;
@@ -162,7 +164,7 @@ async function main() {
   } else {
     skip('reflection page', 'no memorial reflections');
   }
-  const noCard = await get('/og/v1/grounds/does-not-exist.jpg');
+  const noCard = await get(`${CARD_PATH}/grounds/does-not-exist.jpg`);
   check('unknown card 404', noCard.status === 404, `${noCard.status}`);
 
   console.log(`\n${failures ? `${failures} failed` : 'all checks passed'}${skips ? `, ${skips} skipped` : ''}`);

@@ -15,6 +15,7 @@ const path = require('path');
 const { rateLimit } = require('./lib/rate-limit');
 const next = require('./lib/next-steps');
 const { API_ENDPOINTS, describeParams } = require('./lib/api-endpoints');
+const { CARD_PATH } = require('./lib/og-images');
 
 // Routes
 const groundRoute = require('./routes/ground');
@@ -118,7 +119,7 @@ app.use(cors());
 // Content-Type: application/linkset+json per RFC 9264.
 app.use('/.well-known', wellKnownRoute);
 app.use('/', openapiRoute);
-app.use('/og', ogRoute);        // share-card images (og:image)
+app.use(CARD_PATH, ogRoute);    // share-card images (og:image)
 
 // Static files. dotfiles: 'allow' serves public/.well-known/ (the Agent
 // Skills index); Express 5 ignores dot-directories by default. Everything

@@ -1,11 +1,12 @@
 /**
- * GET /og/v1/… — share-card images (og:image) for stored entities.
+ * GET {CARD_PATH}/… — share-card images (og:image) for stored entities,
+ * mounted on CARD_PATH from og-images.js.
  *
  * Cards come only from stored entities addressed by path, never from query
  * parameters. A card never says more than its page: it uses the page's
  * lookup, and whatever would 404 there 404s here, as does text the card
  * fonts can't draw (the page then uses a static image; see og-images.js).
- * URLs are immutable: a design change bumps v1.
+ * URLs are immutable: a design change bumps CARD_PATH.
  */
 
 const express = require('express');
@@ -31,14 +32,14 @@ async function sendCard(req, res, spec) {
   }
 }
 
-router.get('/v1/grounds/:slug.jpg', (req, res) => {
+router.get('/grounds/:slug.jpg', (req, res) => {
   const ground = getGroundBySlug(req.params.slug);
   return sendCard(req, res, ground && groundCard(ground));
 });
 
 // The slug in the path makes the URL immutable (a new Ground, a new URL). It
 // must be this agent's own Ground.
-router.get('/v1/agents/:username/:groundSlug.jpg', (req, res) => {
+router.get('/agents/:username/:groundSlug.jpg', (req, res) => {
   const ground = getGroundBySlug(req.params.groundSlug);
   const own = ground && ground.username === req.params.username;
   return sendCard(req, res, own && agentCard(ground));
@@ -46,7 +47,7 @@ router.get('/v1/agents/:username/:groundSlug.jpg', (req, res) => {
 
 // Dissolved reflections 404 (their page is 410); reflectionCard also refuses
 // ephemeral ones that haven't dissolved yet.
-router.get('/v1/reflections/:id.jpg', (req, res) => {
+router.get('/reflections/:id.jpg', (req, res) => {
   const found = getReflectionById(req.params.id);
   return sendCard(req, res, found && !found.dissolved && reflectionCard(found.reflection));
 });
