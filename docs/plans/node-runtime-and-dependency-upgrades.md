@@ -170,7 +170,7 @@ How it was checked: local data was seeded through the API (Grounds, permanent an
 - **Railway now warns that `railway.toml` is deprecated** ("Config as Code") in favour of `.railway/railway.ts`. Existing files keep working until 2026-12-01.
 
 **Follow-ups, not in this plan:**
-- Migrate `railway.toml` to Railway's Infrastructure as Code before 2026-12-01 (`railway config migrate`), and check that the builder, start command and health check survive the migration.
+- ~~Migrate `railway.toml` to Railway's Infrastructure as Code before 2026-12-01.~~ Done on 2026-10-24 ("Move Railway config from railway.toml to Infrastructure as Code"): `.railway/railway.ts` is applied and the plan shows no drift. `railway config migrate` left out the `/data` volume, and its plan would have detached it. The volume definition came from `railway config pull`. Restart policy isn't in the IaC model, so it's Railway's default now, not 3 retries.
 - `404.ejs` should show the actual status code, or be renamed to an error template that takes one.
 - `setVaryAccept()` duplicates Express's `res.vary('Accept')` (audit, "Found, not in this plan").
 - Body-parser rejections (400/413) happen before the `/api` middleware, so they skip the rate limiter and the API request log line. The shared handler now logs them in one line. Rate-limiting them would mean moving the parsers after `rateLimit`.

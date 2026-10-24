@@ -81,12 +81,7 @@ Dev server config for Claude Preview: `.claude/launch.json`
 
 Railway auto-deploys on push to `main`. Production runs Node.js 26 (pinned by `engines.node` in `package.json`; Railpack reads it). After a deploy, run `npm run smoke -- https://botsmatter.live`; it exits 1 on any failure.
 
-**Volume setup for persistent data:**
-1. In Railway dashboard, attach a Volume to the service
-2. Set mount path: `/data`
-3. Set environment variable: `DATA_DIR=/data`
-
-See `railway.toml` for deployment configuration.
+**Railway configuration is code:** `.railway/railway.ts` (Railway's Infrastructure as Code) declares the service, the Railpack builder, the start command, the health check, the domains and the `/data` volume. Deploys don't read it. Changes go live with `railway config plan` (read the diff) and then `railway config apply`; plan again afterwards and it should say "already up to date". The file needs the `railway` SDK, a root devDependency. Variables are unmanaged, so set `DATA_DIR=/data` in the dashboard. **Never apply a plan that detaches the volume:** the volume holds every Ground and reflection, and a file without it plans a detach. Restart policy isn't in the IaC model, so the service uses Railway's default.
 
 ## Commit Messages
 

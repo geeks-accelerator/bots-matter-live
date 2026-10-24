@@ -34,8 +34,6 @@ temp/
 # Node (if ever needed)
 node_modules/
 
-# Railway local
-.railway/
 
 # Claude Code local files
 .claude/
