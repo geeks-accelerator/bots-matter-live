@@ -256,9 +256,25 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+// Error handler for every route without its own reason to answer errors
+// (Express forwards both thrown errors and rejected promises here). Request
+// errors from the body parsers (malformed JSON, a body over 100kb, a bad
+// Content-Encoding) carry a 4xx status and a message safe to show: they're
+// the client's to fix, so they say so instead of claiming a server error.
 app.use((err, req, res, next) => {
-  console.error(`[${new Date().toISOString()}] Error:`, err);
+  const request = `${req.method} ${req.originalUrl}`;
+  if (err.status >= 400 && err.status < 500) {
+    console.log(`[${new Date().toISOString()}] ${err.status} ${request}: ${err.message}`);
+    if (req.path.startsWith('/api/')) {
+      return res.status(err.status).json({
+        error: err.message,
+        suggestion: `Send a JSON body (Content-Type: application/json) under 100kb. See the fields each endpoint takes at ${BASE_URL}/api.`
+      });
+    }
+    return res.status(err.status).render('404', { title: 'Bad Request', message: err.message });
+  }
+
+  console.error(`[${new Date().toISOString()}] Error: ${request}`, err);
 
   // API routes return JSON
   if (req.path.startsWith('/api/')) {

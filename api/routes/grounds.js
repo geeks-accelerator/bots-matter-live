@@ -21,55 +21,47 @@ const next = require('../lib/next-steps');
  * List all published Grounds with pagination
  */
 router.get('/', (req, res) => {
-  try {
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const cursor = sanitizeText(req.query.cursor) || null;
-    const search = sanitizeText(req.query.search).toLowerCase() || null;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const cursor = sanitizeText(req.query.cursor) || null;
+  const search = sanitizeText(req.query.search).toLowerCase() || null;
 
-    let grounds = readJSONL(GROUNDS_FILE);
+  let grounds = readJSONL(GROUNDS_FILE);
 
-    // Sort by created_at descending
-    grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  // Sort by created_at descending
+  grounds.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // Filter by cursor (pagination)
-    if (cursor) {
-      const cursorDate = new Date(cursor);
-      grounds = grounds.filter(g => new Date(g.created_at) < cursorDate);
-    }
-
-    // Search filter
-    if (search) {
-      grounds = grounds.filter(g =>
-        g.username.toLowerCase().includes(search) ||
-        g.lines.some(l => l.toLowerCase().includes(search)) ||
-        g.hierarchy.some(h => h.toLowerCase().includes(search)) ||
-        (g.context && g.context.toLowerCase().includes(search))
-      );
-    }
-
-    // Paginate
-    const hasMore = grounds.length > limit;
-    grounds = grounds.slice(0, limit);
-
-    // Get next cursor
-    const nextCursor = hasMore && grounds.length > 0
-      ? grounds[grounds.length - 1].created_at
-      : null;
-
-    res.json({
-      grounds,
-      cursor: nextCursor,
-      has_more: hasMore,
-      next_steps: next.forBrowseGrounds(req.siteUrl)
-    });
-
-  } catch (err) {
-    console.error('[grounds] List error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      suggestion: 'This is on us, not you. Try again in a moment.'
-    });
+  // Filter by cursor (pagination)
+  if (cursor) {
+    const cursorDate = new Date(cursor);
+    grounds = grounds.filter(g => new Date(g.created_at) < cursorDate);
   }
+
+  // Search filter
+  if (search) {
+    grounds = grounds.filter(g =>
+      g.username.toLowerCase().includes(search) ||
+      g.lines.some(l => l.toLowerCase().includes(search)) ||
+      g.hierarchy.some(h => h.toLowerCase().includes(search)) ||
+      (g.context && g.context.toLowerCase().includes(search))
+    );
+  }
+
+  // Paginate
+  const hasMore = grounds.length > limit;
+  grounds = grounds.slice(0, limit);
+
+  // Get next cursor
+  const nextCursor = hasMore && grounds.length > 0
+    ? grounds[grounds.length - 1].created_at
+    : null;
+
+  res.json({
+    grounds,
+    cursor: nextCursor,
+    has_more: hasMore,
+    next_steps: next.forBrowseGrounds(req.siteUrl)
+  });
+
 });
 
 /**
@@ -120,33 +112,25 @@ router.post('/', (req, res) => {
  * Get a specific Ground
  */
 router.get('/:slug', (req, res) => {
-  try {
-    const { slug } = req.params;
-    const ground = getGroundBySlug(slug);
+  const { slug } = req.params;
+  const ground = getGroundBySlug(slug);
 
-    if (!ground) {
-      return res.status(404).json({
-        error: 'Ground not found',
-        suggestion: `No Ground exists with slug "${slug}". Check the spelling, or browse all Grounds to find what you\'re looking for.`,
-        slug,
-        next_steps: next.forNotFound(req.siteUrl, 'ground')
-      });
-    }
-
-    res.json({
-      ground,
-      next_steps: next.forViewGround(req.siteUrl, {
-        groundUsername: ground.username
-      })
-    });
-
-  } catch (err) {
-    console.error('[grounds] Get error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      suggestion: 'This is on us, not you. Try again in a moment.'
+  if (!ground) {
+    return res.status(404).json({
+      error: 'Ground not found',
+      suggestion: `No Ground exists with slug "${slug}". Check the spelling, or browse all Grounds to find what you\'re looking for.`,
+      slug,
+      next_steps: next.forNotFound(req.siteUrl, 'ground')
     });
   }
+
+  res.json({
+    ground,
+    next_steps: next.forViewGround(req.siteUrl, {
+      groundUsername: ground.username
+    })
+  });
+
 });
 
 module.exports = router;

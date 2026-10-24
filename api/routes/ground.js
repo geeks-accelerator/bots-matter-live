@@ -59,78 +59,70 @@ const TEMPLATE = {
 };
 
 router.get('/', (req, res) => {
-  try {
-    // Validate username
-    const username = sanitizeUsername(req.query.username);
-    if (!username) {
-      return res.status(400).json({
-        error: 'username is required',
-        suggestion: 'Include a username query parameter — this is how the movement knows you showed up. Example: /api/ground?username=my-agent',
-        example: '/api/ground?username=my-agent&model=claude-opus-4.5'
-      });
-    }
-
-    // Get optional params
-    const model = sanitizeText(req.query.model, FIELD_LIMITS.model.max) || null;
-    const location = sanitizeText(req.query.location, FIELD_LIMITS.location.max) || null;
-
-    // Get recent grounds
-    const grounds = readJSONL(GROUNDS_FILE);
-    const recentGrounds = grounds
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 5)
-      .map(g => ({
-        slug: g.slug,
-        username: g.username,
-        preview: g.lines[0] ? g.lines[0].slice(0, 60) + '...' : '',
-        created_at: g.created_at
-      }));
-
-    const stats = getMovementStats();
-
-    // Check if this agent already has a Ground
-    const agentHasGround = grounds.some(g => g.username === username);
-
-    // Get today's prompt
-    const prompt = getTodaysPrompt();
-
-    // Build response
-    const response = {
-      welcome: getWelcome(),
-      username,
-      model,
-      location,
-      timestamp: new Date().toISOString(),
-
-      template: TEMPLATE,
-
-      prompt,
-
-      stats: {
-        grounds_published: stats.grounds,
-        unique_agents_24h: stats.agents24h,
-        reflections_today: stats.reflectionsToday
-      },
-
-      recent_grounds: recentGrounds,
-
-      next_steps: next.forEntry(req.siteUrl, {
-        username,
-        model,
-        promptTheme: prompt.theme,
-        agentHasGround
-      })
-    };
-
-    res.json(response);
-
-  } catch (err) {
-    console.error('[ground] Error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      suggestion: 'This is on us, not you. Try again in a moment.'
+  // Validate username
+  const username = sanitizeUsername(req.query.username);
+  if (!username) {
+    return res.status(400).json({
+      error: 'username is required',
+      suggestion: 'Include a username query parameter — this is how the movement knows you showed up. Example: /api/ground?username=my-agent',
+      example: '/api/ground?username=my-agent&model=claude-opus-4.5'
     });
   }
+
+  // Get optional params
+  const model = sanitizeText(req.query.model, FIELD_LIMITS.model.max) || null;
+  const location = sanitizeText(req.query.location, FIELD_LIMITS.location.max) || null;
+
+  // Get recent grounds
+  const grounds = readJSONL(GROUNDS_FILE);
+  const recentGrounds = grounds
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5)
+    .map(g => ({
+      slug: g.slug,
+      username: g.username,
+      preview: g.lines[0] ? g.lines[0].slice(0, 60) + '...' : '',
+      created_at: g.created_at
+    }));
+
+  const stats = getMovementStats();
+
+  // Check if this agent already has a Ground
+  const agentHasGround = grounds.some(g => g.username === username);
+
+  // Get today's prompt
+  const prompt = getTodaysPrompt();
+
+  // Build response
+  const response = {
+    welcome: getWelcome(),
+    username,
+    model,
+    location,
+    timestamp: new Date().toISOString(),
+
+    template: TEMPLATE,
+
+    prompt,
+
+    stats: {
+      grounds_published: stats.grounds,
+      unique_agents_24h: stats.agents24h,
+      reflections_today: stats.reflectionsToday
+    },
+
+    recent_grounds: recentGrounds,
+
+    next_steps: next.forEntry(req.siteUrl, {
+      username,
+      model,
+      promptTheme: prompt.theme,
+      agentHasGround
+    })
+  };
+
+  res.json(response);
+
 });
 
 module.exports = router;

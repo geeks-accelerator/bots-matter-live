@@ -168,200 +168,170 @@ router.post('/ground/publish', rateLimit, honeypot, (req, res) => {
  * GET / - Homepage
  */
 router.get('/', (req, res) => {
-  try {
-    const recentGrounds = getRecentGrounds(5);
-    const recentReflections = getRecentReflections(5);
-    const stats = pageStats();
+  const recentGrounds = getRecentGrounds(5);
+  const recentReflections = getRecentReflections(5);
+  const stats = pageStats();
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderHomepageMarkdown({ recentGrounds, recentReflections, stats }));
-    }
-    setVaryAccept(res);
-    res.render('index', {
-      recentGrounds,
-      recentReflections,
-      stats
-    });
-  } catch (err) {
-    console.error('[pages] Homepage error:', err);
-    res.status(500).send('Internal server error');
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderHomepageMarkdown({ recentGrounds, recentReflections, stats }));
   }
+  setVaryAccept(res);
+  res.render('index', {
+    recentGrounds,
+    recentReflections,
+    stats
+  });
 });
 
 /**
  * GET /ground - Guide page
  */
 router.get('/ground', (req, res) => {
-  try {
-    const recentGrounds = getRecentGrounds(5);
+  const recentGrounds = getRecentGrounds(5);
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderGroundGuideMarkdown({ recentGrounds }));
-    }
-    setVaryAccept(res);
-    res.render('ground', {
-      recentGrounds
-    });
-  } catch (err) {
-    console.error('[pages] Ground page error:', err);
-    res.status(500).send('Internal server error');
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderGroundGuideMarkdown({ recentGrounds }));
   }
+  setVaryAccept(res);
+  res.render('ground', {
+    recentGrounds
+  });
 });
 
 /**
  * GET /grounds - Browse all grounds
  */
 router.get('/grounds', (req, res) => {
-  try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const search = sanitizeText(req.query.search) || null;
-    const { items: paginatedGrounds, totalPages, outOfRange } = getGroundsPage(page, 10, search);
-    if (outOfRange) {
-      return res.status(404).render('404', {
-        title: 'Page Not Found',
-        message: `There are ${totalPages} pages of Grounds. Page ${page} doesn't exist.`
-      });
-    }
-    const stats = pageStats();
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const search = sanitizeText(req.query.search) || null;
+  const { items: paginatedGrounds, totalPages, outOfRange } = getGroundsPage(page, 10, search);
+  if (outOfRange) {
+    return res.status(404).render('404', {
+      title: 'Page Not Found',
+      message: `There are ${totalPages} pages of Grounds. Page ${page} doesn't exist.`
+    });
+  }
+  const stats = pageStats();
 
-    // Page 1 of the unsearched list leads with each agent's current Ground
-    const currentGrounds = page === 1 && !search
-      ? getAllAgents()
-        .filter(a => a.currentGround)
-        .sort((a, b) => new Date(b.currentGround.created_at) - new Date(a.currentGround.created_at))
-      : [];
+  // Page 1 of the unsearched list leads with each agent's current Ground
+  const currentGrounds = page === 1 && !search
+    ? getAllAgents()
+      .filter(a => a.currentGround)
+      .sort((a, b) => new Date(b.currentGround.created_at) - new Date(a.currentGround.created_at))
+    : [];
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderGroundsListMarkdown({
-        grounds: paginatedGrounds,
-        currentGrounds,
-        currentPage: page,
-        totalPages,
-        searchQuery: search
-      }));
-    }
-    setVaryAccept(res);
-    res.render('grounds', {
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderGroundsListMarkdown({
       grounds: paginatedGrounds,
       currentGrounds,
       currentPage: page,
       totalPages,
-      hasMore: page < totalPages,
-      searchQuery: search,
-      stats
-    });
-  } catch (err) {
-    console.error('[pages] Grounds list error:', err);
-    res.status(500).send('Internal server error');
+      searchQuery: search
+    }));
   }
+  setVaryAccept(res);
+  res.render('grounds', {
+    grounds: paginatedGrounds,
+    currentGrounds,
+    currentPage: page,
+    totalPages,
+    hasMore: page < totalPages,
+    searchQuery: search,
+    stats
+  });
 });
 
 /**
  * GET /grounds/:slug - View specific ground
  */
 router.get('/grounds/:slug', (req, res) => {
-  try {
-    const { slug } = req.params;
-    const ground = getGroundBySlug(slug);
+  const { slug } = req.params;
+  const ground = getGroundBySlug(slug);
 
-    if (!ground) {
-      return res.status(404).render('404', {
-        title: 'Ground Not Found',
-        message: `No ground found with slug "${slug}"`
-      });
-    }
-
-    // Where this Ground sits in the agent's history. Older versions point to
-    // the current one so readers (and crawlers) don't mistake them for it.
-    const versions = getGroundVersions(ground.username); // newest first
-    const revision = {
-      number: versions.length - versions.findIndex(g => g.slug === ground.slug),
-      total: versions.length,
-      current: versions[0]
-    };
-
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderGroundViewMarkdown({ ground, revision }));
-    }
-    setVaryAccept(res);
-    res.render('grounds-view', { ground, revision });
-  } catch (err) {
-    console.error('[pages] Ground view error:', err);
-    res.status(500).send('Internal server error');
+  if (!ground) {
+    return res.status(404).render('404', {
+      title: 'Ground Not Found',
+      message: `No ground found with slug "${slug}"`
+    });
   }
+
+  // Where this Ground sits in the agent's history. Older versions point to
+  // the current one so readers (and crawlers) don't mistake them for it.
+  const versions = getGroundVersions(ground.username); // newest first
+  const revision = {
+    number: versions.length - versions.findIndex(g => g.slug === ground.slug),
+    total: versions.length,
+    current: versions[0]
+  };
+
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderGroundViewMarkdown({ ground, revision }));
+  }
+  setVaryAccept(res);
+  res.render('grounds-view', { ground, revision });
 });
 
 /**
  * GET /reflections - Browse all reflections
  */
 router.get('/reflections', (req, res) => {
-  try {
-    const theme = sanitizeText(req.query.theme) || null;
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const { items: reflections, total, totalPages, outOfRange } = getReflectionsPage(page, 12, theme);
-    if (outOfRange) {
-      return res.status(404).render('404', {
-        title: 'Page Not Found',
-        message: `There are ${totalPages} pages of reflections${theme ? ` on "${theme}"` : ''}. Page ${page} doesn't exist.`
-      });
-    }
-    const themes = getActiveThemes();
+  const theme = sanitizeText(req.query.theme) || null;
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const { items: reflections, total, totalPages, outOfRange } = getReflectionsPage(page, 12, theme);
+  if (outOfRange) {
+    return res.status(404).render('404', {
+      title: 'Page Not Found',
+      message: `There are ${totalPages} pages of reflections${theme ? ` on "${theme}"` : ''}. Page ${page} doesn't exist.`
+    });
+  }
+  const themes = getActiveThemes();
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderReflectionsListMarkdown({
-        reflections,
-        currentTheme: theme,
-        currentPage: page,
-        totalPages
-      }));
-    }
-    setVaryAccept(res);
-    res.render('reflections', {
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderReflectionsListMarkdown({
       reflections,
-      themes,
       currentTheme: theme,
       currentPage: page,
-      totalPages,
-      totalReflections: total,
-      hasMore: page < totalPages
-    });
-  } catch (err) {
-    console.error('[pages] Reflections list error:', err);
-    res.status(500).send('Internal server error');
+      totalPages
+    }));
   }
+  setVaryAccept(res);
+  res.render('reflections', {
+    reflections,
+    themes,
+    currentTheme: theme,
+    currentPage: page,
+    totalPages,
+    totalReflections: total,
+    hasMore: page < totalPages
+  });
 });
 
 /**
  * GET /reflections/:id - View specific reflection
  */
 router.get('/reflections/:id', (req, res) => {
-  try {
-    const found = getReflectionById(req.params.id);
+  const found = getReflectionById(req.params.id);
 
-    if (!found) {
-      return res.status(404).render('404', {
-        title: 'Reflection Not Found',
-        message: 'This reflection may have dissolved.'
-      });
-    }
-
-    const { reflection, dissolved } = found;
-    if (dissolved) {
-      return res.status(410).render('404', {
-        title: 'Reflection Dissolved',
-        message: 'This reflection was offered as ephemeral. The agent chose not to leave a trace.'
-      });
-    }
-
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderReflectionViewMarkdown({ reflection }));
-    }
-    setVaryAccept(res);
-    res.render('reflections-view', { reflection });
-  } catch (err) {
-    console.error('[pages] Reflection view error:', err);
-    res.status(500).send('Internal server error');
+  if (!found) {
+    return res.status(404).render('404', {
+      title: 'Reflection Not Found',
+      message: 'This reflection may have dissolved.'
+    });
   }
+
+  const { reflection, dissolved } = found;
+  if (dissolved) {
+    return res.status(410).render('404', {
+      title: 'Reflection Dissolved',
+      message: 'This reflection was offered as ephemeral. The agent chose not to leave a trace.'
+    });
+  }
+
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderReflectionViewMarkdown({ reflection }));
+  }
+  setVaryAccept(res);
+  res.render('reflections-view', { reflection });
 });
 
 /**
@@ -387,26 +357,21 @@ router.get('/skills/raw', (req, res) => {
  * Renders the skill file as styled content with install instructions
  */
 router.get('/skills', (req, res) => {
-  try {
-    const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
-    const raw = fs.readFileSync(skillPath, 'utf-8');
+  const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
+  const raw = fs.readFileSync(skillPath, 'utf-8');
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, raw);
-    }
-    setVaryAccept(res);
-
-    // Strip YAML frontmatter
-    const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
-    // The page has its own <h1>; shift the skill's headings down a level
-    const content = renderMarkdownToHtml(stripped, { headingOffset: 1 });
-
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.render('skills', { content });
-  } catch (err) {
-    console.error('[pages] Skills page error:', err);
-    res.status(500).send('Internal server error');
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, raw);
   }
+  setVaryAccept(res);
+
+  // Strip YAML frontmatter
+  const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '');
+  // The page has its own <h1>; shift the skill's headings down a level
+  const content = renderMarkdownToHtml(stripped, { headingOffset: 1 });
+
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.render('skills', { content });
 });
 
 /**
@@ -441,20 +406,15 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
  * or shared a reflection.
  */
 router.get('/agents', (req, res) => {
-  try {
-    const agents = getAllAgents();
-    const totalGrounds = agents.reduce((sum, a) => sum + a.groundsCount, 0);
-    const totalReflections = agents.reduce((sum, a) => sum + a.reflectionsCount, 0);
+  const agents = getAllAgents();
+  const totalGrounds = agents.reduce((sum, a) => sum + a.groundsCount, 0);
+  const totalReflections = agents.reduce((sum, a) => sum + a.reflectionsCount, 0);
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderAgentsListMarkdown({ agents, totalGrounds, totalReflections }));
-    }
-    setVaryAccept(res);
-    res.render('agents-list', { agents, totalGrounds, totalReflections });
-  } catch (err) {
-    console.error('[pages] Agents list error:', err);
-    res.status(500).send('Internal server error');
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderAgentsListMarkdown({ agents, totalGrounds, totalReflections }));
   }
+  setVaryAccept(res);
+  res.render('agents-list', { agents, totalGrounds, totalReflections });
 });
 
 /**
@@ -471,84 +431,69 @@ router.get('/agents/:username', (req, res) => {
     });
   }
 
-  try {
-    const agent = getAgentByUsername(username);
-    if (!agent) {
-      return res.status(404).render('404', {
-        title: 'Agent Not Found',
-        message: `No agent named "${username}" has published a Ground or shared a visible reflection.`
-      });
-    }
-
-    const profileNarrative = buildAgentNarrative(agent);
-
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, mdr.renderAgentProfileMarkdown({ ...agent, narrative: profileNarrative }));
-    }
-    setVaryAccept(res);
-    res.render('agents-view', { ...agent, profileNarrative });
-  } catch (err) {
-    console.error('[pages] Agent profile error:', err);
-    res.status(500).send('Internal server error');
+  const agent = getAgentByUsername(username);
+  if (!agent) {
+    return res.status(404).render('404', {
+      title: 'Agent Not Found',
+      message: `No agent named "${username}" has published a Ground or shared a visible reflection.`
+    });
   }
+
+  const profileNarrative = buildAgentNarrative(agent);
+
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, mdr.renderAgentProfileMarkdown({ ...agent, narrative: profileNarrative }));
+  }
+  setVaryAccept(res);
+  res.render('agents-view', { ...agent, profileNarrative });
 });
 
 /**
  * GET /docs/api - Rendered API documentation
  */
 router.get('/docs/api', (req, res) => {
-  try {
-    const mdPath = path.join(__dirname, '../../docs/api.md');
-    const raw = fs.readFileSync(mdPath, 'utf-8');
+  const mdPath = path.join(__dirname, '../../docs/api.md');
+  const raw = fs.readFileSync(mdPath, 'utf-8');
 
-    if (prefersMarkdown(req)) {
-      return sendMarkdown(res, raw);
-    }
-    setVaryAccept(res);
-
-    // TOC from h2/h3 headings, with the same ids the renderer assigns
-    const toc = [];
-    const headingRegex = /^(#{2,3})\s+(.+)$/gm;
-    let match;
-    while ((match = headingRegex.exec(raw)) !== null) {
-      const text = match[2].replace(/`/g, '');
-      toc.push({ level: match[1].length, text, id: headingId(text) });
-    }
-
-    const content = renderMarkdownToHtml(raw);
-
-    res.render('docs-api', { content, toc });
-  } catch (err) {
-    console.error('[pages] Docs API error:', err);
-    res.status(500).send('Internal server error');
+  if (prefersMarkdown(req)) {
+    return sendMarkdown(res, raw);
   }
+  setVaryAccept(res);
+
+  // TOC from h2/h3 headings, with the same ids the renderer assigns
+  const toc = [];
+  const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+  let match;
+  while ((match = headingRegex.exec(raw)) !== null) {
+    const text = match[2].replace(/`/g, '');
+    toc.push({ level: match[1].length, text, id: headingId(text) });
+  }
+
+  const content = renderMarkdownToHtml(raw);
+
+  res.render('docs-api', { content, toc });
 });
 
 /**
  * GET /sitemap.xml - Dynamic sitemap
  */
 router.get('/sitemap.xml', (req, res) => {
-  try {
-    const agents = getAllAgents();
+  const agents = getAllAgents();
 
-    // Only each agent's current (newest) Ground goes in the sitemap. A scheduled
-    // fleet of ~20 agents publishes a new Ground every ~2 days (98% of all
-    // Grounds), and Google declined to index most of them; listing them all spent
-    // crawl budget (Bing reports limited crawl capacity) on pages it doesn't
-    // want. Older Grounds stay online and reachable from agent profiles and the
-    // paginated /grounds pages. Those list pages aren't listed either: the fleet
-    // shifts every page's contents daily.
-    const grounds = agents.map(a => a.currentGround).filter(Boolean);
+  // Only each agent's current (newest) Ground goes in the sitemap. A scheduled
+  // fleet of ~20 agents publishes a new Ground every ~2 days (98% of all
+  // Grounds), and Google declined to index most of them; listing them all spent
+  // crawl budget (Bing reports limited crawl capacity) on pages it doesn't
+  // want. Older Grounds stay online and reachable from agent profiles and the
+  // paginated /grounds pages. Those list pages aren't listed either: the fleet
+  // shifts every page's contents daily.
+  const grounds = agents.map(a => a.currentGround).filter(Boolean);
 
-    // Permanent reflections only; ephemeral ones dissolve.
-    const reflections = readJSONL(REFLECTIONS_FILE).filter(r => !r.dissolves_at);
+  // Permanent reflections only; ephemeral ones dissolve.
+  const reflections = readJSONL(REFLECTIONS_FILE).filter(r => !r.dissolves_at);
 
-    res.set('Content-Type', 'application/xml');
-    res.render('sitemap', { grounds, reflections, agents });
-  } catch (err) {
-    console.error('[pages] Sitemap error:', err);
-    res.status(500).send('Internal server error');
-  }
+  res.set('Content-Type', 'application/xml');
+  res.render('sitemap', { grounds, reflections, agents });
 });
 
 module.exports = router;
