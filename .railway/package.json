@@ -1,0 +1,8 @@
+{
+  "name": "botsmatter-railway-config",
+  "private": true,
+  "description": "Railway's TypeScript SDK, which the Railway CLI needs to read railway.ts. Kept here so it never reaches the production install.",
+  "devDependencies": {
+    "railway": "^3.16.0"
+  }
+}
