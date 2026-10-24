@@ -1,10 +1,10 @@
 # Node Runtime and Dependency Upgrades
 
 **Created:** 2026-10-24 (revised the same day after a codebase audit)
-**Status:** Implemented and verified locally on 2026-10-24 (Node 26.12.1). **Not yet deployed:** the commits are local, and the after-deploy checks below are still open.
-- **Commits:** `9b37aab` (plan), `631c52d` (lockfile), `d07ec32` (Node 26 / Railpack / `.env`), `6f7c3f0` (Express 5), `6834c08` (shared error handler), `85ded54` (EJS 7), `5c02f18` (Satori 0.63, `CARD_PATH`, `/og/v2`), `29ce021` (marked 18).
-- **Result:** `npm audit` 0, `npm outdated` empty, smoke passes from a clean install.
-- **Still open:** everything under "After deploy" in step 2. Most importantly, run `node -v` on the running container, because the Railpack switch is the one change that can't be tested locally.
+**Status:** Shipped and verified in production on 2026-10-24. The Railpack build log shows **Node 26.12.1** (deployment `0539f4c7`).
+- **Commits:** `9b37aab` (plan), `631c52d` (lockfile), `d07ec32` (Node 26 / Railpack / `.env`), `6f7c3f0` (Express 5), `6834c08` (shared error handler), `85ded54` (EJS 7), `5c02f18` (Satori 0.63, `CARD_PATH`, `/og/v2`), `29ce021` (marked 18), `b7439b6` (exact Node pin).
+- **Result:** `npm audit` 0, `npm outdated` empty, and `npm run smoke -- https://botsmatter.live` passes.
+- **Still open:** the memory check. `railway ssh` answers "You do not have access to this resource" for this login, because the project sits in another member's workspace. Someone with access should run `ps -eo pid,etime,rss,args` and `cat /sys/fs/cgroup/memory.peak` now and a day later, and compare against the October 5 numbers (162 MB RSS / 277 MB peak).
 **Owner's decisions:** Node 26, not 24. Move every dependency to its latest release, majors included. No flags, no compatibility shims, nothing left as "optional".
 **Scope:**
 1. Production moves from Node 20 (end-of-life, and unpatched for the October 21 Node security release) to **Node 26.12.1**, built with Railpack.
@@ -156,7 +156,21 @@ How it was checked: local data was seeded through the API (Grounds, permanent an
 - **`404.ejs` always shows "404" as its big code,** even when it renders the 400, 410 and 429 pages. That predates this work and isn't changed here (see follow-ups).
 - **`docs/guides/agent-discovery-and-engagement.md:160` still says "Pin CommonJS-compatible versions (we stay on `marked@4` …)".** `docs/guides/` is untracked, possibly another session's work in progress, so I didn't touch it.
 
+## Found in production
+
+- **`engines.node: "26.x"` deployed Node 26.11.1, not 26.12.1.** Railpack resolves ranges through Mise's version index, which didn't have the three-day-old security release yet. Production briefly ran an unpatched 26.x (deployment `acaa857a`, about six minutes). Railpack prints the resolved version in its build log (`node │ 26.11.1 │ package.json > engines > node (26.x)`), and that line is how it was caught. Both `package.json` files now pin exactly `"26.12.1"` (`b7439b6`), and the next build resolved it. **When Node ships a security release, bump the pin and read that build-log line.**
+- **Everything else matched local:**
+  - Smoke passes.
+  - The `/data` volume mounts.
+  - Share cards render on `/og/v2` (83–118 KB; about 1 s for a cold render through Cloudflare).
+  - `/.well-known/agent-skills/index.json` serves.
+  - Malformed JSON → 400, oversized → 413, empty API POST → 400, empty form POST → 303.
+  - Bracket and repeated query params → 200.
+  - No errors in the deploy logs.
+- **Railway now warns that `railway.toml` is deprecated** ("Config as Code") in favour of `.railway/railway.ts`. Existing files keep working until 2026-12-01.
+
 **Follow-ups, not in this plan:**
+- Migrate `railway.toml` to Railway's Infrastructure as Code before 2026-12-01 (`railway config migrate`), and check that the builder, start command and health check survive the migration.
 - `404.ejs` should show the actual status code, or be renamed to an error template that takes one.
 - `setVaryAccept()` duplicates Express's `res.vary('Accept')` (audit, "Found, not in this plan").
 - Body-parser rejections (400/413) happen before the `/api` middleware, so they skip the rate limiter and the API request log line. The shared handler now logs them in one line. Rate-limiting them would mean moving the parsers after `rateLimit`.
