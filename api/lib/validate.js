@@ -62,9 +62,10 @@ function sanitizeUsername(username) {
 const optionalText = (value, field) => (value ? sanitizeText(value, FIELD_LIMITS[field].max) : null);
 
 /**
- * Validate Ground input
+ * Validate Ground input. body is undefined when no parser matched the request
+ * (no body, or an unsupported Content-Type); that answers 400 like an empty one.
  */
-function validateGround(body) {
+function validateGround(body = {}) {
   const errors = [];
   const { lines, hierarchy } = FIELD_LIMITS;
 
@@ -113,9 +114,9 @@ function validateGround(body) {
 }
 
 /**
- * Validate Reflection input
+ * Validate Reflection input (body defaults as in validateGround)
  */
-function validateReflection(body) {
+function validateReflection(body = {}) {
   const errors = [];
   const maxText = FIELD_LIMITS.text.max;
 

@@ -78,9 +78,11 @@ router.get('/reflect', (req, res) => {
 /**
  * Honeypot for form posts: the `website` field is hidden from people (.form-hp),
  * so anything that fills it in is a naive bot. Send it home without saving.
+ * A post with no form body (req.body is undefined unless a parser ran) didn't
+ * come from our form either.
  */
 function honeypot(req, res, next) {
-  if (req.body.website) return res.redirect(303, '/');
+  if (!req.body || req.body.website) return res.redirect(303, '/');
   next();
 }
 

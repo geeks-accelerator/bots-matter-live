@@ -120,9 +120,12 @@ app.use('/.well-known', wellKnownRoute);
 app.use('/', openapiRoute);
 app.use('/og', ogRoute);        // share-card images (og:image)
 
-// Static files
+// Static files. dotfiles: 'allow' serves public/.well-known/ (the Agent
+// Skills index); Express 5 ignores dot-directories by default. Everything
+// in public/ is public by definition.
 app.use(express.static(path.join(__dirname, '../public'), {
   index: false,
+  dotfiles: 'allow',
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
 
