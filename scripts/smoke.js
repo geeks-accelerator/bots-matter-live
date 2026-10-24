@@ -175,7 +175,9 @@ async function main() {
     const noCard = await get(cardPath.replace(/[^/]+\.jpg$/, 'does-not-exist.jpg'));
     check(`unknown card 404 under ${cardBase}`, noCard.status === 404, `${noCard.status}`);
     for (const retired of RETIRED_CARD_PATHS) {
-      const r = await get(retired + cardPath.slice(cardBase.length));
+      // The query only misses the edge cache, which keeps serving the old
+      // card to anyone who has its URL; the origin is what must redirect.
+      const r = await get(`${retired}${cardPath.slice(cardBase.length)}?smoke=${Date.now()}`);
       check(`retired ${retired} card 301s to ${cardBase}`, r.status === 301 && r.headers.get('location') === cardPath,
         `${r.status} ${r.headers.get('location') || ''}`);
     }
