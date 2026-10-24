@@ -1,7 +1,10 @@
 # Node Runtime and Dependency Upgrades
 
 **Created:** 2026-10-24 (revised the same day after a codebase audit)
-**Status:** Planned. Nothing changed yet.
+**Status:** Implemented and verified locally on 2026-10-24 (Node 26.12.1). **Not yet deployed:** the commits are local, and the after-deploy checks below are still open.
+- **Commits:** `9b37aab` (plan), `631c52d` (lockfile), `d07ec32` (Node 26 / Railpack / `.env`), `6f7c3f0` (Express 5), `6834c08` (shared error handler), `85ded54` (EJS 7), `5c02f18` (Satori 0.63, `CARD_PATH`, `/og/v2`), `29ce021` (marked 18).
+- **Result:** `npm audit` 0, `npm outdated` empty, smoke passes from a clean install.
+- **Still open:** everything under "After deploy" in step 2. Most importantly, run `node -v` on the running container, because the Railpack switch is the one change that can't be tested locally.
 **Owner's decisions:** Node 26, not 24. Move every dependency to its latest release, majors included. No flags, no compatibility shims, nothing left as "optional".
 **Scope:**
 1. Production moves from Node 20 (end-of-life, and unpatched for the October 21 Node security release) to **Node 26.12.1**, built with Railpack.
@@ -140,6 +143,23 @@ In `api/`, run `npm update`. That brings `body-parser` 1.20.9, `ejs` 5.0.2 and `
 - Delete the "marked@4 only" comment, and CLAUDE.md's "`marked@4` … do NOT upgrade to v5+" bullet.
 
 **Verify:** render diff of `/docs/api`, `/docs/api.md`, `/skills` and every `/skills/*` page against v4. Heading `id`s must be identical, because in-page anchors and external links depend on them.
+
+---
+
+## Found during implementation
+
+How it was checked: local data was seeded through the API (Grounds, permanent and ephemeral reflections, long and short text). A throwaway script saved every surface (74 at first: pages, `.md` versions, 404s and redirects, API JSON, discovery files, share cards) before and after each step, and the two were diffed. The only expected noise was `/api/ground` and the dissolve countdown.
+
+- **Steps 1, 2, 3, 5 and 7 changed no output.** Bodies were byte-identical before and after. The one exception is Express 5's Content-Type spelling (`charset=utf-8` lowercase and moved after other parameters), which means the same thing. EJS 7 was also checked by rendering the 500 page, a 429 page and both forms' error states with each version, and marked 18 on seven documents (30 tables, every heading id).
+- **The shared error handler ignored `err.status`** (true on Express 4 as well). Malformed JSON, a body over 100kb, or a bad gzip body answered **500 "not something you did wrong"**. Step 4 now answers them 400 or 413 with body-parser's message, as JSON for the API and the Bad Request page for forms. The probe from the research (gzip plus trailing bytes) got a 500 on Express 5 before that fix and a 400 after; the process survived both times.
+- **Satori 0.63 visibly changed the cards, so they moved to `/og/v2`.** Every card plus four stress cards was rendered on 0.35.2 and 0.63.2 and diffed by pixel. Line breaks, clamps and titles are identical, and nothing reaches the footer. Letter-spaced mono text (eyebrow, wordmark, date) renders wider on 0.63: the date moves left by about 9px. Before bumping, I tested the single-`CARD_PATH` refactor with a scratch `/og/v9`: pages, routes and smoke all followed, and the old path returned 404.
+- **`404.ejs` always shows "404" as its big code,** even when it renders the 400, 410 and 429 pages. That predates this work and isn't changed here (see follow-ups).
+- **`docs/guides/agent-discovery-and-engagement.md:160` still says "Pin CommonJS-compatible versions (we stay on `marked@4` …)".** `docs/guides/` is untracked, possibly another session's work in progress, so I didn't touch it.
+
+**Follow-ups, not in this plan:**
+- `404.ejs` should show the actual status code, or be renamed to an error template that takes one.
+- `setVaryAccept()` duplicates Express's `res.vary('Accept')` (audit, "Found, not in this plan").
+- Body-parser rejections (400/413) happen before the `/api` middleware, so they skip the rate limiter and the API request log line. The shared handler now logs them in one line. Rate-limiting them would mean moving the parsers after `rateLimit`.
 
 ---
 
