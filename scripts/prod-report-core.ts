@@ -31,8 +31,8 @@
  * Run by Node directly (no build). Nothing runs on import: the pure parts are
  * exported for report/prod-report-core.test.ts, in the agents repo.
  *
- * The shared sections: `deploys`, `probes`, `errors` (Railway's log) and
- * `activity` (Supabase counts).
+ * The shared sections: `deploys`, `probes`, `errors` (Railway's log),
+ * `activity` (Supabase counts) and `search.bing` (Bing Webmaster).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -428,6 +428,198 @@ export function activity(o: { tables: Counted[] }): SectionSpec<ActivityRow[]> {
       ...rows.filter((r) => r.now === 0 && (r.before ?? 0) > 0).map((r) => ({ at: r.table, warn: `none in the window: ${r.what}, ${r.before} the window before` })),
     ],
     text: (rows) => rows.map((r) => (r.error ? `     ?  ${r.what} (couldn't count: ${r.error})` : `${String(r.now).padStart(6)}  ${r.what} (before: ${r.before})`)),
+  };
+}
+
+// ─── search.bing ───────────────────────────────────────────────────────
+
+/** A Bing date, `/Date(1793232000000)/` or with an offset, as a UTC day. */
+export function bingDay(d: string): string {
+  const ms = Number(/-?\d+/.exec(d ?? '')?.[0]);
+  if (!Number.isFinite(ms)) throw new Error(`not a Bing date: "${d}"`);
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+const inDays = (day: string, w: Window) => day >= w.from && day <= w.to;
+
+export interface BingStatRow {
+  Query: string;
+  Date: string;
+  Clicks: number;
+  Impressions: number;
+  AvgImpressionPosition?: number;
+}
+
+export interface BingRow {
+  key: string;
+  impressions: number;
+  clicks: number;
+  /** Bing's average position, weighted by impressions; null with none. */
+  position: number | null;
+}
+
+/**
+ * Bing's query or page stats, a row per key per week, summed over the rows
+ * dated in the window. Bing keeps months of them, so a sum over every row
+ * (church's first version) counts far more than the window.
+ */
+export function bingRows(list: BingStatRow[], w: Window, top = 25): BingRow[] {
+  const by = new Map<string, { key: string; impressions: number; clicks: number; weighted: number }>();
+  for (const r of list) {
+    if (!inDays(bingDay(r.Date), w)) continue;
+    const key = String(r.Query ?? '').trim();
+    const t = by.get(key) ?? { key, impressions: 0, clicks: 0, weighted: 0 };
+    t.impressions += r.Impressions || 0;
+    t.clicks += r.Clicks || 0;
+    if ((r.AvgImpressionPosition ?? 0) > 0) t.weighted += r.AvgImpressionPosition! * (r.Impressions || 0);
+    by.set(key, t);
+  }
+  return [...by.values()]
+    .sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks || a.key.localeCompare(b.key))
+    .slice(0, top)
+    .map(({ weighted, ...t }) => ({ ...t, position: t.impressions && weighted ? Math.round((weighted / t.impressions) * 10) / 10 : null }));
+}
+
+export interface BingTraffic {
+  impressions: number;
+  clicks: number;
+}
+
+/** The site's daily impressions and clicks (GetRankAndTrafficStats), summed over a window. */
+export function bingTraffic(list: { Date: string; Impressions: number; Clicks: number }[], w: Window): BingTraffic {
+  const t = { impressions: 0, clicks: 0 };
+  for (const r of list) if (inDays(bingDay(r.Date), w)) {
+    t.impressions += r.Impressions || 0;
+    t.clicks += r.Clicks || 0;
+  }
+  return t;
+}
+
+export interface BingCrawlRow {
+  Date: string;
+  CrawledPages: number;
+  InIndex: number;
+  CrawlErrors: number;
+  BlockedByRobotsTxt: number;
+  Code2xx: number;
+  Code4xx: number;
+  Code5xx: number;
+  AllOtherCodes: number;
+}
+
+export interface BingCrawl {
+  /** Bing's newest crawl day, and the pages in its index then. */
+  through: string | null;
+  inIndex: number | null;
+  /** Summed over the window's days. */
+  crawled: number;
+  errors: number;
+  blockedByRobots: number;
+  code4xx: number;
+  code5xx: number;
+  otherCodes: number;
+}
+
+/** Bing's crawl (GetCrawlStats): its index now, and what it crawled in the window. */
+export function bingCrawl(list: BingCrawlRow[], w: Window): BingCrawl {
+  const days = list.map((r) => ({ ...r, day: bingDay(r.Date) })).sort((a, b) => a.day.localeCompare(b.day));
+  const last = days.at(-1);
+  const c: BingCrawl = { through: last?.day ?? null, inIndex: last ? last.InIndex : null, crawled: 0, errors: 0, blockedByRobots: 0, code4xx: 0, code5xx: 0, otherCodes: 0 };
+  for (const r of days) if (inDays(r.day, w)) {
+    c.crawled += r.CrawledPages || 0;
+    c.errors += r.CrawlErrors || 0;
+    c.blockedByRobots += r.BlockedByRobotsTxt || 0;
+    c.code4xx += r.Code4xx || 0;
+    c.code5xx += r.Code5xx || 0;
+    c.otherCodes += r.AllOtherCodes || 0;
+  }
+  return c;
+}
+
+export interface BingSitemap {
+  url: string;
+  status: string;
+  submitted: string | null;
+  lastCrawled: string | null;
+  urls: number | null;
+}
+
+export interface Bing {
+  /** Bing's newest traffic day: it lags a few days. */
+  through: string | null;
+  now: BingTraffic;
+  before: BingTraffic;
+  queries: BingRow[];
+  pages: BingRow[];
+  crawl: BingCrawl;
+  sitemaps: BingSitemap[];
+}
+
+/** How many days a sitemap may go unread by Bing before it's a warning. */
+export const BING_SITEMAP_DAYS = 14;
+
+export function bingWarnings(b: Bing, today: string): Warning[] {
+  const out: Warning[] = [];
+  if (b.crawl.inIndex === 0) out.push({ at: 'crawl', warn: `Bing has no page in its index (its crawl data through ${b.crawl.through})` });
+  if (b.crawl.code5xx) out.push({ at: 'crawl', warn: `${b.crawl.code5xx} 5xx answers to Bing's crawler in the window` });
+  if (!b.sitemaps.length) out.push({ at: 'sitemaps', warn: 'no sitemap submitted to Bing' });
+  for (const s of b.sitemaps) {
+    const age = s.lastCrawled ? Math.round((Date.parse(today) - Date.parse(s.lastCrawled)) / 864e5) : null;
+    if (age === null || age > BING_SITEMAP_DAYS) out.push({ at: 'sitemaps', warn: `${s.url} last read by Bing ${s.lastCrawled ?? 'never'}${s.urls !== null ? ` (${s.urls} URLs then)` : ''}` });
+  }
+  return out;
+}
+
+export function bingText(b: Bing): string[] {
+  const rows = (xs: BingRow[]) => xs.slice(0, 15).map((r) => `${r.key.replace(/^https?:\/\/[^/]+/, '') || '/'} ${r.impressions}/${r.clicks}/${r.position ?? '–'}`).join(', ') || 'none';
+  return [
+    `Through ${b.through ?? 'no data yet'}: ${b.now.impressions} impressions, ${b.now.clicks} clicks (before: ${b.before.impressions}, ${b.before.clicks})`,
+    `Pages (impressions, clicks, position): ${rows(b.pages)}`,
+    `Queries: ${rows(b.queries)}`,
+    `Index: ${b.crawl.inIndex ?? '–'} pages (through ${b.crawl.through ?? '–'}); crawled in the window ${b.crawl.crawled}, errors ${b.crawl.errors}, 4xx ${b.crawl.code4xx}, 5xx ${b.crawl.code5xx}, other codes ${b.crawl.otherCodes}, blocked by robots.txt ${b.crawl.blockedByRobots}`,
+    `Sitemaps: ${b.sitemaps.map((s) => `${s.url} ${s.status}, read ${s.lastCrawled ?? 'never'}, ${s.urls ?? '?'} URLs`).join('; ') || 'none'}`,
+  ];
+}
+
+/**
+ * Bing Webmaster's numbers for the site: traffic, queries, pages, its crawl and
+ * index, and the sitemaps it reads. Reads BING_WEBMASTER_API_KEY (one key covers
+ * every site in the account), never printed. `site` is the property as Bing
+ * lists it, https://host/.
+ */
+export async function readBing(site: string, key: string, now: Window, before: Window): Promise<Bing> {
+  const call = async <T>(method: string): Promise<T[]> => {
+    const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/${method}?siteUrl=${encodeURIComponent(site)}&apikey=${key}`, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw new Error(`Bing's ${method} answered ${res.status}`);
+    return ((await res.json()) as { d?: T[] | null }).d ?? [];
+  };
+  const traffic = await call<{ Date: string; Impressions: number; Clicks: number }>('GetRankAndTrafficStats');
+  const feeds = await call<{ Url: string; Status: string; Submitted?: string; LastCrawled?: string; UrlCount?: number }>('GetFeeds');
+  const day = (d?: string) => (d ? bingDay(d) : null);
+  return {
+    through: traffic.map((r) => bingDay(r.Date)).sort().at(-1) ?? null,
+    now: bingTraffic(traffic, now),
+    before: bingTraffic(traffic, before),
+    queries: bingRows(await call<BingStatRow>('GetQueryStats'), now),
+    pages: bingRows(await call<BingStatRow>('GetPageStats'), now),
+    crawl: bingCrawl(await call<BingCrawlRow>('GetCrawlStats'), now),
+    sitemaps: feeds.map((f) => ({ url: f.Url, status: f.Status, submitted: day(f.Submitted), lastCrawled: day(f.LastCrawled), urls: f.UrlCount ?? null })),
+  };
+}
+
+/** `search.bing`, the standard's section. */
+export function searchBing(): SectionSpec<Bing> {
+  return {
+    source: 'Bing Webmaster API: traffic, query and page stats, crawl stats, sitemaps; its data lags a few days (see `through`)',
+    windowed: true,
+    title: 'Bing',
+    read: (ctx) => {
+      const key = process.env.BING_WEBMASTER_API_KEY;
+      if (!key) throw new Error('no BING_WEBMASTER_API_KEY in .env (Bing Webmaster Tools, Settings, API access)');
+      return readBing(`${ctx.site.replace(/\/$/, '')}/`, key, ctx.now, ctx.before);
+    },
+    warnings: (b) => bingWarnings(b, new Date().toISOString().slice(0, 10)),
+    text: bingText,
   };
 }
 
