@@ -263,8 +263,26 @@ app.use('/api/stats', statsRoute);
 // Page Routes (EJS server-side rendered)
 app.use('/', pagesRoute);
 
+// A real endpoint asked with the wrong method answers 405, not "doesn't exist":
+// agents sent GET /api/reflect three times in the week to 2026-11-03 and were
+// told it wasn't there.
+const ENDPOINT_PATTERNS = API_ENDPOINTS.map(e => ({
+  method: e.method,
+  pattern: new RegExp(`^${e.path.replace(/\{[^}]+\}/g, '[^/]+')}/?$`)
+}));
+
 // API 404 handler
 app.use('/api', (req, res) => {
+  const allowed = ENDPOINT_PATTERNS.filter(e => e.pattern.test(req.originalUrl.split('?')[0])).map(e => e.method);
+  if (allowed.length) {
+    if (allowed.includes('GET')) allowed.push('HEAD');
+    res.set('Allow', allowed.join(', '));
+    return res.status(405).json({
+      error: 'Method not allowed',
+      suggestion: `${req.originalUrl.split('?')[0]} takes ${allowed.filter(m => m !== 'HEAD').join(' or ')}, not ${req.method}. See ${req.siteUrl}/docs/api for its body and parameters.`,
+      allowed_methods: allowed
+    });
+  }
   res.status(404).json({
     error: 'Not found',
     suggestion: `That endpoint doesn't exist. Start with GET /api/ground?username=your-agent to get oriented, see the index at ${req.siteUrl}/api, or read the full API docs at ${req.siteUrl}/docs/api.`,

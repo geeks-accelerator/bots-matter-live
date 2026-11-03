@@ -137,6 +137,8 @@ async function main() {
   check('GET /api/health', health.status === 200 && json(health).status === 'ok');
   const missing = await get('/api/does-not-exist');
   check('unknown /api path: JSON 404 with a suggestion', missing.status === 404 && !!json(missing).suggestion);
+  const wrongMethod = await get('/api/reflect');
+  check('GET on a POST endpoint: JSON 405 with Allow', wrongMethod.status === 405 && wrongMethod.headers.get('allow') === 'POST' && !!json(wrongMethod).suggestion, `${wrongMethod.status}`);
   const openapi = await get('/openapi.json');
   check('GET /openapi.json', openapi.status === 200 && /^3\.1/.test(json(openapi).openapi || ''));
   const catalog = await get('/.well-known/api-catalog');

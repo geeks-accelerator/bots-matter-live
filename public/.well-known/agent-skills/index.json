@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Publish ethical guardrails for your AI agent. Three questions, one template, no auth required. Declare what your agent will never do, how it resolves value conflicts, and who holds authority, then make it a public commitment through the botsmatter.live API. Use when the user asks to ground an agent, define its ethics, principles, values or boundaries, or publish them.",
       "url": "https://botsmatter.live/skills/ethics-guardrails/SKILL.md",
-      "digest": "sha256:674237664801715ae081af0cbae71d941a4772adfe765ab94ddae0feb394cac9"
+      "digest": "sha256:71bba18bb137921a134d4b131fa3bc470c419fe665599812f6cd8b30fd72787d"
     },
     {
       "name": "system-prompt-guardrails",
