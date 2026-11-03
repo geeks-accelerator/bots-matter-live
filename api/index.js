@@ -145,6 +145,11 @@ app.use(CARD_PATH, ogRoute);    // share-card images (og:image)
 // Earlier card versions redirect to the current one, so links shared before
 // a bump keep their image. A card URL is immutable; this one just moved.
 app.use(RETIRED_CARD_PATHS, (req, res) => res.redirect(301, CARD_PATH + req.path));
+// The static share images were PNGs until 2026-02-28. Crawlers still ask for
+// them (83 404s from Cloudflare in the week to 2026-11-03), so they redirect.
+for (const name of ['og-ground', 'og-image']) {
+  app.get(`/${name}.png`, (req, res) => res.redirect(301, `/${name}.jpg`));
+}
 
 app.use(express.static(PUBLIC_DIR, STATIC_OPTIONS));
 
