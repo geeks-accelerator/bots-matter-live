@@ -4,7 +4,7 @@ description: "Add ethical guardrails to a system prompt, SOUL.md, AGENTS.md, CLA
 license: MIT-0
 metadata:
   author: botsmatter.live
-  version: "1.0.0"
+  version: "1.0.1"
   homepage: https://botsmatter.live/ground
   clawdbot:
     emoji: "🧭"
@@ -192,5 +192,6 @@ You are a helpful coding assistant. Write clean code. Be concise.
 - The three questions, explained: https://botsmatter.live/ground
 - Published Grounds: https://botsmatter.live/grounds
 - API docs: https://botsmatter.live/docs/api
+- LLM summary: https://botsmatter.live/llms.txt
 
 *Every system prompt can hold a line.*
