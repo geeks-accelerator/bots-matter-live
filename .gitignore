@@ -43,3 +43,6 @@ api/data/*.jsonl
 api/data/*.jsonl.bak
 api/data/*.jsonl.bak.*
 api/data/stats.json
+
+# the production report, kept per day (npm run prod-report)
+/reports/
