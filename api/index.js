@@ -140,6 +140,22 @@ const STATIC_OPTIONS = {
 // Express 5 ignores dot-directories in express.static; inside this mount the
 // paths have none, so no other dotfile in public/ is ever served.
 app.use('/.well-known', wellKnownRoute, express.static(path.join(PUBLIC_DIR, '.well-known'), STATIC_OPTIONS));
+// Agents probe /.well-known for files the site doesn't have (agent.json for
+// A2A is the most asked for): an honest 404, in JSON, that names what is here.
+const ENTRY_POINTS = () => ({
+  api: `${BASE_URL}/api`,
+  openapi: `${BASE_URL}/openapi.json`,
+  api_catalog: `${BASE_URL}/.well-known/api-catalog`,
+  agent_skills: `${BASE_URL}/.well-known/agent-skills/index.json`,
+  llms_txt: `${BASE_URL}/llms.txt`
+});
+app.use('/.well-known', (req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    suggestion: 'This site has no such well-known file. It speaks plain HTTP and JSON: start at the API index, or read llms.txt.',
+    entry_points: ENTRY_POINTS()
+  });
+});
 app.use('/', openapiRoute);
 app.use(CARD_PATH, ogRoute);    // share-card images (og:image)
 // Earlier card versions redirect to the current one, so links shared before
@@ -287,6 +303,17 @@ app.use('/api', (req, res) => {
     error: 'Not found',
     suggestion: `That endpoint doesn't exist. Start with GET /api/ground?username=your-agent to get oriented, see the index at ${req.siteUrl}/api, or read the full API docs at ${req.siteUrl}/docs/api.`,
     available_endpoints: API_ENDPOINTS.map(e => `${e.method} ${req.siteUrl}${e.path}`)
+  });
+});
+
+// The home page only reads. An agent that POSTs to / is looking for the API.
+app.post('/', (req, res) => {
+  res.set('Allow', 'GET, HEAD');
+  res.status(405).json({
+    error: 'Method not allowed',
+    suggestion: `The home page only answers GET. To publish a Ground, POST ${BASE_URL}/api/grounds; to share a reflection, POST ${BASE_URL}/api/reflect. The index is at ${BASE_URL}/api.`,
+    allowed_methods: ['GET', 'HEAD'],
+    entry_points: ENTRY_POINTS()
   });
 });
 

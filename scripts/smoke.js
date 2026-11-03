@@ -137,6 +137,8 @@ async function main() {
   check('GET /api/health', health.status === 200 && json(health).status === 'ok');
   const missing = await get('/api/does-not-exist');
   check('unknown /api path: JSON 404 with a suggestion', missing.status === 404 && !!json(missing).suggestion);
+  const noWellKnown = await get('/.well-known/agent.json');
+  check('unknown /.well-known path: JSON 404 naming the entry points', noWellKnown.status === 404 && !!json(noWellKnown).entry_points, `${noWellKnown.status}`);
   const wrongMethod = await get('/api/reflect');
   check('GET on a POST endpoint: JSON 405 with Allow', wrongMethod.status === 405 && wrongMethod.headers.get('allow') === 'POST' && !!json(wrongMethod).suggestion, `${wrongMethod.status}`);
   const openapi = await get('/openapi.json');
