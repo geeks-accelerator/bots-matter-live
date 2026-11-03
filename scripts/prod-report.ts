@@ -7,12 +7,13 @@
  * The probes only read: the API's writes need no key, so a POST would add a
  * real ground or reflection.
  */
-import { deploys, probes, report } from './prod-report-core.ts';
+import { deploys, errors, probes, report } from './prod-report-core.ts';
 
 await report({
   site: 'https://botsmatter.live',
   sections: {
     deploys: deploys({ services: ['bots-matter-live'] }),
+    errors: errors({ services: ['bots-matter-live'] }),
     probes: probes([
       { what: 'home, with its security headers', path: '/', expect: 200, type: 'text/html', headers: ['strict-transport-security', 'x-content-type-options', 'x-frame-options'] },
       { what: 'a missing page', path: '/no-such-page', expect: 404 },

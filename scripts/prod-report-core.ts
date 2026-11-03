@@ -30,6 +30,9 @@
  *
  * Run by Node directly (no build). Nothing runs on import: the pure parts are
  * exported for report/prod-report-core.test.ts, in the agents repo.
+ *
+ * The shared sections: `deploys`, `probes`, `errors` (Railway's log) and
+ * `activity` (Supabase counts).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -235,6 +238,196 @@ export function deploys(o: { services: string[] }): SectionSpec<Deploys> {
     },
     warnings: deploysWarnings,
     text: deploysText,
+  };
+}
+
+// ─── errors ────────────────────────────────────────────────────────────
+
+/** A row of `railway logs --json`. */
+export interface LogLine {
+  timestamp: string;
+  message: string;
+  level?: string;
+}
+
+/** `railway logs` gives at most this many lines a call (more is refused, the standard). */
+export const RAILWAY_LOG_LIMIT = 5000;
+
+/**
+ * The deployments that ran during the window, each with when it was replaced.
+ * `railway logs` reads one deployment's log, so the window is read deployment by
+ * deployment (2026-11-03: the default, the latest deployment, held minutes of it).
+ */
+export function deploymentsInWindow(list: RailwayDeployment[], w: Window) {
+  const ran = [...list].filter((d) => d.status === 'SUCCESS' || d.status === 'REMOVED' || d.status === 'CRASHED').sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  return ran
+    .map((d, i) => ({ id: d.id, from: d.createdAt, replacedAt: ran[i + 1]?.createdAt ?? null }))
+    .filter((d) => Date.parse(d.from) < end(w) && (d.replacedAt === null || Date.parse(d.replacedAt) > start(w)));
+}
+
+/** A log line without the addresses in it: a report never holds an IP (the standard). nginx puts the client's in each error. */
+export const withoutAddresses = (message: string) =>
+  message.replace(/\b\d{1,3}(\.\d{1,3}){3}\b/g, '<ip>').replace(/(?<![\w:])((?:[0-9a-f]{1,4}:){1,7}:(?:[0-9a-f]{1,4}(?::[0-9a-f]{1,4}){0,6})?|(?:[0-9a-f]{1,4}:){5,7}[0-9a-f]{1,4})(?![\w:])/gi, '<ip>');
+
+/** One message's shape, so the same error with other ids or numbers counts once. */
+export const errorShape = (message: string) =>
+  message
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<id>')
+    .replace(/\b[0-9a-f]{12,}\b/gi, '<id>')
+    .replace(/\d+/g, '#')
+    .replace(/[^\x20-\x7e]+/g, '…')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160);
+
+/**
+ * Railway calls every line on stderr an error. One that names a lower level
+ * itself isn't: nginx's `[notice]`, uvicorn's `INFO:`, `npm warn` (ollamaherd,
+ * 2026-11-03: 948 "errors", all of them nginx starting workers).
+ */
+export const namesLowerLevel = (message: string) =>
+  /^\s*(\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d )?\[(debug|info|notice|warn)\]|^\s*(DEBUG|INFO|NOTICE|WARNING|WARN):|^\s*npm warn\b/i.test(message);
+
+/**
+ * Error lines grouped by their shape, most first. Counted apart, not as errors:
+ * a line logged after its deployment was replaced, the old one shutting down
+ * (`npm error signal SIGTERM` on every deploy, 2026-11-03); and a line that
+ * names a lower level (`namesLowerLevel`).
+ */
+export function errorGroups(lines: { line: LogLine; replacedAt: string | null }[], top = 20) {
+  const groups = new Map<string, { message: string; count: number; first: string; last: string }>();
+  let shutdown = 0;
+  let lower = 0;
+  for (const { line, replacedAt } of lines) {
+    if (replacedAt && Date.parse(line.timestamp) >= Date.parse(replacedAt)) {
+      shutdown++;
+      continue;
+    }
+    if (namesLowerLevel(line.message)) {
+      lower++;
+      continue;
+    }
+    const message = withoutAddresses(line.message);
+    const shape = errorShape(message);
+    const g = groups.get(shape) ?? { message: message.slice(0, 200), count: 0, first: line.timestamp, last: line.timestamp };
+    g.count++;
+    if (line.timestamp < g.first) g.first = line.timestamp;
+    if (line.timestamp > g.last) g.last = line.timestamp;
+    groups.set(shape, g);
+  }
+  const all = [...groups.values()].sort((a, b) => b.count - a.count || b.last.localeCompare(a.last));
+  return { lines: all.reduce((n, g) => n + g.count, 0), shutdown, lower, kinds: all.length, groups: all.slice(0, top) };
+}
+
+export type ServiceErrors = ReturnType<typeof errorGroups> & { deployments: number; truncated: number };
+
+/** Warned when seen in the day before the report: older ones are in the section, not the warnings. */
+export function errorsWarnings(e: Record<string, ServiceErrors>, nowMs: number): Warning[] {
+  const out: Warning[] = [];
+  for (const [service, s] of Object.entries(e)) {
+    if (s.truncated) out.push({ at: service, warn: `${s.truncated} deployment logs hit ${RAILWAY_LOG_LIMIT} error lines: there are more than counted` });
+    for (const g of s.groups.filter((x) => nowMs - Date.parse(x.last) < 864e5).slice(0, 5)) out.push({ at: service, warn: `${g.count}× since ${g.first}: ${g.message.slice(0, 120)}` });
+  }
+  return out;
+}
+
+/** The server's errors and crashes in the window, from Railway's log, by service. */
+export function errors(o: { services: string[] }): SectionSpec<Record<string, ServiceErrors>> {
+  return {
+    source: `railway logs --filter @level:error, each deployment in the window (${o.services.join(', ')})`,
+    windowed: true,
+    title: 'Server errors',
+    read: (ctx) =>
+      Object.fromEntries(
+        o.services.map((service) => {
+          const runs = deploymentsInWindow(ctx.runJson<RailwayDeployment[]>('railway', ['deployment', 'list', '-s', service, '--json'], []), ctx.now);
+          const lines: { line: LogLine; replacedAt: string | null }[] = [];
+          let truncated = 0;
+          for (const d of runs) {
+            const since = new Date(Math.max(Date.parse(d.from), start(ctx.now))).toISOString();
+            const until = new Date(Math.min(d.replacedAt ? Date.parse(d.replacedAt) + 3_600_000 : Date.now(), end(ctx.now))).toISOString();
+            const out = ctx.run('railway', ['logs', d.id, '-s', service, '--since', since, '--until', until, '-n', String(RAILWAY_LOG_LIMIT), '--json', '--filter', '@level:error']);
+            const got = out.split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l) as LogLine);
+            if (got.length >= RAILWAY_LOG_LIMIT) truncated++;
+            for (const line of got) lines.push({ line, replacedAt: d.replacedAt });
+          }
+          return [service, { deployments: runs.length, truncated, ...errorGroups(lines) }];
+        }),
+      ),
+    warnings: (e) => errorsWarnings(e, Date.now()),
+    text: (e) =>
+      Object.entries(e).flatMap(([service, s]) => [
+        `${service}: ${s.lines} error lines of ${s.kinds} kinds, from ${s.deployments} deployments${s.shutdown || s.lower ? ` (set apart: ${s.shutdown} as replaced ones shut down, ${s.lower} naming a lower level)` : ''}${s.truncated ? `; ${s.truncated} logs hit the limit` : ''}`,
+        ...s.groups.slice(0, 10).map((g) => `  ${String(g.count).padStart(5)}×  last ${g.last.slice(0, 16)}  ${g.message.slice(0, 120)}`),
+      ]),
+  };
+}
+
+// ─── activity ──────────────────────────────────────────────────────────
+
+/** A table to count, for `activity`. */
+export interface Counted {
+  /** What a row is, said plainly: "agents registered". */
+  what: string;
+  table: string;
+  /** When a row happened; created_at when there's none. */
+  column?: string;
+}
+
+/** The count in a PostgREST `content-range` header (`0-0/42`, or `*\/0`). */
+export function countOf(contentRange: string | null): number {
+  const n = Number(contentRange?.split('/')[1]);
+  if (!Number.isFinite(n)) throw new Error(`no count in content-range "${contentRange}"`);
+  return n;
+}
+
+async function countRows(url: string, key: string, t: Counted, w: Window): Promise<number> {
+  const column = t.column ?? 'created_at';
+  const q = `${url}/rest/v1/${t.table}?select=*&${column}=gte.${w.from}T00:00:00Z&${column}=lt.${new Date(end(w)).toISOString()}`;
+  const res = await fetch(q, { method: 'HEAD', headers: { apikey: key, authorization: `Bearer ${key}`, prefer: 'count=exact', range: '0-0' }, signal: AbortSignal.timeout(30_000) });
+  if (!res.ok && res.status !== 206) throw new Error(`Supabase answered ${res.status} (is ${column} a column of ${t.table}?)`);
+  return countOf(res.headers.get('content-range'));
+}
+
+export interface ActivityRow {
+  what: string;
+  table: string;
+  now: number | null;
+  before: number | null;
+  /** Why this table couldn't be counted; the other tables still are. */
+  error?: string;
+}
+
+/**
+ * What agents (or people) did in the window, counted per table from Supabase,
+ * beside the window before. Counts only, never a row's contents (the standard).
+ * Reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, the names the
+ * Supabase projects share.
+ */
+export function activity(o: { tables: Counted[] }): SectionSpec<ActivityRow[]> {
+  return {
+    source: `Supabase, rows created in the window: ${o.tables.map((t) => t.table).join(', ')}`,
+    windowed: true,
+    title: 'Activity',
+    read: async (ctx) => {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!url || !key) throw new Error('no NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.prod');
+      const rows: ActivityRow[] = [];
+      for (const t of o.tables) {
+        try {
+          rows.push({ what: t.what, table: t.table, now: await countRows(url, key, t, ctx.now), before: await countRows(url, key, t, ctx.before) });
+        } catch (e) {
+          rows.push({ what: t.what, table: t.table, now: null, before: null, error: oneLine(e) });
+        }
+      }
+      return rows;
+    },
+    warnings: (rows) => [
+      ...rows.filter((r) => r.error).map((r) => ({ at: r.table, warn: `couldn't count: ${r.error}` })),
+      ...rows.filter((r) => r.now === 0 && (r.before ?? 0) > 0).map((r) => ({ at: r.table, warn: `none in the window: ${r.what}, ${r.before} the window before` })),
+    ],
+    text: (rows) => rows.map((r) => (r.error ? `     ?  ${r.what} (couldn't count: ${r.error})` : `${String(r.now).padStart(6)}  ${r.what} (before: ${r.before})`)),
   };
 }
 
