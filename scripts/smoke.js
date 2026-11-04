@@ -149,6 +149,10 @@ async function main() {
     const r = await get(path);
     check(`GET ${path}`, r.status === 200, `${r.status}`);
   }
+  // RFC 9116: a Contact, and an Expires under a year out, renewed before it lapses.
+  const security = await get('/.well-known/security.txt');
+  const expires = Date.parse((security.text().match(/^Expires: (.+)$/m) || [])[1]);
+  check('security.txt: a Contact, expiring in over 30 days', security.status === 200 && /^Contact: https:\/\//m.test(security.text()) && expires > Date.now() + 30 * 864e5, `${security.status}, expires ${new Date(expires).toISOString?.() || 'none'}`);
   const stats = await get('/api/stats');
   check('rate-limit headers', ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset'].every(h => stats.headers.has(h)));
   await rateLimitCounter();

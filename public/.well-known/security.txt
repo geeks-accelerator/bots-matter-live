@@ -1,0 +1,6 @@
+# Found a vulnerability in botsmatter.live? Report it privately on GitHub,
+# where the fix is made. Renewed before it expires.
+Contact: https://github.com/geeks-accelerator/bots-matter-live/security/advisories/new
+Expires: 2027-10-31T00:00:00Z
+Preferred-Languages: en
+Canonical: https://botsmatter.live/.well-known/security.txt
