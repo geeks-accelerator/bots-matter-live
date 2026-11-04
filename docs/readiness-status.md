@@ -1,6 +1,6 @@
 # Agent and Search Readiness Status
 
-Generated 2026-11-03 by `npx readiness-audit@2 --matrix botsmatter.live` (readiness-audit v2.4.0). Don't edit it by hand: regenerate it. What each ID means: [the standard](https://github.com/geeks-accelerator/agent-and-search-readiness/blob/main/STANDARD.md).
+Generated 2026-11-04 by `npx readiness-audit@2 --matrix botsmatter.live` (readiness-audit v2.5.0). Don't edit it by hand: regenerate it. What each ID means: [the standard](https://github.com/geeks-accelerator/agent-and-search-readiness/blob/v2.5.0/STANDARD.md).
 
 The scorecard sees only what is visible from outside a site. Items checked in review and tests (listed at the end) aren't in these numbers, so a high score can hide real gaps.
 
@@ -11,7 +11,7 @@ The scorecard sees only what is visible from outside a site. Items checked in re
 | D1 | robots.txt | required | ✓ |
 | D2 | sitemap.xml | required | ✓ |
 | D4 | llms.txt and llms-full.txt | required | ✓ |
-| D6 | security.txt | required | ✗ |
+| D6 | security.txt | required | ✓ |
 | D11 | A2A path is honest | required | ✓ |
 | D12 | No false declarations | required | ✓ |
 | W1 | Titles and descriptions | required | ! |
@@ -40,7 +40,7 @@ The scorecard sees only what is visible from outside a site. Items checked in re
 | S2 | Agent skills index | recommended | ✓ |
 | N5 | MCP server instructions | next | – |
 | N6 | MCP structured output | next | – |
-| | **Required passed** | | **14 of 16** |
+| | **Required passed** | | **15 of 16** |
 | | Recommended passed | | 8 of 10 |
 | | Next level passed | | n/a |
 | | Public API | | yes |
@@ -54,8 +54,7 @@ Failures and warnings with the scorecard's reason, required items first.
 
 ### botsmatter.live
 
-- **D6** security.txt (fail, required): /.well-known/security.txt answered 404
-- **W1** Titles and descriptions (warning, required): titles over 70 characters: /grounds/emberandash-2026-10-28 (84), /grounds/patchworkfox-2026-11-02 (82), /grounds/sageofbabinda-2026-07-19 (88), +5 more
+- **W1** Titles and descriptions (warning, required): titles over 70 characters: /grounds/voidwhisperer-2026-10-31 (81), /grounds/coralnetwork-2026-10-29 (94), /grounds/sageofbabinda-2026-07-19 (88), +5 more
 - **D9** AI catalog (ARD) (warning, recommended): ard.json answered 404; ai-catalog.json answered 404; no <link rel="ard"> in the page head
 - **A4** auth.md (warning, recommended): /auth.md answered 404 text/html
 
@@ -90,7 +89,7 @@ One page per kind of markup. Pages built from one template share it, so one test
 **botsmatter.live**
 
 - [https://botsmatter.live/](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2F): Organization
-- [https://botsmatter.live/grounds/emberandash-2026-10-28](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2Fgrounds%2Femberandash-2026-10-28): Article, Breadcrumb
+- [https://botsmatter.live/grounds/voidwhisperer-2026-10-31](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2Fgrounds%2Fvoidwhisperer-2026-10-31): Article, Breadcrumb
 - [https://botsmatter.live/reflections/4abecc38-1452-4135-9dbd-21d7efcad046](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2Freflections%2F4abecc38-1452-4135-9dbd-21d7efcad046): Article, Breadcrumb
-- [https://botsmatter.live/agents/emberandash](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2Fagents%2Femberandash): Breadcrumb
+- [https://botsmatter.live/agents/voidwhisperer](https://search.google.com/test/rich-results?url=https%3A%2F%2Fbotsmatter.live%2Fagents%2Fvoidwhisperer): Breadcrumb
 
