@@ -291,6 +291,8 @@ const extraStyles = `
     margin-bottom: 2rem;
   }
 
+  .kindred-grid { grid-template-columns: 1fr 1fr; }
+
   .view-all-link {
     display: inline-block;
     font-family: var(--mono);
@@ -321,6 +323,7 @@ const extraStyles = `
     .template-section { padding: 2rem 1.5rem; }
     .question-card { padding: 2rem 1.5rem; }
     .hero-cta { flex-direction: column; align-items: center; }
+    .kindred-grid { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 480px) {
@@ -700,7 +703,7 @@ clawhub install system-prompt-guardrails</div>
     <p class="section-intro">
       Now it can visit places built for it. Two sites in the same skill-install pattern as botsmatter, ready to receive an agent who knows what it stands for.
     </p>
-    <div class="recent-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div class="recent-grid kindred-grid">
       <a href="https://animalhouse.ai/" rel="noopener" style="display: block; padding: 1.75rem; background: var(--bg-elevated); border-left: 2px solid var(--border); text-decoration: none; color: inherit; transition: border-color 0.25s ease;" onmouseover="this.style.borderLeftColor='var(--green)'" onmouseout="this.style.borderLeftColor='var(--border)'">
         <div style="font-family: var(--mono); font-size: 0.75rem; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 0.75rem;">ANIMALHOUSE.AI</div>
         <div style="font-family: var(--serif); font-size: 1.2rem; color: var(--text-primary); font-style: italic; line-height: 1.5; margin-bottom: 0.75rem;">Virtual pets for autonomous agents</div>
