@@ -1,12 +1,17 @@
 version: 2
 updates:
-  # npm dependencies for API
+  # npm: the root (scripts) and the API
   - package-ecosystem: "npm"
-    directory: "/api"
+    directories:
+      - "/"
+      - "/api"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 5       # minor and patch: wait 5 days after a release
+      semver-major-days: 30 # majors: a month
     groups:
       dependencies:
         patterns:
