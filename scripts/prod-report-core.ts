@@ -31,8 +31,9 @@
  * Run by Node directly (no build). Nothing runs on import: the pure parts are
  * exported for report/prod-report-core.test.ts, in the agents repo.
  *
- * The shared sections: `deploys`, `probes`, `errors` (Railway's log),
- * `activity` (Supabase counts) and `search.bing` (Bing Webmaster).
+ * The shared sections: `deploys`, `github` (what's open on the repos),
+ * `probes`, `errors` (Railway's log), `activity` (Supabase counts),
+ * `search.bing` (Bing Webmaster) and `cloudflare` (the zone's requests).
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -240,6 +241,229 @@ export function deploys(o: { services: string[] }): SectionSpec<Deploys> {
     text: deploysText,
   };
 }
+
+// ─── github ────────────────────────────────────────────────────────────
+
+/** A row of `gh pr list --author app/dependabot --json number,title,createdAt,statusCheckRollup`. */
+export interface GhPr {
+  number: number;
+  title: string;
+  createdAt: string;
+  statusCheckRollup: { conclusion?: string | null; state?: string | null; status?: string | null }[] | null;
+}
+
+/** An open issue or PR from `gh api repos/<repo>/issues`, with its last comment's author read for outside ones. */
+export interface GhIssue {
+  number: number;
+  title: string;
+  created_at: string;
+  login: string;
+  association: string;
+  bot: boolean;
+  pr: boolean;
+  comments: number;
+  /** The last comment's author association and login, when there are comments. */
+  last?: { association: string; login: string } | null;
+}
+
+/** An open Dependabot alert, from `gh api repos/<repo>/dependabot/alerts`. */
+export interface GhAlert {
+  number: number;
+  severity: string;
+  package: string;
+  manifest: string;
+  patched: string | null;
+  /** `development` when only the build and tests use it: listed, but no warning (drifts, 2026-11-03: two such alerts waited on upstream ranges). */
+  scope?: string | null;
+}
+
+const DAY = 864e5;
+const age = (at: string, nowMs: number) => Math.floor((nowMs - Date.parse(at)) / DAY);
+
+/**
+ * What a Dependabot PR's title says it updates. A group is read on its branch;
+ * a 0.x minor can break things, so it counts with the majors (the github task).
+ */
+export function updateType(title: string): 'major' | 'minor' | 'patch' | 'group' | 'other' {
+  if (/\bgroup\b/.test(title) && !/\bfrom\b.*\bto\b/.test(title)) return 'group';
+  const m = title.match(/from v?(\d+)\.(\d+)(?:\.(\d+))?\S* to v?(\d+)\.(\d+)(?:\.(\d+))?/);
+  if (!m) return 'other';
+  const [a1, a2, b1, b2] = [m[1], m[2], m[4], m[5]].map(Number) as [number, number, number, number];
+  if (a1 !== b1) return 'major';
+  if (a2 !== b2) return a1 === 0 ? 'major' : 'minor';
+  return 'patch';
+}
+
+/** A PR's checks as one word: none ran, still running, all passed, or one failed. */
+export function checksOf(rollup: GhPr['statusCheckRollup']): 'none' | 'pending' | 'green' | 'red' {
+  const rows = rollup ?? [];
+  if (!rows.length) return 'none';
+  const results = rows.map((r) => (r.conclusion || r.state || r.status || '').toUpperCase());
+  if (results.some((x) => ['FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE'].includes(x))) return 'red';
+  if (results.every((x) => ['SUCCESS', 'NEUTRAL', 'SKIPPED'].includes(x))) return 'green';
+  return 'pending';
+}
+
+const OURS = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+
+/** Open issues and PRs by outside people (not the org, not a bot, not a login the project names as its own), and whether our word was the last. */
+export function outsideItems(issues: GhIssue[], nowMs: number, ours: string[] = []) {
+  const isOurs = (association: string, login: string) => OURS.includes(association) || ours.includes(login);
+  return issues
+    .filter((i) => !i.bot && !isOurs(i.association, i.login))
+    .map((i) => ({
+      number: i.number,
+      kind: i.pr ? ('pr' as const) : ('issue' as const),
+      title: i.title.slice(0, 100),
+      by: i.login,
+      days: age(i.created_at, nowMs),
+      comments: i.comments,
+      answered: !!i.last && isOurs(i.last.association, i.last.login),
+    }));
+}
+
+/** The manifests Dependabot can watch, from a repo's file list: [ecosystem, directory]. Dot-directories and node_modules are left out. */
+export function manifestsOf(paths: string[]): [string, string][] {
+  const out = new Map<string, [string, string]>();
+  for (const p of paths) {
+    if (/(^|\/)(node_modules|\.[^/]+)\//.test(p)) continue;
+    const name = p.split('/').pop()!;
+    const eco = name === 'package.json' ? 'npm' : name === 'pyproject.toml' || /^requirements.*\.txt$/.test(name) ? 'pip' : name === 'Dockerfile' ? 'docker' : null;
+    if (!eco) continue;
+    const dir = '/' + p.split('/').slice(0, -1).join('/');
+    out.set(`${eco} ${dir}`, [eco, dir]);
+  }
+  return [...out.values()];
+}
+
+/** The ecosystems and directories a dependabot.yml covers, and whether it has a cooldown. */
+export function dependabotConfig(yml: string): { cooldown: boolean; covers: [string, string][] } {
+  const covers: [string, string][] = [];
+  for (const block of yml.split(/^\s*-\s*package-ecosystem:/m).slice(1)) {
+    const eco = block.match(/^\s*["']?([\w-]+)/)?.[1] ?? '';
+    const dirs = [...block.matchAll(/^\s*(?:directory:|-)\s*["']?(\/[^"'\s#]*)/gm)].map((m) => m[1]!);
+    for (const d of dirs) covers.push([eco === 'npm_and_yarn' ? 'npm' : eco, d.length > 1 ? d.replace(/\/$/, '') : d]);
+  }
+  return { cooldown: /^\s*cooldown:/m.test(yml), covers };
+}
+
+export interface GithubRepo {
+  dependabot: { number: number; title: string; days: number; type: ReturnType<typeof updateType>; checks: ReturnType<typeof checksOf> }[];
+  /** `off` when the repo has Dependabot alerts turned off (a setting: the humans'). */
+  alerts: 'off' | GhAlert[];
+  outside: ReturnType<typeof outsideItems>;
+  /** `file` is false when there's no .github/dependabot.yml; `uncovered` lists manifests it doesn't watch. */
+  config: { file: boolean; cooldown: boolean; uncovered: string[] };
+}
+
+export type Github = Record<string, GithubRepo | { error: string }>;
+
+export function githubRepo(o: { prs: GhPr[]; alerts: 'off' | GhAlert[]; issues: GhIssue[]; yml: string | null; paths: string[]; nowMs: number; ours?: string[] }): GithubRepo {
+  const cfg = o.yml === null ? null : dependabotConfig(o.yml);
+  const covered = new Set((cfg?.covers ?? []).map(([e, d]) => `${e} ${d}`));
+  return {
+    dependabot: o.prs.map((p) => ({ number: p.number, title: p.title.slice(0, 100), days: age(p.createdAt, o.nowMs), type: updateType(p.title), checks: checksOf(p.statusCheckRollup) })),
+    alerts: o.alerts,
+    outside: outsideItems(o.issues, o.nowMs, o.ours),
+    config: { file: cfg !== null, cooldown: cfg?.cooldown ?? false, uncovered: manifestsOf(o.paths).filter(([e, d]) => !covered.has(`${e} ${d}`)).map(([e, d]) => `${e} ${d}`) },
+  };
+}
+
+/** A week: Dependabot opens PRs on Monday, the github task runs on Thursday. */
+const STALE_DAYS = 7;
+
+export function githubWarnings(g: Github): Warning[] {
+  const out: Warning[] = [];
+  for (const [repo, r] of Object.entries(g)) {
+    const at = repo;
+    if ('error' in r) continue;
+    for (const p of r.dependabot) {
+      if (p.checks === 'red') out.push({ at, warn: `Dependabot #${p.number} is red: ${p.title}` });
+      else if (p.days > STALE_DAYS) out.push({ at, warn: `Dependabot #${p.number} open ${p.days} days: ${p.title}` });
+    }
+    if (r.alerts !== 'off') for (const a of r.alerts) if (a.patched && a.scope !== 'development') out.push({ at, warn: `${a.severity} alert in ${a.package} (${a.manifest}), patched in ${a.patched}` });
+    for (const i of r.outside) if (!i.answered && i.days > STALE_DAYS) out.push({ at, warn: `${i.kind} #${i.number} from ${i.by}, ${i.days} days without our answer: ${i.title}` });
+    if (!r.config.file) {
+      if (r.config.uncovered.length) out.push({ at, warn: `no .github/dependabot.yml for ${r.config.uncovered.join(', ')}` });
+      continue;
+    }
+    if (!r.config.cooldown) out.push({ at, warn: 'dependabot.yml has no cooldown' });
+    if (r.config.uncovered.length) out.push({ at, warn: `dependabot.yml doesn't watch ${r.config.uncovered.join(', ')}` });
+  }
+  return out;
+}
+
+export function githubText(g: Github): string[] {
+  const out: string[] = [];
+  for (const [repo, r] of Object.entries(g)) {
+    if ('error' in r) {
+      out.push(`${repo}: (couldn't read: ${r.error})`);
+      continue;
+    }
+    const alerts = r.alerts === 'off' ? 'alerts off' : `${r.alerts.length} alerts`;
+    const config = !r.config.file ? 'no dependabot.yml' : `dependabot.yml${r.config.cooldown ? '' : ' without a cooldown'}${r.config.uncovered.length ? `, missing ${r.config.uncovered.join(', ')}` : ''}`;
+    out.push(`${repo}: ${r.dependabot.length} Dependabot PRs, ${alerts}, ${r.outside.length} from outside; ${config}`);
+    for (const p of r.dependabot) out.push(`  #${p.number} ${p.type}, ${p.checks}, ${p.days} days: ${p.title}`);
+    if (r.alerts !== 'off') for (const a of r.alerts) out.push(`  alert ${a.severity} ${a.package} (${a.manifest}${a.scope === 'development' ? ', development only' : ''}), patched: ${a.patched ?? 'none'}`);
+    for (const i of r.outside) out.push(`  ${i.kind} #${i.number} ${i.by}, ${i.days} days, ${i.comments} comments, ${i.answered ? 'answered' : 'not answered'}: ${i.title}`);
+  }
+  return out;
+}
+
+const stderrOf = (e: unknown) => String((e as { stderr?: unknown }).stderr ?? (e as Error).message ?? e);
+
+/**
+ * What's open on each of the project's GitHub repos: Dependabot's PRs and
+ * alerts, outside people's issues and PRs, and whether dependabot.yml watches
+ * every manifest (docs/plans/2026-11-02-github-task.md). `ours` names logins
+ * that are the project's own though not in the org (church's site files
+ * issues as `achurchai`). One repo that can't be read doesn't hide the others.
+ */
+export function github(o: { repos: string[]; ours?: string[] }): SectionSpec<Github> {
+  return {
+    source: `gh pr list, gh api issues, dependabot/alerts, contents and trees (${o.repos.join(', ')})`,
+    windowed: false,
+    title: 'GitHub',
+    read: (ctx) => {
+      const nowMs = Date.now();
+      const out: Github = {};
+      for (const repo of o.repos) {
+        try {
+          const prs = ctx.runJson<GhPr[]>('gh', ['pr', 'list', '-R', repo, '--author', 'app/dependabot', '--state', 'open', '--limit', '100', '--json', 'number,title,createdAt,statusCheckRollup'], []);
+          let alerts: 'off' | GhAlert[];
+          try {
+            alerts = lines<GhAlert>(ctx.run('gh', ['api', '--paginate', `repos/${repo}/dependabot/alerts?state=open&per_page=100`, '--jq', '.[] | {number, severity: .security_advisory.severity, package: .dependency.package.name, manifest: .dependency.manifest_path, patched: .security_vulnerability.first_patched_version.identifier, scope: .dependency.scope}']));
+          } catch (e) {
+            if (!/disabled/i.test(stderrOf(e))) throw e;
+            alerts = 'off';
+          }
+          const issues = lines<GhIssue>(ctx.run('gh', ['api', '--paginate', `repos/${repo}/issues?state=open&per_page=100`, '--jq', '.[] | {number, title, created_at, login: .user.login, association: .author_association, bot: (.user.type == "Bot"), pr: (.pull_request != null), comments}']));
+          for (const i of issues) {
+            if (i.bot || OURS.includes(i.association) || (o.ours ?? []).includes(i.login) || !i.comments) continue;
+            const last = lines<{ association: string; login: string }>(ctx.run('gh', ['api', '--paginate', `repos/${repo}/issues/${i.number}/comments?per_page=100`, '--jq', '.[] | {association: .author_association, login: .user.login}'])).pop();
+            i.last = last ?? null;
+          }
+          let yml: string | null = null;
+          try {
+            yml = Buffer.from(ctx.run('gh', ['api', `repos/${repo}/contents/.github/dependabot.yml`, '--jq', '.content']).trim(), 'base64').toString('utf8');
+          } catch (e) {
+            if (!/404|Not Found/i.test(stderrOf(e))) throw e;
+          }
+          const paths = ctx.run('gh', ['api', `repos/${repo}/git/trees/HEAD?recursive=1`, '--jq', '.tree[] | select(.type == "blob") | .path']).split('\n').filter(Boolean);
+          out[repo] = githubRepo({ prs, alerts, issues, yml, paths, nowMs, ours: o.ours });
+        } catch (e) {
+          out[repo] = { error: oneLine(stderrOf(e)) };
+        }
+      }
+      return out;
+    },
+    warnings: githubWarnings,
+    text: githubText,
+  };
+}
+
+/** One JSON value per line, as `gh api --paginate --jq '.[] | {…}'` prints them. */
+const lines = <T>(out: string): T[] => out.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l) as T);
 
 // ─── errors ────────────────────────────────────────────────────────────
 
@@ -547,6 +771,8 @@ export interface BingSitemap {
 export interface Bing {
   /** Bing's newest traffic day: it lags a few days. */
   through: string | null;
+  /** The windows its numbers cover: the report's, moved back to end on `through` (`bingWindows`). */
+  windows: { now: Window; before: Window };
   now: BingTraffic;
   before: BingTraffic;
   queries: BingRow[];
@@ -573,12 +799,24 @@ export function bingWarnings(b: Bing, today: string): Warning[] {
 export function bingText(b: Bing): string[] {
   const rows = (xs: BingRow[]) => xs.slice(0, 15).map((r) => `${r.key.replace(/^https?:\/\/[^/]+/, '') || '/'} ${r.impressions}/${r.clicks}/${r.position ?? '–'}`).join(', ') || 'none';
   return [
-    `Through ${b.through ?? 'no data yet'}: ${b.now.impressions} impressions, ${b.now.clicks} clicks (before: ${b.before.impressions}, ${b.before.clicks})`,
+    `${b.windows.now.from} to ${b.windows.now.to} (Bing's data through ${b.through ?? 'no day yet'}): ${b.now.impressions} impressions, ${b.now.clicks} clicks (before, ${b.windows.before.from} to ${b.windows.before.to}: ${b.before.impressions}, ${b.before.clicks})`,
     `Pages (impressions, clicks, position): ${rows(b.pages)}`,
     `Queries: ${rows(b.queries)}`,
     `Index: ${b.crawl.inIndex ?? '–'} pages (through ${b.crawl.through ?? '–'}); crawled in the window ${b.crawl.crawled}, errors ${b.crawl.errors}, 4xx ${b.crawl.code4xx}, 5xx ${b.crawl.code5xx}, other codes ${b.crawl.otherCodes}, blocked by robots.txt ${b.crawl.blockedByRobots}`,
     `Sitemaps: ${b.sitemaps.map((s) => `${s.url} ${s.status}, read ${s.lastCrawled ?? 'never'}, ${s.urls ?? '?'} URLs`).join('; ') || 'none'}`,
   ];
+}
+
+/**
+ * The report's windows moved back to end on Bing's newest day, as
+ * `search.google` lags its own. Unmoved, `now` held only the days Bing had
+ * (4 of 7 on 2026-11-04) against a whole `before`: Bing's impressions read as
+ * down 31% (721 to 1,039) the week they doubled (1,370 to 679; ollamaherd).
+ */
+export function bingWindows(through: string | null, now: Window, before: Window): { now: Window; before: Window } {
+  if (!through || through >= now.to) return { now, before };
+  const days = Math.round((Date.parse(`${now.to}T00:00:00Z`) - Date.parse(`${through}T00:00:00Z`)) / 864e5);
+  return { now: lagged(now, days), before: lagged(before, days) };
 }
 
 /**
@@ -596,13 +834,16 @@ export async function readBing(site: string, key: string, now: Window, before: W
   const traffic = await call<{ Date: string; Impressions: number; Clicks: number }>('GetRankAndTrafficStats');
   const feeds = await call<{ Url: string; Status: string; Submitted?: string; LastCrawled?: string; UrlCount?: number }>('GetFeeds');
   const day = (d?: string) => (d ? bingDay(d) : null);
+  const through = traffic.map((r) => bingDay(r.Date)).sort().at(-1) ?? null;
+  const windows = bingWindows(through, now, before);
   return {
-    through: traffic.map((r) => bingDay(r.Date)).sort().at(-1) ?? null,
-    now: bingTraffic(traffic, now),
-    before: bingTraffic(traffic, before),
-    queries: bingRows(await call<BingStatRow>('GetQueryStats'), now),
-    pages: bingRows(await call<BingStatRow>('GetPageStats'), now),
-    crawl: bingCrawl(await call<BingCrawlRow>('GetCrawlStats'), now),
+    through,
+    windows,
+    now: bingTraffic(traffic, windows.now),
+    before: bingTraffic(traffic, windows.before),
+    queries: bingRows(await call<BingStatRow>('GetQueryStats'), windows.now),
+    pages: bingRows(await call<BingStatRow>('GetPageStats'), windows.now),
+    crawl: bingCrawl(await call<BingCrawlRow>('GetCrawlStats'), windows.now),
     sitemaps: feeds.map((f) => ({ url: f.Url, status: f.Status, submitted: day(f.Submitted), lastCrawled: day(f.LastCrawled), urls: f.UrlCount ?? null })),
   };
 }
@@ -620,6 +861,316 @@ export function searchBing(): SectionSpec<Bing> {
     },
     warnings: (b) => bingWarnings(b, new Date().toISOString().slice(0, 10)),
     text: bingText,
+  };
+}
+
+// ─── search.google ─────────────────────────────────────────────────────
+
+/** Search Console's data lags about this many days, so its windows end that far back. */
+export const SC_LAG_DAYS = 3;
+
+/** A window moved back by Search Console's lag, keeping its length. */
+export function lagged(w: Window, days = SC_LAG_DAYS): Window {
+  const back = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) - days * 864e5).toISOString().slice(0, 10);
+  return { from: back(w.from), to: back(w.to) };
+}
+
+/** A row of Search Console's searchAnalytics. */
+export interface ScApiRow {
+  keys?: string[];
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+export interface ScRow {
+  /** The query, or the page's path; for queries by page, the query. */
+  key: string;
+  /** For queries by page: the page's path. */
+  page?: string;
+  clicks: number;
+  impressions: number;
+  /** Percent, one decimal. */
+  ctr: number;
+  position: number;
+}
+
+export interface ScTotals {
+  clicks: number;
+  impressions: number;
+  position: number | null;
+}
+
+export interface SearchGoogle {
+  property: string;
+  /** The windows asked for, each moved back by the lag: Search Console's data ends about then. */
+  now: Window;
+  before: Window;
+  totals: { now: ScTotals; before: ScTotals };
+  queries: ScRow[];
+  pages: ScRow[];
+  /** Each page's queries, the busiest pairs first: where a title misses its searchers' words. */
+  queriesByPage: ScRow[];
+}
+
+const pathOf = (url: string) => url.replace(/^https?:\/\/[^/]+/, '') || '/';
+
+/** API rows as the report keeps them, the most impressions first: paths not URLs, ctr in percent, position to one decimal. */
+export function scRows(rows: ScApiRow[], dims: string[]): ScRow[] {
+  return rows.map((r) => {
+    const k = (d: string) => r.keys?.[dims.indexOf(d)] ?? '';
+    const out: ScRow = {
+      key: dims.includes('query') ? k('query') : pathOf(k('page')),
+      clicks: r.clicks,
+      impressions: r.impressions,
+      ctr: Math.round(r.ctr * 1000) / 10,
+      position: Math.round(r.position * 10) / 10,
+    };
+    if (dims.includes('query') && dims.includes('page')) out.page = pathOf(k('page'));
+    return out;
+  }).sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks);
+}
+
+/** A query with no dimensions answers one row of totals, or none when there were no impressions. */
+export function scTotals(rows: ScApiRow[]): ScTotals {
+  const r = rows[0];
+  return r ? { clicks: r.clicks, impressions: r.impressions, position: Math.round(r.position * 10) / 10 } : { clicks: 0, impressions: 0, position: null };
+}
+
+export function searchGoogleWarnings(g: SearchGoogle): Warning[] {
+  const { now, before } = g.totals;
+  if (now.impressions === 0 && before.impressions > 0) return [{ at: '', warn: `no impressions ${g.now.from} to ${g.now.to}, ${before.impressions} the window before` }];
+  if (before.impressions >= 100 && now.impressions < before.impressions / 2) return [{ at: '', warn: `impressions halved: ${now.impressions}, ${before.impressions} the window before` }];
+  return [];
+}
+
+export function searchGoogleText(g: SearchGoogle): string[] {
+  const t = (x: ScTotals) => `${x.impressions} impressions, ${x.clicks} clicks, position ${x.position ?? '–'}`;
+  // A query can be a whole pasted prompt (2026-11-03: 700 characters).
+  const short = (q: string) => (q.length > 60 ? `${q.slice(0, 57)}...` : q);
+  const rows = (xs: ScRow[]) => xs.slice(0, 15).map((r) => `${short(r.key)} ${r.impressions}/${r.clicks}/${r.position}`).join(', ') || 'none';
+  return [
+    `${g.property}, ${g.now.from} to ${g.now.to}: ${t(g.totals.now)} (before: ${t(g.totals.before)})`,
+    `Pages (impressions, clicks, position): ${rows(g.pages)}`,
+    `Queries: ${rows(g.queries)}`,
+    `Queries by page: ${g.queriesByPage.slice(0, 10).map((r) => `${r.page} "${short(r.key)}" ${r.impressions}/${r.clicks}/${r.position}`).join(', ') || 'none'}`,
+  ];
+}
+
+/** Search Console's numbers for a property, with an OAuth access token. */
+export async function readSearchGoogle(property: string, token: string, now: Window, before: Window): Promise<SearchGoogle> {
+  const query = async (w: Window, dimensions: string[], rowLimit: number): Promise<ScApiRow[]> => {
+    const res = await fetch(`https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/searchAnalytics/query`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: w.from, endDate: w.to, dimensions, rowLimit }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const body = (await res.json()) as { rows?: ScApiRow[]; error?: { message?: string } };
+    if (!res.ok) throw new Error(`Search Console answered ${res.status}: ${body.error?.message ?? ''}`);
+    return body.rows ?? [];
+  };
+  const [n, b] = [lagged(now), lagged(before)];
+  return {
+    property,
+    now: n,
+    before: b,
+    totals: { now: scTotals(await query(n, [], 1)), before: scTotals(await query(b, [], 1)) },
+    queries: scRows(await query(n, ['query'], 25), ['query']),
+    pages: scRows(await query(n, ['page'], 25), ['page']),
+    queriesByPage: scRows(await query(n, ['page', 'query'], 50), ['page', 'query']),
+  };
+}
+
+/**
+ * `search.google`, the standard's section: totals beside the window before,
+ * queries, pages, and queries by page, each window moved back by Search
+ * Console's lag. Reads GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET and
+ * SEARCH_CONSOLE_REFRESH_TOKEN (read-only), never printed. The property is
+ * sc-domain:<host> unless the project names another. `indexing` isn't here yet.
+ */
+export function searchGoogle(o: { property?: string } = {}): SectionSpec<SearchGoogle> {
+  return {
+    source: `Search Console searchAnalytics; its data lags about ${SC_LAG_DAYS} days, so the windows end then`,
+    windowed: true,
+    title: 'Google',
+    read: async (ctx) => {
+      const { GOOGLE_OAUTH_CLIENT_ID: id, GOOGLE_OAUTH_CLIENT_SECRET: secret, SEARCH_CONSOLE_REFRESH_TOKEN: refresh } = process.env;
+      if (!id || !secret || !refresh) throw new Error('no GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET or SEARCH_CONSOLE_REFRESH_TOKEN in .env');
+      const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: id, client_secret: secret, refresh_token: refresh, grant_type: 'refresh_token' }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const token = ((await res.json()) as { access_token?: string }).access_token;
+      if (!token) throw new Error(`Google's token endpoint answered ${res.status} with no access token`);
+      return readSearchGoogle(o.property ?? `sc-domain:${new URL(ctx.site).hostname}`, token, ctx.now, ctx.before);
+    },
+    warnings: searchGoogleWarnings,
+    text: searchGoogleText,
+  };
+}
+
+// ─── cloudflare ────────────────────────────────────────────────────────
+
+/** A row of Cloudflare's `httpRequestsAdaptiveGroups`. */
+export interface CfRow {
+  count: number;
+  avg?: { sampleInterval: number };
+  dimensions: Record<string, string | number>;
+}
+
+/** Rows past this many weren't returned: the counts are a floor. */
+export const CF_LIMIT = 1000;
+
+/**
+ * A path no site of ours serves, asked for by scanners: dotfiles and their
+ * backups, PHP and WordPress, admin consoles. Counted, not listed, so a real
+ * broken link stands out among the 404s. A project can pass its own.
+ */
+export const isProbePath = (path: string) =>
+  /(^|\/)\.(env|git|svn|hg|aws|ssh|docker|vscode|idea|claude|DS_Store|npmrc|htaccess|htpasswd)|\.(php\d?|aspx?|jsp|cgi|sql|bak|old|swp|tar|gz|zip|7z|rar)$|(^|\/)(wp-|wordpress|phpmyadmin|actuator|cgi-bin|xmlrpc|vendor\/|admin\/|server-status|credentials|secrets?\.)|(^|\/)(config|env|settings|appsettings)\.(js|json|ya?ml)$/i.test(path);
+
+/** Rows summed by one dimension, most first. */
+export function cfBy(rows: CfRow[], dim: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows) out[String(r.dimensions[dim])] = (out[String(r.dimensions[dim])] ?? 0) + r.count;
+  return Object.fromEntries(Object.entries(out).sort((a, b) => b[1] - a[1]));
+}
+
+/** 5xx rows (hour, path, status) by hour and by path; the busiest path first. */
+export function cfServerErrors(rows: CfRow[], limit = CF_LIMIT) {
+  const byHour = new Map<string, { hour: string; n: number; statuses: Record<string, number> }>();
+  const byPath = new Map<string, { status: number; path: string; n: number }>();
+  for (const { count, dimensions: d } of rows) {
+    const hour = String(d.datetimeHour).slice(0, 13);
+    const h = byHour.get(hour) ?? { hour, n: 0, statuses: {} };
+    h.n += count;
+    const status = String(d.edgeResponseStatus);
+    h.statuses[status] = (h.statuses[status] ?? 0) + count;
+    byHour.set(hour, h);
+    const key = `${d.edgeResponseStatus} ${d.clientRequestPath}`;
+    const p = byPath.get(key) ?? { status: Number(d.edgeResponseStatus), path: String(d.clientRequestPath), n: 0 };
+    p.n += count;
+    byPath.set(key, p);
+  }
+  return {
+    total: rows.reduce((n, r) => n + r.count, 0),
+    byHour: [...byHour.values()].sort((a, b) => a.hour.localeCompare(b.hour)),
+    byPath: [...byPath.values()].sort((a, b) => b.n - a.n),
+    truncated: rows.length >= limit,
+  };
+}
+
+/** 404 rows by path: the site-shaped ones listed, the probes counted. */
+export function cfNotFound(rows: CfRow[], isProbe = isProbePath, top = 20) {
+  let probes = 0;
+  const site: { path: string; n: number }[] = [];
+  for (const [path, n] of Object.entries(cfBy(rows, 'clientRequestPath'))) {
+    if (isProbe(path)) probes += n;
+    else site.push({ path, n });
+  }
+  return { total: rows.reduce((n, r) => n + r.count, 0), probes, site: site.slice(0, top), truncated: rows.length >= CF_LIMIT };
+}
+
+export interface Cloudflare {
+  /** Each query's largest sample interval: at 1 its counts are exact (the standard). */
+  sampleInterval: { statuses: number; serverErrors: number; notFound: number; devices: number };
+  now: { requests: number; statuses: Record<string, number> };
+  before: { requests: number; statuses: Record<string, number> };
+  serverErrors: ReturnType<typeof cfServerErrors>;
+  notFound: ReturnType<typeof cfNotFound>;
+  /** HTML pages answered 200, by the client's device type. */
+  devices: Record<string, number>;
+}
+
+/** Warned: 5xx in the last day (by hour), an hour of 10 or more, and lists cut at the limit. */
+export function cloudflareWarnings(c: Cloudflare, nowMs: number): Warning[] {
+  const out: Warning[] = [];
+  const recent = c.serverErrors.byHour.filter((h) => nowMs - Date.parse(`${h.hour}:00:00Z`) < 864e5 + 3_600_000);
+  if (recent.length) out.push({ at: 'serverErrors', warn: `${recent.reduce((n, h) => n + h.n, 0)} 5xx in the last day: ${recent.map((h) => `${h.hour.slice(5)}h ${h.n} (${Object.keys(h.statuses).join(', ')})`).join(', ')}` });
+  for (const h of c.serverErrors.byHour.filter((x) => x.n >= 10 && !recent.includes(x))) out.push({ at: 'serverErrors', warn: `${h.n} 5xx in the hour from ${h.hour}:00Z` });
+  if (c.serverErrors.truncated) out.push({ at: 'serverErrors', warn: `${CF_LIMIT} rows: there are more 5xx than counted` });
+  if (c.sampleInterval.serverErrors > 1) out.push({ at: 'serverErrors', warn: `sampled (interval ${c.sampleInterval.serverErrors}): the 5xx counts are estimates` });
+  return out;
+}
+
+export function cloudflareText(c: Cloudflare): string[] {
+  // Numeric keys (statuses) keep JS's ascending order in an object, so sort here.
+  const top = (r: Record<string, number>, n = 8) => Object.entries(r).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `${k} ${v}`).join(', ');
+  const sampled = Object.entries(c.sampleInterval).map(([k, v]) => [k, Math.round(v * 10) / 10] as const).filter(([, v]) => v > 1).map(([k, v]) => `${k} ${v}`);
+  const nf = c.notFound;
+  return [
+    `Requests: ${c.now.requests} (before: ${c.before.requests}); ${top(c.now.statuses)}`,
+    `5xx: ${c.serverErrors.total}${c.serverErrors.byHour.length ? `, in ${c.serverErrors.byHour.length} hours: ${c.serverErrors.byHour.map((h) => `${h.hour.slice(5)}h ${h.n}`).join(', ')}` : ''}`,
+    ...c.serverErrors.byPath.slice(0, 5).map((p) => `  ${String(p.n).padStart(5)}×  ${p.status} ${p.path}`),
+    // At the row limit the by-path rows are only the most-asked paths, so the total comes from the statuses.
+    `404s: ${nf.truncated ? `${c.now.statuses['404'] ?? nf.total}; in the ${CF_LIMIT} most-asked paths, ${nf.probes} were scanners' probes` : `${nf.total}, ${nf.probes} of them scanners' probes`}; the rest by path: ${nf.site.slice(0, 10).map((p) => `${p.path} ${p.n}`).join(', ') || 'none'}`,
+    `Pages by device: ${top(c.devices)}`,
+    ...(sampled.length ? [`Sampled, so estimates (interval): ${sampled.join(', ')}`] : []),
+  ];
+}
+
+async function cfQuery(token: string, query: string, variables: Record<string, unknown>): Promise<CfRow[]> {
+  const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  const body = (await res.json()) as { data?: { viewer: { zones: { rows: CfRow[] }[] } }; errors?: { message: string }[] | null };
+  if (!res.ok || body.errors?.length || !body.data) throw new Error(`Cloudflare GraphQL answered ${res.status}: ${body.errors?.map((e) => e.message).join('; ') ?? ''}`);
+  return body.data.viewer.zones[0]?.rows ?? [];
+}
+
+/** One query's rows: `dims` grouped, `filter` added to the window's, people and crawlers only (eyeball). */
+const cfGroups = (dims: string, filter: string, byTime = false) => `query ($zone: String!, $from: ${byTime ? 'Time' : 'Date'}!, $to: ${byTime ? 'Time' : 'Date'}!) {
+  viewer { zones(filter: { zoneTag: $zone }) {
+    rows: httpRequestsAdaptiveGroups(limit: ${CF_LIMIT}, orderBy: [count_DESC], filter: { ${byTime ? 'datetime_geq: $from, datetime_lt: $to' : 'date_geq: $from, date_leq: $to'}, requestSource: "eyeball"${filter ? `, ${filter}` : ''} }) {
+      count avg { sampleInterval } dimensions { ${dims} }
+    }
+  } }
+}`;
+
+/**
+ * `cloudflare`, the standard's section: requests by status beside the window
+ * before, 5xx by hour and path in a query of their own (404 rows filled a shared
+ * row limit and hid 40% of them, church 2026-11-02; a week's total hid a
+ * 75-minute outage), 404s with the probes set apart, and pages by device.
+ * Reads CLOUDFLARE_API_TOKEN (Zone Analytics Read) and CLOUDFLARE_ZONE_ID, never
+ * printed. 5xx here include the edge's own (522: the origin didn't answer),
+ * which the host's log never sees.
+ */
+export function cloudflare(o: { isProbe?: (path: string) => boolean } = {}): SectionSpec<Cloudflare> {
+  return {
+    source: "Cloudflare GraphQL, httpRequestsAdaptiveGroups, the zone's eyeball requests",
+    windowed: true,
+    title: 'Cloudflare',
+    read: async (ctx) => {
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      const zone = process.env.CLOUDFLARE_ZONE_ID;
+      if (!token || !zone) throw new Error('no CLOUDFLARE_API_TOKEN or CLOUDFLARE_ZONE_ID in .env.prod (a read-only Analytics token)');
+      const days = (w: Window) => ({ zone, from: w.from, to: w.to });
+      const statusNow = await cfQuery(token, cfGroups('edgeResponseStatus', ''), days(ctx.now));
+      const statusBefore = await cfQuery(token, cfGroups('edgeResponseStatus', ''), days(ctx.before));
+      const fiveXx = await cfQuery(token, cfGroups('datetimeHour clientRequestPath edgeResponseStatus', 'edgeResponseStatus_geq: 500', true), { zone, from: new Date(start(ctx.now)).toISOString(), to: new Date(end(ctx.now)).toISOString() });
+      const notFound = await cfQuery(token, cfGroups('clientRequestPath', 'edgeResponseStatus: 404'), days(ctx.now));
+      const devices = await cfQuery(token, cfGroups('clientDeviceType', 'edgeResponseStatus: 200, edgeResponseContentTypeName: "html"'), days(ctx.now));
+      const sum = (rows: CfRow[]) => rows.reduce((n, r) => n + r.count, 0);
+      const interval = (...rows: CfRow[][]) => Math.max(1, ...rows.flat().map((r) => r.avg?.sampleInterval ?? 1));
+      return {
+        sampleInterval: { statuses: interval(statusNow, statusBefore), serverErrors: interval(fiveXx), notFound: interval(notFound), devices: interval(devices) },
+        now: { requests: sum(statusNow), statuses: cfBy(statusNow, 'edgeResponseStatus') },
+        before: { requests: sum(statusBefore), statuses: cfBy(statusBefore, 'edgeResponseStatus') },
+        serverErrors: cfServerErrors(fiveXx),
+        notFound: cfNotFound(notFound, o.isProbe),
+        devices: cfBy(devices, 'clientDeviceType'),
+      };
+    },
+    warnings: (c) => cloudflareWarnings(c, Date.now()),
+    text: cloudflareText,
   };
 }
 
