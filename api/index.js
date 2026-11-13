@@ -91,6 +91,20 @@ function markdownUrlFor(req) {
   return (p === '/' ? '/index' : p.replace(/\/$/, '')) + '.md' + query;
 }
 
+// A failure is never kept by a cache (the caching standard, 2). The no-store
+// is set on the error itself, when its status is, so it also replaces a
+// Cache-Control a route set before its answer failed: a missing SKILL.md
+// answered 404 with the file's max-age=86400, and a missing share card's 404,
+// sent with no header, was a Cloudflare HIT (both live, 2026-11-13).
+app.use((req, res, next) => {
+  const status = res.status;
+  res.status = function (code) {
+    if (code >= 400) this.setHeader('Cache-Control', 'no-store');
+    return status.call(this, code);
+  };
+  next();
+});
+
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Robots-Tag', 'all');
@@ -120,11 +134,14 @@ const STATIC_OPTIONS = {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
 
-    // Long cache for static assets (images, CSS, JS, fonts)
+    // No name in public/ carries a hash, so nothing here is immutable (the
+    // caching standard, 3: a year on a fixed name can't be recalled). Images
+    // and icons keep a day; robots.txt, llms.txt and the discovery files an
+    // hour, so a change reaches crawlers and agents the same hour.
     if (['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.webp'].includes(ext)) {
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    } else {
       res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=3600');
     }
 
     // llms.txt and llms-full.txt are markdown

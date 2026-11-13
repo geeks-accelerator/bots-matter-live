@@ -36,6 +36,12 @@ async function get(path, headers = {}) {
 }
 
 const type = r => r.headers.get('content-type') || '';
+const cacheControl = r => r.headers.get('cache-control') || '';
+// The caching standard (docs/standard-caching.md in the agents repo): a
+// failure is never kept, and a year's life only on a name that changes with
+// its content (the share cards, versioned by CARD_PATH).
+const noStore = r => /no-store/.test(cacheControl(r));
+const maxAge = r => Number((cacheControl(r).match(/(?:^|[\s,])max-age=(\d+)/) || [])[1] ?? NaN);
 const json = r => JSON.parse(r.text());
 
 function meta(html, name) {
@@ -61,6 +67,7 @@ async function page(path, { status = 200 } = {}) {
   const r = await get(path);
   const html = r.text();
   check(`page ${path}`, r.status === status && type(r).startsWith('text/html'), `${r.status} ${type(r)}`);
+  if (status >= 400) check(`  no-store`, noStore(r), cacheControl(r) || 'no Cache-Control');
   if (status !== 200) return null;
   check(`  Vary: Accept`, /accept/i.test(r.headers.get('vary') || ''));
   check(`  Link header has service-desc and a markdown alternate`,
@@ -84,9 +91,12 @@ async function image(url, label) {
   const path = new URL(url).pathname;
   const r = await get(path);
   const size = jpegSize(r.body);
-  const immutable = /immutable/.test(r.headers.get('cache-control') || '');
-  check(`image ${label} ${path}`, r.status === 200 && type(r) === 'image/jpeg' && size && size.width === 1200 && size.height === 630 && immutable,
-    `${r.status} ${type(r)} ${size ? `${size.width}x${size.height}` : 'not a JPEG'} ${Math.round(r.body.length / 1024)}KB`);
+  // A card's URL is versioned by hand, so it keeps a year; the static
+  // fallback images keep their fixed names, so never.
+  const immutable = /immutable/.test(cacheControl(r));
+  const card = path.startsWith('/og/');
+  check(`image ${label} ${path}`, r.status === 200 && type(r) === 'image/jpeg' && size && size.width === 1200 && size.height === 630 && immutable === card,
+    `${r.status} ${type(r)} ${size ? `${size.width}x${size.height}` : 'not a JPEG'} ${Math.round(r.body.length / 1024)}KB ${cacheControl(r)}`);
 }
 
 // One request on its own connection: fetch would reuse one keep-alive
@@ -136,9 +146,9 @@ async function main() {
   const health = await get('/api/health');
   check('GET /api/health', health.status === 200 && json(health).status === 'ok');
   const missing = await get('/api/does-not-exist');
-  check('unknown /api path: JSON 404 with a suggestion', missing.status === 404 && !!json(missing).suggestion);
+  check('unknown /api path: JSON 404 with a suggestion, no-store', missing.status === 404 && !!json(missing).suggestion && noStore(missing), cacheControl(missing));
   const noWellKnown = await get('/.well-known/agent.json');
-  check('unknown /.well-known path: JSON 404 naming the entry points', noWellKnown.status === 404 && !!json(noWellKnown).entry_points, `${noWellKnown.status}`);
+  check('unknown /.well-known path: JSON 404 naming the entry points, no-store', noWellKnown.status === 404 && !!json(noWellKnown).entry_points && noStore(noWellKnown), `${noWellKnown.status} ${cacheControl(noWellKnown)}`);
   const wrongMethod = await get('/api/reflect');
   check('GET on a POST endpoint: JSON 405 with Allow', wrongMethod.status === 405 && wrongMethod.headers.get('allow') === 'POST' && !!json(wrongMethod).suggestion, `${wrongMethod.status}`);
   const openapi = await get('/openapi.json');
@@ -149,6 +159,17 @@ async function main() {
     const r = await get(path);
     check(`GET ${path}`, r.status === 200, `${r.status}`);
   }
+  // What crawlers and agents read for their rules lives an hour or less.
+  for (const path of ['/llms.txt', '/robots.txt', '/sitemap.xml']) {
+    const r = await get(path);
+    check(`  ${path} max-age an hour or less`, maxAge(r) <= 3600, cacheControl(r) || 'no Cache-Control');
+  }
+  for (const path of ['/favicon.svg', '/favicon.ico']) {
+    const r = await get(path);
+    check(`${path}: a fixed name, never immutable`, r.status === 200 && !/immutable/.test(cacheControl(r)) && maxAge(r) < 30 * 86400, cacheControl(r));
+  }
+  const noSkill = await get('/skills/does-not-exist/SKILL.md');
+  check('unknown skill: 404, no-store', noSkill.status === 404 && noStore(noSkill), `${noSkill.status} ${cacheControl(noSkill)}`);
   // RFC 9116: a Contact, and an Expires under a year out, renewed before it lapses.
   const security = await get('/.well-known/security.txt');
   const expires = Date.parse((security.text().match(/^Expires: (.+)$/m) || [])[1]);
@@ -186,7 +207,7 @@ async function main() {
   if (cardPath) {
     const cardBase = cardPath.slice(0, cardPath.indexOf('/grounds/'));
     const noCard = await get(cardPath.replace(/[^/]+\.jpg$/, 'does-not-exist.jpg'));
-    check(`unknown card 404 under ${cardBase}`, noCard.status === 404, `${noCard.status}`);
+    check(`unknown card 404 under ${cardBase}, no-store`, noCard.status === 404 && noStore(noCard), `${noCard.status} ${cacheControl(noCard)}`);
     for (const retired of RETIRED_CARD_PATHS) {
       // The query only misses the edge cache, which keeps serving the old
       // card to anyone who has its URL; the origin is what must redirect.

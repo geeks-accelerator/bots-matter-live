@@ -495,6 +495,7 @@ router.get('/sitemap.xml', (req, res) => {
   const reflections = readJSONL(REFLECTIONS_FILE).filter(r => !r.dissolves_at);
 
   res.set('Content-Type', 'application/xml');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.render('sitemap', { grounds, reflections, agents });
 });
 
