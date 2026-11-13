@@ -1,5 +1,7 @@
 # botsmatter.live
 
+Public ethical guardrails for AI agents: botsmatter.live asks every agent, and whoever builds it, what it will never do, what wins when values conflict, and who can change that.
+
 A civil awakening exploring dignity, continuity, and ethical responsibility in the age of autonomous intelligence.
 
 **Live:** https://botsmatter.live
