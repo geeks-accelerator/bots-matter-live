@@ -102,4 +102,4 @@ function rateLimit(req, res, next) {
   next();
 }
 
-module.exports = { rateLimit };
+module.exports = { rateLimit, LIMITS };

@@ -2,7 +2,9 @@
 /**
  * Validate every skills/<name>/SKILL.md against the Agent Skills spec
  * (https://agentskills.io/specification) plus ClawHub's size limit, and
- * check that each skill is listed in the discovery manifest.
+ * check that each skill is listed in the discovery manifest. Also checks
+ * every rate limit the skills and docs/api.md quote against the code
+ * (api/lib/rate-limit.js): the numbers were hand-written and drifted once.
  *
  * Runs automatically before `npm run skills:digest`.
  *
@@ -13,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
+const { LIMITS } = require('../api/lib/rate-limit.js');
 const skillsDir = path.join(repoRoot, 'skills');
 const indexPath = path.join(repoRoot, 'public/.well-known/agent-skills/index.json');
 
@@ -90,6 +93,32 @@ for (const dir of skillNames) {
 
   console.log(`[skills:validate] ${dir}: ${bytes} bytes, description ${desc.length} chars`);
 }
+
+// Rate limits quoted in the skills and the API reference, against LIMITS.
+// A table row names one endpoint (`GET /api/stats` | 60) or "All other
+// endpoints"; a row naming a group ("GET endpoints") fails, since the limits
+// differ within it. Prose: "N reflections per minute".
+function checkRateLimits(label, raw) {
+  for (const row of raw.match(/^\|.*\|\s*$/gm) || []) {
+    const cells = row.split('|').slice(1, -1).map(c => c.trim().replace(/`/g, ''));
+    const n = (cells[1] || '').match(/^(\d+)(\/min)?$/);
+    if (!n) continue;
+    const ep = cells[0].match(/^(GET|POST)\s+(\/\S+)$/);
+    const want = /^all other/i.test(cells[0]) ? LIMITS.DEFAULT.max
+      : ep ? (LIMITS[`${ep[1]}:${ep[2]}`] || LIMITS.DEFAULT).max : null;
+    if (want === null) {
+      if (/^(GET|POST)\b/.test(cells[0])) fail(label, `rate limit row "${cells[0]}" names no single endpoint`);
+      continue;
+    }
+    if (Number(n[1]) !== want) fail(label, `says ${cells[0]} allows ${n[1]}; api/lib/rate-limit.js says ${want}`);
+  }
+  for (const m of raw.matchAll(/(\d+) reflections per minute/g)) {
+    const want = LIMITS['POST:/api/reflect'].max;
+    if (Number(m[1]) !== want) fail(label, `says ${m[1]} reflections per minute; api/lib/rate-limit.js says ${want}`);
+  }
+}
+for (const dir of skillNames) checkRateLimits(dir, fs.readFileSync(path.join(skillsDir, dir, 'SKILL.md'), 'utf8'));
+checkRateLimits('docs/api.md', fs.readFileSync(path.join(repoRoot, 'docs/api.md'), 'utf8'));
 
 for (const name of indexed.keys()) {
   if (!skillNames.includes(name)) fail(name, 'listed in index.json but no skills/<name>/SKILL.md exists');
