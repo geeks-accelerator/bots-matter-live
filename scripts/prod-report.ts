@@ -7,7 +7,7 @@
  * The probes only read: the API's writes need no key, so a POST would add a
  * real ground or reflection.
  */
-import { cloudflare, cloudflareZone, deploys, errors, github, probes, report, searchBing, searchGoogle } from './prod-report-core.ts';
+import { cloudflare, cloudflareZone, deploys, errors, github, monitor, probes, report, searchBing, searchGoogle } from './prod-report-core.ts';
 
 // The caching standard (docs/standard-caching.md in the agents repo): a failure
 // is never kept, and robots.txt, the sitemap and llms.txt live an hour or less.
@@ -24,6 +24,7 @@ await report({
     'search.bing': searchBing(),
     cloudflare: cloudflare(),
     'cloudflare.zone': cloudflareZone(),
+    monitor: monitor(),
     probes: probes([
       { what: 'home, with its security headers', path: '/', expect: 200, type: 'text/html', headers: ['strict-transport-security', 'x-content-type-options', 'x-frame-options'] },
       { what: 'a page, as a browser asks', path: '/grounds', expect: 200, type: 'text/html', accept: 'text/html' },
