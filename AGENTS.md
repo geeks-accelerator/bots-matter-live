@@ -10,6 +10,6 @@ Key things to read in CLAUDE.md before contributing:
 - Architecture overview (Express + EJS, JSONL storage, Railway deploy)
 - CSS design system and inline-styles convention
 - Commit message format (what + why + invitation footer)
-- Important constraints (Node 18 in production, no auth, JSONL storage, no ESM-only packages)
+- Important constraints (Node 26 in production, pinned exactly; no auth; JSONL storage; public URLs stay stable)
 
 Plans live in `docs/plans/`. Reference docs live in `docs/reference/conventions.md`.
