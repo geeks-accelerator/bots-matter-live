@@ -126,7 +126,10 @@ async function rateLimitCounter() {
     if (r.reset === prev.reset) return r.left === prev.left - 1;
     return r.reset > prev.reset && r.left === r.limit - 1;
   });
-  check('rate limit: one counter per client', oneCounter, remaining.map(r => r.left).join(', '));
+  // On a failure, each answer's reset too: a single falling count failed this
+  // check once (2026-11-14 00:29Z), and the counts alone couldn't say why.
+  check('rate limit: one counter per client', oneCounter,
+    remaining.map(r => oneCounter ? r.left : `${r.left}@${r.reset}`).join(', '));
 }
 
 async function main() {
