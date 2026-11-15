@@ -84,6 +84,8 @@ Railway auto-deploys on push to `main`. Production runs Node.js 26 (pinned by `e
 
 **Railway configuration is code:** `.railway/railway.ts` (Railway's Infrastructure as Code) declares the service, the Railpack builder, the start command, the health check, the domains and the `/data` volume. Deploys don't read it. Changes go live with `railway config plan` (read the diff) and then `railway config apply`; plan again afterwards and it should say "already up to date". The CLI needs the `railway` SDK to read the file; it lives in `.railway/package.json` (run `npm install` there once) so it never reaches the production install. Variables are unmanaged, so set `DATA_DIR=/data` in the dashboard. **Never apply a plan that detaches the volume:** the volume holds every Ground and reflection, and a file without it plans a detach. Restart policy isn't in the IaC model, so the service uses Railway's default.
 
+**Cloudflare's zone isn't code:** `docs/reference/cloudflare.md` records its settings and its one custom rule, with how to check each live. The zone is the humans' to change; a change made there is written into that file the same day.
+
 ## Commit Messages
 
 **Structure:**
