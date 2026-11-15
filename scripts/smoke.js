@@ -173,6 +173,8 @@ async function main() {
   }
   const noSkill = await get('/skills/does-not-exist/SKILL.md');
   check('unknown skill: 404, no-store', noSkill.status === 404 && noStore(noSkill), `${noSkill.status} ${cacheControl(noSkill)}`);
+  // The 404 page is HTML; a type set for the file before it failed isn't kept.
+  check('unknown skill: the 404 page says text/html', type(noSkill).startsWith('text/html'), type(noSkill));
   // RFC 9116: a Contact, and an Expires under a year out, renewed before it lapses.
   const security = await get('/.well-known/security.txt');
   const expires = Date.parse((security.text().match(/^Expires: (.+)$/m) || [])[1]);

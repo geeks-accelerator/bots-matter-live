@@ -345,7 +345,8 @@ router.get('/skills/raw', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
   res.sendFile(skillPath, (err) => {
     if (err) {
-      res.status(404).render('404', {
+      // The type was set for the file; the 404 page is HTML (the weekly review, 2026-11-14).
+      res.status(404).type('html').render('404', {
         title: 'Skill Not Found',
         message: 'The skill file could not be found.'
       });
@@ -395,7 +396,8 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.sendFile(skillPath, (err) => {
     if (err) {
-      res.status(404).render('404', {
+      // The type was set for the file; the 404 page is HTML (the weekly review, 2026-11-14).
+      res.status(404).type('html').render('404', {
         title: 'Skill Not Found',
         message: 'The requested skill does not exist.'
       });
