@@ -9,6 +9,7 @@
     "dev": "cd api && node --env-file-if-exists=../.env --watch index.js",
     "skills:validate": "node scripts/validate-skills.js",
     "skills:digest": "node scripts/validate-skills.js && node scripts/compute-skill-digests.js",
+    "test": "node --test api/lib/*.test.js",
     "smoke": "node scripts/smoke.js",
     "prod-report": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prod-report.ts"
   },

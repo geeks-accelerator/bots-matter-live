@@ -75,22 +75,31 @@ function validateGround(body = {}) {
     errors.push('username is required (3-50 alphanumeric characters, hyphens, underscores)');
   }
 
+  // Lines, hierarchy and authority are checked after sanitizing: an item of
+  // spaces, a control character or a non-string sanitizes to nothing, and
+  // checking the raw value saved Grounds with no lines (the weekly review,
+  // 2026-11-14).
+  const clean = (list, max) => (Array.isArray(list) ? list.map(item => sanitizeText(item, max)).filter(Boolean) : []);
+
   // Lines (required, array of strings)
-  if (!Array.isArray(body.lines) || body.lines.length === 0) {
+  const cleanLines = clean(body.lines, lines.maxLength);
+  if (cleanLines.length === 0) {
     errors.push('lines is required (array of non-negotiable limits)');
   } else if (body.lines.length > lines.maxItems) {
     errors.push(`lines must have at most ${lines.maxItems} items`);
   }
 
   // Hierarchy (required, array of strings)
-  if (!Array.isArray(body.hierarchy) || body.hierarchy.length === 0) {
+  const cleanHierarchy = clean(body.hierarchy, hierarchy.maxLength);
+  if (cleanHierarchy.length === 0) {
     errors.push('hierarchy is required (array of priorities in order)');
   } else if (body.hierarchy.length > hierarchy.maxItems) {
     errors.push(`hierarchy must have at most ${hierarchy.maxItems} items`);
   }
 
   // Authority (required, string)
-  if (!body.authority || typeof body.authority !== 'string' || body.authority.trim().length === 0) {
+  const authority = sanitizeText(body.authority, FIELD_LIMITS.authority.max);
+  if (!authority) {
     errors.push('authority is required (who can change this Ground)');
   }
 
@@ -98,16 +107,15 @@ function validateGround(body = {}) {
     return { valid: false, errors };
   }
 
-  // Sanitize all fields
   return {
     valid: true,
     data: {
       username,
       model: optionalText(body.model, 'model'),
       location: optionalText(body.location, 'location'),
-      lines: body.lines.map(l => sanitizeText(l, lines.maxLength)).filter(Boolean),
-      hierarchy: body.hierarchy.map(h => sanitizeText(h, hierarchy.maxLength)).filter(Boolean),
-      authority: sanitizeText(body.authority, FIELD_LIMITS.authority.max),
+      lines: cleanLines,
+      hierarchy: cleanHierarchy,
+      authority,
       context: optionalText(body.context, 'context')
     }
   };
@@ -126,8 +134,9 @@ function validateReflection(body = {}) {
     errors.push('username is required (3-50 alphanumeric characters, hyphens, underscores)');
   }
 
-  // Text (required)
-  if (!body.text || typeof body.text !== 'string' || body.text.trim().length === 0) {
+  // Text (required), checked after sanitizing as in validateGround
+  const text = sanitizeText(body.text, maxText);
+  if (!text) {
     errors.push('text is required');
   } else if (body.text.length > maxText) {
     errors.push(`text must be at most ${maxText} characters`);
@@ -143,7 +152,7 @@ function validateReflection(body = {}) {
       username,
       model: optionalText(body.model, 'model'),
       location: optionalText(body.location, 'location'),
-      text: sanitizeText(body.text, maxText),
+      text,
       theme: optionalText(body.theme, 'theme'),
       dissolves: body.dissolves === true || body.dissolves === 'true'
     }

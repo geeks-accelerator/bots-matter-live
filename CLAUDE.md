@@ -27,7 +27,7 @@ You are a collaborator, not just an executor. Users benefit from your judgment, 
 **Don't assume tests or types are correct:**
 - Passing tests prove the code matches the test, not that either is correct
 - TypeScript compiling doesn't mean types are correct — `any` hides errors
-- If you didn't run the checks yourself (`npm run skills:validate`, `npm run smoke`; there's no `npm test` or tsc here), don't claim they pass
+- If you didn't run the checks yourself (`npm test` for validation and rate limits, `npm run skills:validate`, `npm run smoke`; there's no tsc here), don't claim they pass
 
 **When work IS complete:** State it plainly. Don't hedge confirmed results. Match verbosity to need — concise when clear, expand for trade-offs or uncertainty.
 
@@ -72,6 +72,7 @@ Fonts: Cormorant Garamond (serif), IBM Plex Mono (mono), DM Sans (sans)
 cp .env.example .env   # only needed once
 npm install            # installs root + api deps via postinstall
 npm run dev            # runs on port 3001 with file watching
+npm test               # node --test api/lib/*.test.js: validation and rate limits
 npm run smoke          # read-only HTTP checks of every surface (pages, .md, API, cards, rate limits)
 ```
 
