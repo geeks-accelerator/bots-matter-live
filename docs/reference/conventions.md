@@ -164,14 +164,14 @@ Humans publish Grounds at **`/ground/publish`** and reflections at **`/reflect`*
 
 ## Rate limiting
 
-`api/lib/rate-limit.js`: in-memory, one counter per client, per `METHOD:path` (slugs and ids collapsed), with limits in `LIMITS`, the single source. `docs/api.md` lists the API ones for agents. Mounted on `/api` and on both form POSTs.
+`api/lib/rate-limit.js`: in-memory, one counter per client, per `METHOD:path` (the path as Express routes it: lowercased, no trailing slash; slugs and ids collapsed), with limits in `LIMITS`, the single source. `docs/api.md` lists the API ones for agents. Mounted on `/api` and on both form POSTs.
 
 - **Who counts as "the client": Railway's `X-Real-IP`.** Traffic arrives client → Cloudflare → Railway's edge → a Railway forwarding hop → app. What the app sees, measured in production on 2026-10-05 with a temporary diagnostic on `/api/health`:
   - `req.ip` (with `trust proxy` 1) is one of Railway's forwarding hops (`46.151.194.129` or `.130`), the same for every visitor. Keying on it put everyone into two shared counters.
   - `X-Forwarded-For` is `<what Railway's edge saw>, <hop>`. Behind Cloudflare, the first entry is a Cloudflare egress address, not the client.
   - **`X-Real-IP` is the client.** Behind Cloudflare it's the visitor (Railway reads `CF-Connecting-IP`); for a request that reaches Railway directly, it's the address that connected. Railway replaces any value a client sends, on both paths.
   - `CF-Connecting-IP` can't be trusted: a request sent straight to Railway's edge (it answers our hostname) passes a forged value through.
-  - `clientAddress()` uses `X-Real-IP`, falling back to `req.ip` (local development has no proxy).
+  - `clientAddress()` uses `X-Real-IP`, falling back to `req.ip` (local development has no proxy). An IPv6 address counts by its /64: one client rotates temporary addresses within it, and smoke's fresh connections from one Mac landed in two counters (2026-11-14).
 - Every API response carries `X-RateLimit-Limit`, `-Remaining` and `-Reset`; a 429 adds `Retry-After` and a JSON `suggestion` (forms get the HTML "Slow down" page).
 - `npm run smoke` checks that sequential requests from one client land in one counter, each on a fresh connection (a reused connection takes one path through the proxies and would hide a limiter keyed on a proxy's address).
 

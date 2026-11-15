@@ -31,7 +31,22 @@ setInterval(() => {
 // "Rate limiting" in docs/reference/conventions.md.) Locally there's no
 // X-Real-IP, so req.ip applies.
 function clientAddress(req) {
-  return req.get('x-real-ip') || req.ip || 'unknown';
+  return clientKey(req.get('x-real-ip') || req.ip || 'unknown');
+}
+
+// An IPv6 client holds a whole /64 and rotates its temporary addresses within
+// it, so one counter per address let one client count as many (2026-11-14:
+// live smoke from one Mac with nine IPv6 addresses saw two counters). The
+// key is the /64; an IPv4-mapped address is its IPv4 address.
+function clientKey(address) {
+  const mapped = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (mapped) return mapped[1];
+  if (!address.includes(':')) return address;
+  const [head, tail = ''] = address.toLowerCase().split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return groups.slice(0, 4).map(g => g.replace(/^0+(?=.)/, '')).join(':') + '::/64';
 }
 
 // Rate limits by METHOD:full-path. Page-route form posts share the same
