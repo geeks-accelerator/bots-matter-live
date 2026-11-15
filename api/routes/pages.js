@@ -342,7 +342,8 @@ router.get('/reflections/:id', (req, res) => {
 router.get('/skills/raw', (req, res) => {
   const skillPath = path.join(__dirname, '../../skills/ethics-guardrails/SKILL.md');
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+  // An hour, like the skills index whose sha256 must match it (the weekly review, 2026-11-14).
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.sendFile(skillPath, (err) => {
     if (err) {
       // The type was set for the file; the 404 page is HTML (the weekly review, 2026-11-14).
@@ -393,7 +394,8 @@ router.get('/skills/:skill/SKILL.md', (req, res) => {
 
   const skillPath = path.join(__dirname, '../../skills', skill, 'SKILL.md');
   res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
+  // An hour, like the skills index whose sha256 must match it (the weekly review, 2026-11-14).
+  res.setHeader('Cache-Control', 'public, max-age=3600');
   res.sendFile(skillPath, (err) => {
     if (err) {
       // The type was set for the file; the 404 page is HTML (the weekly review, 2026-11-14).

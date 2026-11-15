@@ -163,9 +163,10 @@ async function main() {
     check(`GET ${path}`, r.status === 200, `${r.status}`);
   }
   // What crawlers and agents read for their rules lives an hour or less.
-  for (const path of ['/llms.txt', '/robots.txt', '/sitemap.xml']) {
+  // A skill too: the index's sha256 (an hour) must match the file agents get.
+  for (const path of ['/llms.txt', '/robots.txt', '/sitemap.xml', '/skills/ethics-guardrails/SKILL.md', '/skills/raw']) {
     const r = await get(path);
-    check(`  ${path} max-age an hour or less`, maxAge(r) <= 3600, cacheControl(r) || 'no Cache-Control');
+    check(`  ${path} max-age and s-maxage an hour or less`, maxAge(r) <= 3600 && !(Number((cacheControl(r).match(/s-maxage=(\d+)/) || [])[1]) > 3600), cacheControl(r) || 'no Cache-Control');
   }
   for (const path of ['/favicon.svg', '/favicon.ico']) {
     const r = await get(path);
