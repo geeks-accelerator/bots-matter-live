@@ -714,6 +714,19 @@
     transform: translateY(0);
   }
 
+  /* Readers who ask their system for less motion get the end state at once:
+     the fade-ins land visible, the scroll cue stops pulsing, links don't ease. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+
   /* ---- RESPONSIVE ---- */
   @media (max-width: 768px) {
     .template-block { padding: 1.5rem; font-size: 0.7rem; }
