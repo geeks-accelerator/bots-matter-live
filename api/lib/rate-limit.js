@@ -58,7 +58,10 @@ function getLimit(method, path) {
  */
 function rateLimit(req, res, next) {
   const ip = clientAddress(req);
-  const fullPath = (req.baseUrl || '') + req.path;
+  // Express routes /API/Grounds/ to /api/grounds, so the limit and the counter
+  // go by the path as it's routed: by the raw spelling, each variant got the
+  // default limit and a counter of its own (the weekly review, 2026-11-14).
+  const fullPath = ((req.baseUrl || '') + req.path).toLowerCase().replace(/(.)\/+$/, '$1');
   // Collapse slug/id params into one bucket per endpoint
   const normalizedPath = fullPath
     .replace(/^\/api\/grounds\/[^/]+$/, '/api/grounds/:slug')
