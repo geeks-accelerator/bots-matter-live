@@ -266,4 +266,8 @@ router.get('/openapi.json', (req, res) => {
   res.json(buildOpenApi());
 });
 
+// Where many APIs keep theirs. Claude-SearchBot, ChatGLM-Spider and others
+// asked for it here 11 times in the week to 2026-11-16 and got 404s.
+router.get('/api/openapi.json', (req, res) => res.redirect(301, '/openapi.json'));
+
 module.exports = router;

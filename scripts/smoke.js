@@ -156,6 +156,8 @@ async function main() {
   check('GET on a POST endpoint: JSON 405 with Allow', wrongMethod.status === 405 && wrongMethod.headers.get('allow') === 'POST' && !!json(wrongMethod).suggestion, `${wrongMethod.status}`);
   const openapi = await get('/openapi.json');
   check('GET /openapi.json', openapi.status === 200 && /^3\.1/.test(json(openapi).openapi || ''));
+  const guessed = await get('/api/openapi.json');
+  check('/api/openapi.json 301s to /openapi.json', guessed.status === 301 && new URL(guessed.headers.get('location') || '', base).pathname === '/openapi.json', `${guessed.status} ${guessed.headers.get('location')}`);
   const catalog = await get('/.well-known/api-catalog');
   check('api-catalog is a linkset', catalog.status === 200 && type(catalog).startsWith('application/linkset+json'), type(catalog));
   for (const path of ['/.well-known/agent-skills/index.json', '/llms.txt', '/robots.txt', '/sitemap.xml', '/skills/ethics-guardrails/SKILL.md']) {
