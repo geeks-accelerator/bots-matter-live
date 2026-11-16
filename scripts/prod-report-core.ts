@@ -701,7 +701,7 @@ export interface Counted {
 /**
  * The database's read-only role (the Supabase standard, 12): a login that can
  * only SELECT, on the tables `activity` counts and the migration history, with
- * `pg_read_all_stats` for `inspect db`. The project agents' checkouts hold this
+ * `pg_monitor` for `inspect db`. The project agents' checkouts hold this
  * and no service-role key (2026-11-14), so a mistake in a read can't write.
  */
 export const READONLY_URL = 'SUPABASE_DB_URL_READONLY';
@@ -712,9 +712,9 @@ export function readonlyUrl(): string {
   return url;
 }
 
-/** Text with the connection string and its password taken out, for an error the report prints. */
-export function redact(text: string, url: string): string {
-  let out = text.split(url).join(`$${READONLY_URL}`);
+/** Text with the connection string and its password taken out, for an error to print; `name` is the variable it came from. */
+export function redact(text: string, url: string, name = READONLY_URL): string {
+  let out = text.split(url).join(`$${name}`);
   try {
     const password = decodeURIComponent(new URL(url).password);
     if (password) out = out.split(password).join('***');
@@ -725,11 +725,11 @@ export function redact(text: string, url: string): string {
 }
 
 /** Runs `f`, and rethrows its error without the connection string in it. */
-function keepingUrlOut<T>(url: string, f: () => T): T {
+export function keepingUrlOut<T>(url: string, f: () => T, name = READONLY_URL): T {
   try {
     return f();
   } catch (e) {
-    throw new Error(redact(oneLine(e), url));
+    throw new Error(redact(oneLine(e), url, name));
   }
 }
 
@@ -807,9 +807,19 @@ export function activity(o: { tables: Counted[] }): SectionSpec<ActivityRow[]> {
 
 /** The rows of a table the Supabase CLI prints (`a | b | c`), keyed by its header. */
 export function cliTable(text: string): Record<string, string>[] {
+  // The 3.x CLI prints JSON when it isn't writing to a terminal: `{"migrations": [...]}`,
+  // `{"rows": [...]}`, or `{"_tag": "Error", ...}`. Read as a table, that JSON was no rows at all,
+  // so `migration list` would have said nothing was pending (2026-11-16, found moving to 3.x).
+  const json = text.trim().startsWith('{') ? (() => { try { return JSON.parse(text) as Record<string, unknown>; } catch { return null; } })() : null;
+  if (json) {
+    if (json._tag === 'Error') throw new Error(String((json.error as { message?: string } | undefined)?.message ?? 'the Supabase CLI failed'));
+    const rows = Object.values(json).find((v): v is Record<string, unknown>[] => Array.isArray(v) && v.every((r) => r !== null && typeof r === 'object'));
+    return (rows ?? []).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k.toLowerCase(), v === null || v === undefined ? '' : String(v)])));
+  }
   const lines = text.split('\n').filter((l) => l.includes('|') && !/^[\s|-]+$/.test(l));
   if (lines.length < 1) return [];
-  const cells = (l: string) => l.split('|').map((c) => c.trim());
+  // 3.x's text table quotes each value in backticks.
+  const cells = (l: string) => l.split('|').map((c) => c.trim().replace(/^`(.*)`$/, '$1'));
   const head = cells(lines[0]!).map((h) => h.toLowerCase());
   return lines.slice(1).map((l) => Object.fromEntries(cells(l).map((c, i) => [head[i] ?? String(i), c])));
 }
@@ -893,7 +903,7 @@ const firstEnv = (names: string[]) => names.map((n) => process.env[n]).find(Bool
 /**
  * `supabase`, the Supabase standard's section: the migration history against
  * the repo and the slowest queries, through the Supabase CLI with the read-only
- * role's connection string (`--db-url`, never the checkout's link); and the public
+ * role's connection string (`--remote=<url>`, never the checkout's link); and the public
  * key tried against every table and function named, each of which must refuse
  * it. Reads the URL and the anon key from .env.prod by the names the projects
  * use. Rows are never kept: a table that answers is counted, not shown.
@@ -916,8 +926,8 @@ export function supabase(o: { tables: string[]; functions?: string[] }): Section
         }
       };
       const db = readonlyUrl();
-      const migrations = tryRead(() => migrationDrift(cliTable(keepingUrlOut(db, () => ctx.run('supabase', ['migration', 'list', '--db-url', db])))));
-      const outliers = tryRead(() => cliTable(keepingUrlOut(db, () => ctx.run('supabase', ['inspect', 'db', 'outliers', '--db-url', db]))));
+      const migrations = tryRead(() => migrationDrift(cliTable(keepingUrlOut(db, () => ctx.run('supabase', ['migration', 'list', `--remote=${db}`])))));
+      const outliers = tryRead(() => cliTable(keepingUrlOut(db, () => ctx.run('supabase', ['inspect', 'db', 'outliers', `--remote=${db}`]))));
       const url = firstEnv(['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_URL', 'PUBLIC_SUPABASE_URL']);
       const anonKey = firstEnv(['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY', 'PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEY']);
       if (!url || !anonKey) throw new Error('no Supabase URL or anon key in .env.prod (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY or their other names)');
@@ -1409,29 +1419,55 @@ export function cfBy(rows: CfRow[], dim: string): Record<string, number> {
   return Object.fromEntries(Object.entries(out).sort((a, b) => b[1] - a[1]));
 }
 
-/** 5xx rows (hour, path, status) by hour and by path; the busiest path first. */
+/**
+ * A user agent, short: the `compatible;` name, a tool's own name, the host its
+ * notice links to, or "a browser". Each site's daily 5xx warning was one 522 on
+ * `/` from Palo Alto's scanner, traced by hand in four projects (2026-11-12 to 15).
+ */
+export function cfClient(ua: unknown): string {
+  const s = String(ua ?? '').trim();
+  if (!s) return 'no user agent';
+  const compatible = /compatible; ?([A-Za-z][\w .-]*?)(?:\/|;|\))/.exec(s)?.[1];
+  if (compatible) return compatible;
+  const tool = /^([A-Za-z][\w.-]*)\//.exec(s)?.[1];
+  if (tool && tool !== 'Mozilla') return tool;
+  const host = /https?:\/\/([\w.-]+)/.exec(s)?.[1];
+  if (host) return host.split('.').slice(-2).join('.');
+  return tool ? 'a browser' : s.slice(0, 40);
+}
+
+const bump = (r: Record<string, number>, k: string, n: number) => { r[k] = (r[k] ?? 0) + n; };
+const mostFirst = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).sort((a, b) => b[1] - a[1]));
+
+/** 5xx rows (hour, path, status, user agent) by hour, by path and by client; the busiest path first. */
 export function cfServerErrors(rows: CfRow[], limit = CF_LIMIT) {
-  const byHour = new Map<string, { hour: string; n: number; statuses: Record<string, number> }>();
-  const byPath = new Map<string, { status: number; path: string; n: number }>();
+  const byHour = new Map<string, { hour: string; n: number; statuses: Record<string, number>; clients?: Record<string, number> }>();
+  const byPath = new Map<string, { status: number; path: string; n: number; clients?: Record<string, number> }>();
+  const byClient: Record<string, number> = {};
   for (const { count, dimensions: d } of rows) {
     const hour = String(d.datetimeHour).slice(0, 13);
+    const client = 'userAgent' in d ? cfClient(d.userAgent) : null;
     const h = byHour.get(hour) ?? { hour, n: 0, statuses: {} };
     h.n += count;
-    const status = String(d.edgeResponseStatus);
-    h.statuses[status] = (h.statuses[status] ?? 0) + count;
+    bump(h.statuses, String(d.edgeResponseStatus), count);
     byHour.set(hour, h);
     const key = `${d.edgeResponseStatus} ${d.clientRequestPath}`;
     const p = byPath.get(key) ?? { status: Number(d.edgeResponseStatus), path: String(d.clientRequestPath), n: 0 };
     p.n += count;
     byPath.set(key, p);
+    if (client) for (const r of [h.clients ??= {}, p.clients ??= {}, byClient]) bump(r, client, count);
   }
+  const sorted = <T extends { clients?: Record<string, number> }>(x: T) => (x.clients ? { ...x, clients: mostFirst(x.clients) } : x);
   return {
     total: rows.reduce((n, r) => n + r.count, 0),
-    byHour: [...byHour.values()].sort((a, b) => a.hour.localeCompare(b.hour)),
-    byPath: [...byPath.values()].sort((a, b) => b.n - a.n),
+    byHour: [...byHour.values()].map(sorted).sort((a, b) => a.hour.localeCompare(b.hour)),
+    byPath: [...byPath.values()].map(sorted).sort((a, b) => b.n - a.n),
+    byClient: mostFirst(byClient),
     truncated: rows.length >= limit,
   };
 }
+
+const clientList = (r?: Record<string, number>, n = 4) => Object.entries(r ?? {}).slice(0, n).map(([k, v]) => `${k} ${v}`).join(', ');
 
 /** 404 rows by path: the site-shaped ones listed, the probes counted. */
 export function cfNotFound(rows: CfRow[], isProbe = isProbePath, top = 20) {
@@ -1503,7 +1539,7 @@ export interface Cloudflare {
 export function cloudflareWarnings(c: Cloudflare, nowMs: number): Warning[] {
   const out: Warning[] = [];
   const recent = c.serverErrors.byHour.filter((h) => nowMs - Date.parse(`${h.hour}:00:00Z`) < 864e5 + 3_600_000);
-  if (recent.length) out.push({ at: 'serverErrors', warn: `${recent.reduce((n, h) => n + h.n, 0)} 5xx in the last day: ${recent.map((h) => `${h.hour.slice(5)}h ${h.n} (${Object.keys(h.statuses).join(', ')})`).join(', ')}` });
+  if (recent.length) out.push({ at: 'serverErrors', warn: `${recent.reduce((n, h) => n + h.n, 0)} 5xx in the last day: ${recent.map((h) => `${h.hour.slice(5)}h ${h.n} (${Object.keys(h.statuses).join(', ')}${h.clients ? `; ${clientList(h.clients)}` : ''})`).join(', ')}` });
   for (const h of c.serverErrors.byHour.filter((x) => x.n >= 10 && !recent.includes(x))) out.push({ at: 'serverErrors', warn: `${h.n} 5xx in the hour from ${h.hour}:00Z` });
   if (c.serverErrors.truncated) out.push({ at: 'serverErrors', warn: `${CF_LIMIT} rows: there are more 5xx than counted` });
   if (c.sampleInterval.serverErrors > 1) out.push({ at: 'serverErrors', warn: `sampled (interval ${c.sampleInterval.serverErrors}): the 5xx counts are estimates` });
@@ -1524,7 +1560,8 @@ export function cloudflareText(c: Cloudflare): string[] {
   return [
     `Requests: ${c.now.requests} (before: ${c.before.requests}); ${top(c.now.statuses)}`,
     `5xx: ${c.serverErrors.total}${c.serverErrors.byHour.length ? `, in ${c.serverErrors.byHour.length} hours: ${c.serverErrors.byHour.map((h) => `${h.hour.slice(5)}h ${h.n}`).join(', ')}` : ''}`,
-    ...c.serverErrors.byPath.slice(0, 5).map((p) => `  ${String(p.n).padStart(5)}×  ${p.status} ${p.path}`),
+    ...(c.serverErrors.byClient && Object.keys(c.serverErrors.byClient).length ? [`5xx by client: ${clientList(c.serverErrors.byClient, 8)}`] : []),
+    ...c.serverErrors.byPath.slice(0, 5).map((p) => `  ${String(p.n).padStart(5)}×  ${p.status} ${p.path}${p.clients ? ` (${clientList(p.clients)})` : ''}`),
     // At the row limit the by-path rows are only the most-asked paths, so the total comes from the statuses.
     `404s: ${nf.truncated ? `${c.now.statuses['404'] ?? nf.total}; in the ${CF_LIMIT} most-asked paths, ${nf.probes} were scanners' probes` : `${nf.total}, ${nf.probes} of them scanners' probes`}; the rest by path: ${nf.site.slice(0, 10).map((p) => `${p.path} ${p.n}`).join(', ') || 'none'}`,
     `Pages by device: ${top(c.devices)}`,
@@ -1575,7 +1612,7 @@ export function cloudflare(o: { isProbe?: (path: string) => boolean } = {}): Sec
       const days = (w: Window) => ({ zone, from: w.from, to: w.to });
       const statusNow = await cfQuery(token, cfGroups('edgeResponseStatus', ''), days(ctx.now));
       const statusBefore = await cfQuery(token, cfGroups('edgeResponseStatus', ''), days(ctx.before));
-      const fiveXx = await cfQuery(token, cfGroups('datetimeHour clientRequestPath edgeResponseStatus', 'edgeResponseStatus_geq: 500', true), { zone, from: new Date(start(ctx.now)).toISOString(), to: new Date(end(ctx.now)).toISOString() });
+      const fiveXx = await cfQuery(token, cfGroups('datetimeHour clientRequestPath edgeResponseStatus userAgent', 'edgeResponseStatus_geq: 500', true), { zone, from: new Date(start(ctx.now)).toISOString(), to: new Date(end(ctx.now)).toISOString() });
       const notFound = await cfQuery(token, cfGroups('clientRequestPath', 'edgeResponseStatus: 404'), days(ctx.now));
       const devices = await cfQuery(token, cfGroups('clientDeviceType', 'edgeResponseStatus: 200, edgeResponseContentTypeName: "html"'), days(ctx.now));
       const cache = await cfQuery(token, cfGroups('cacheStatus edgeResponseContentTypeName', ''), days(ctx.now));
@@ -2130,12 +2167,20 @@ export function parseArgs(args: string[], names: string[]): { days: number; json
   return opts;
 }
 
+/**
+ * A project's keys, by name, from its root: `.env.prod`, then `.env`. The first file read wins a
+ * key, and the shell's own wins over both. The report and `migrate/` read keys this one way.
+ */
+export function loadEnv(root: string): void {
+  for (const f of ['.env.prod', '.env']) if (existsSync(join(root, f))) process.loadEnvFile(join(root, f));
+}
+
 /** The command: a project's scripts/prod-report.ts calls this with its sections. */
 export async function report(config: ReportConfig, args = process.argv.slice(2)): Promise<void> {
   const opts = parseArgs(args, Object.keys(config.sections));
-  // The project's root: this copy lives in its scripts/. The first file read wins a key, and the shell's own wins over both.
+  // The project's root: this copy lives in its scripts/.
   const root = join(import.meta.dirname, '..');
-  for (const f of ['.env.prod', '.env']) if (existsSync(join(root, f))) process.loadEnvFile(join(root, f));
+  loadEnv(root);
   const r = await prodStats(config, { days: opts.days, only: opts.only });
   const md = text(config, r);
   if (!opts.only) {
