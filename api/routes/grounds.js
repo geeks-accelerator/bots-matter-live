@@ -10,7 +10,7 @@ const express = require('express');
 const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
-const { validateGround, sanitizeText } = require('../lib/validate');
+const { validateGround, sanitizeText, parseListQuery } = require('../lib/validate');
 const { GROUNDS_FILE } = require('../lib/paths');
 const { createGround } = require('../lib/grounds');
 const { getGroundBySlug } = require('../lib/queries');
@@ -21,8 +21,13 @@ const next = require('../lib/next-steps');
  * List all published Grounds with pagination
  */
 router.get('/', (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-  const cursor = sanitizeText(req.query.cursor) || null;
+  const { limit, cursor, error } = parseListQuery(req.query);
+  if (error) {
+    return res.status(400).json({
+      error: 'Invalid query',
+      suggestion: `${error}. Leave it out for the default; to page, pass the cursor the previous response returned.`
+    });
+  }
   const search = sanitizeText(req.query.search).toLowerCase() || null;
 
   let grounds = readJSONL(GROUNDS_FILE);

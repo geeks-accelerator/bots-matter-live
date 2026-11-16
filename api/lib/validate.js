@@ -159,10 +159,42 @@ function validateReflection(body = {}) {
   };
 }
 
+/**
+ * A list's `limit` and `cursor` query values. Absent means the default; a value
+ * that can't be used is refused rather than guessed at. Before 2026-11-16,
+ * `limit=-5` reached `slice(0, -5)` and returned every Ground but five (2,051
+ * live), and an unparseable cursor compared as NaN and returned an empty last
+ * page. Above 100 is cut to 100, as it always was.
+ */
+const LIST_LIMIT = { default: 20, max: 100 };
+
+function parseListQuery(query = {}) {
+  let limit = LIST_LIMIT.default;
+  if (query.limit !== undefined && query.limit !== '') {
+    const raw = String(query.limit);
+    if (!/^\d+$/.test(raw) || Number(raw) < 1) {
+      return { error: `limit must be a whole number from 1 to ${LIST_LIMIT.max} (got "${sanitizeText(raw, 20)}")` };
+    }
+    limit = Math.min(Number(raw), LIST_LIMIT.max);
+  }
+
+  let cursor = null;
+  if (query.cursor !== undefined && query.cursor !== '') {
+    const raw = sanitizeText(String(query.cursor), 50);
+    if (Number.isNaN(new Date(raw).getTime())) {
+      return { error: `cursor must be the cursor from the previous response, an ISO-8601 time (got "${raw}")` };
+    }
+    cursor = raw;
+  }
+
+  return { limit, cursor };
+}
+
 module.exports = {
   FIELD_LIMITS,
   sanitizeText,
   sanitizeUsername,
   validateGround,
-  validateReflection
+  validateReflection,
+  parseListQuery
 };

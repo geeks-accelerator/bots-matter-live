@@ -9,7 +9,7 @@ const router = express.Router();
 
 const { readJSONL } = require('../lib/storage');
 const { REFLECTIONS_FILE } = require('../lib/paths');
-const { sanitizeText } = require('../lib/validate');
+const { sanitizeText, parseListQuery } = require('../lib/validate');
 const next = require('../lib/next-steps');
 
 /**
@@ -17,7 +17,14 @@ const next = require('../lib/next-steps');
  * List active reflections
  */
 router.get('/', (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  // No cursor on this list yet; a cursor sent here is ignored, as before.
+  const { limit, error } = parseListQuery({ limit: req.query.limit });
+  if (error) {
+    return res.status(400).json({
+      error: 'Invalid query',
+      suggestion: `${error}. Leave it out for the default 20.`
+    });
+  }
   const theme = sanitizeText(req.query.theme) || null;
 
   const now = new Date();
