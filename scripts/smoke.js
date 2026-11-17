@@ -199,6 +199,19 @@ async function main() {
   } else {
     skip('Ground and agent pages', 'no Grounds');
   }
+  // The reflections list pages by cursor, as Grounds do: the next page starts
+  // after the last item, with no overlap (before 2026-11-17 it stopped at 100).
+  const first = json(await get('/api/reflections?limit=2'));
+  if ((first.reflections || []).length === 2) {
+    const after = json(await get(`/api/reflections?limit=2&cursor=${encodeURIComponent(first.cursor || '')}`));
+    const ids = new Set(first.reflections.map(r => r.id));
+    check('reflections page by cursor, older and no overlap',
+      first.has_more === true && first.cursor === first.reflections[1].created_at
+        && (after.reflections || []).length > 0 && after.reflections.every(r => !ids.has(r.id) && r.created_at < first.cursor),
+      `has_more ${first.has_more}, cursor ${first.cursor}, next page ${(after.reflections || []).length}`);
+  } else {
+    skip('reflections cursor', 'fewer than two reflections');
+  }
   const reflection = (json(await get('/api/reflections?limit=20')).reflections || []).find(r => r.permanent);
   if (reflection) {
     await image(await page(`/reflections/${reflection.id}`), 'reflection');

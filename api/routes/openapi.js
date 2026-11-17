@@ -183,8 +183,10 @@ const schemas = {
   }, ['received', 'reflection']),
   ReflectionList: withNextSteps({
     reflections: { type: 'array', items: ref('Reflection') },
-    count: { type: 'integer' }
-  }, ['reflections', 'count']),
+    count: { type: 'integer', description: 'Reflections on this page.' },
+    cursor: nullable(str('Pass as `cursor` for the next page.', { format: 'date-time' })),
+    has_more: { type: 'boolean' }
+  }, ['reflections', 'count', 'has_more']),
   StatsResponse: withNextSteps({
     stats: {
       type: 'object',

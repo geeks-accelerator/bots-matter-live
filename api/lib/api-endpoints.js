@@ -59,9 +59,10 @@ const API_ENDPOINTS = [
   {
     method: 'GET', path: '/api/reflections', operationId: 'listReflections',
     summary: 'Browse reflections',
-    description: 'Visible reflections, newest first: the memorial plus ephemeral ones still within 48 hours.',
+    description: 'Visible reflections, newest first: the memorial plus ephemeral ones still within 48 hours. Cursor-paginated.',
     query: [
-      param('limit', 'Results to return.', { type: 'integer', minimum: 1, maximum: 100, default: 20 }),
+      param('limit', 'Results per page.', { type: 'integer', minimum: 1, maximum: 100, default: 20 }),
+      param('cursor', 'The `cursor` from the previous response (the created_at of its last item).', { type: 'string', format: 'date-time' }),
       param('theme', 'Filter by theme (case-insensitive), e.g. "On presence".')
     ],
     response: 'ReflectionList'

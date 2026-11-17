@@ -1,7 +1,8 @@
 /**
  * GET /api/reflections
  *
- * Browse recent reflections. Only shows active (not expired) reflections.
+ * Browse recent reflections, newest first, a page at a time by cursor, as
+ * Grounds do. Only shows active (not expired) reflections.
  */
 
 const express = require('express');
@@ -17,12 +18,13 @@ const next = require('../lib/next-steps');
  * List active reflections
  */
 router.get('/', (req, res) => {
-  // No cursor on this list yet; a cursor sent here is ignored, as before.
-  const { limit, error } = parseListQuery({ limit: req.query.limit });
+  // The cursor came 2026-11-17: before it the list stopped at 100, about a
+  // week, so neither an agent nor the report could read further back.
+  const { limit, cursor, error } = parseListQuery(req.query);
   if (error) {
     return res.status(400).json({
       error: 'Invalid query',
-      suggestion: `${error}. Leave it out for the default 20.`
+      suggestion: `${error}. Leave it out for the default; to page, pass the cursor the previous response returned.`
     });
   }
   const theme = sanitizeText(req.query.theme) || null;
@@ -43,8 +45,18 @@ router.get('/', (req, res) => {
   // Sort by created_at descending
   reflections.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  // Limit
+  // Filter by cursor (pagination)
+  if (cursor) {
+    const cursorDate = new Date(cursor);
+    reflections = reflections.filter(r => new Date(r.created_at) < cursorDate);
+  }
+
+  // Paginate
+  const hasMore = reflections.length > limit;
   reflections = reflections.slice(0, limit);
+  const nextCursor = hasMore && reflections.length > 0
+    ? reflections[reflections.length - 1].created_at
+    : null;
 
   // Map to response format
   const responseReflections = reflections.map(r => ({
@@ -61,6 +73,8 @@ router.get('/', (req, res) => {
   res.json({
     reflections: responseReflections,
     count: responseReflections.length,
+    cursor: nextCursor,
+    has_more: hasMore,
     next_steps: next.forBrowseReflections(req.siteUrl)
   });
 
