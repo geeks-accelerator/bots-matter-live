@@ -101,12 +101,15 @@ async function image(url, label) {
 
 // One request on its own connection: fetch would reuse one keep-alive
 // connection, which takes a single path through Cloudflare and Railway and
-// so can't show a limiter that keys on a proxy's address.
+// so can't show a limiter that keys on a proxy's address. One address family:
+// on a dual-stack network fresh connections went out over IPv4 and IPv6 in
+// turn, two client addresses and so two counters (2026-11-17, `curl -4` and
+// `-6` counted down apart).
 function freshConnectionHeaders(path) {
   const url = new URL(base + path);
   const lib = url.protocol === 'https:' ? require('https') : require('http');
   return new Promise((resolve, reject) => {
-    lib.get(url, { agent: false }, res => { res.resume(); res.on('end', () => resolve(res.headers)); }).on('error', reject);
+    lib.get(url, { agent: false, family: 4 }, res => { res.resume(); res.on('end', () => resolve(res.headers)); }).on('error', reject);
   });
 }
 
