@@ -1552,6 +1552,9 @@ function cacheLine(k: NonNullable<Cloudflare['cache']>): string {
   return `Cache: ${k.fromEdge} of ${k.total} from the edge's copy (${pct}), ${k.toOrigin} to the origin; pages ${k.pages.fromEdge} of ${k.pages.total} from the edge;${k.rsc.total ? ` RSC (prefetches and client navigations) ${k.rsc.total}, ${k.rsc.toOrigin} to the origin;` : ''} ${statuses}${k.truncated ? ` (${CF_LIMIT} rows: a floor)` : ''}`;
 }
 
+/** A sample interval above which a row's count is too coarse to rank paths by. */
+const COARSE_SAMPLE = 10;
+
 export function cloudflareText(c: Cloudflare): string[] {
   // Numeric keys (statuses) keep JS's ascending order in an object, so sort here.
   const top = (r: Record<string, number>, n = 8) => Object.entries(r).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `${k} ${v}`).join(', ');
@@ -1563,7 +1566,11 @@ export function cloudflareText(c: Cloudflare): string[] {
     ...(c.serverErrors.byClient && Object.keys(c.serverErrors.byClient).length ? [`5xx by client: ${clientList(c.serverErrors.byClient, 8)}`] : []),
     ...c.serverErrors.byPath.slice(0, 5).map((p) => `  ${String(p.n).padStart(5)}×  ${p.status} ${p.path}${p.clients ? ` (${clientList(p.clients)})` : ''}`),
     // At the row limit the by-path rows are only the most-asked paths, so the total comes from the statuses.
-    `404s: ${nf.truncated ? `${c.now.statuses['404'] ?? nf.total}; in the ${CF_LIMIT} most-asked paths, ${nf.probes} were scanners' probes` : `${nf.total}, ${nf.probes} of them scanners' probes`}; the rest by path: ${nf.site.slice(0, 10).map((p) => `${p.path} ${p.n}`).join(', ') || 'none'}`,
+    // Sampled coarsely, each row is one sample scaled up: "/gcp-key.json 600" was 11 (botsmatter,
+    // 2026-11-17), so the paths aren't ranked and the total comes from the statuses too.
+    c.sampleInterval.notFound > COARSE_SAMPLE
+      ? `404s: ${c.now.statuses['404'] ?? nf.total}, about ${nf.probes} of them scanners' probes; by path: too sampled to rank (a row stands for up to ${Math.round(c.sampleInterval.notFound)} requests)`
+      : `404s: ${nf.truncated ? `${c.now.statuses['404'] ?? nf.total}; in the ${CF_LIMIT} most-asked paths, ${nf.probes} were scanners' probes` : `${nf.total}, ${nf.probes} of them scanners' probes`}; the rest by path: ${nf.site.slice(0, 10).map((p) => `${p.path} ${p.n}`).join(', ') || 'none'}`,
     `Pages by device: ${top(c.devices)}`,
     ...(c.cache ? [cacheLine(c.cache)] : []),
     ...(sampled.length ? [`Sampled, so estimates (interval): ${sampled.join(', ')}`] : []),
