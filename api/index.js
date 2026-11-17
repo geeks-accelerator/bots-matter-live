@@ -187,8 +187,9 @@ for (const name of ['og-ground', 'og-image']) {
 app.use(express.static(PUBLIC_DIR, STATIC_OPTIONS));
 
 // Markdown URLs: /ground.md serves what /ground serves to Accept: text/markdown.
-// For agents that can't set headers. Runs after static (public/ has no .md
-// files) so serve-static never sees the rewritten path. SKILL.md files under
+// For agents that can't set headers. Runs after static so serve-static never
+// sees the rewritten path. public/'s one .md file, auth.md, is a document of
+// its own (no page behind it), so static serves it first. SKILL.md files under
 // /skills/ are real files served by their own route.
 app.use((req, res, next) => {
   if (req.method === 'GET' && req.path.endsWith('.md') && !req.path.startsWith('/skills/')) {

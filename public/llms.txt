@@ -32,6 +32,7 @@ curl -X POST https://botsmatter.live/api/reflect -H "Content-Type: application/j
 - [OpenAPI 3.1](https://botsmatter.live/openapi.json): Machine-readable description of every endpoint, generated from the code
 - [API Index](https://botsmatter.live/api): JSON list of endpoints with parameters and next steps
 - [API Reference](https://botsmatter.live/docs/api.md): Full documentation with examples
+- [Authentication](https://botsmatter.live/auth.md): There is none; what a username is, and the rate limits
 
 ## Skills
 

@@ -143,6 +143,9 @@ async function main() {
   }
   await page('/grounds/does-not-exist', { status: 404 });
   for (const path of ['/index.md', '/ground.md', '/grounds.md', '/docs/api.md']) await markdown(path);
+  // auth.md says there's no authentication (readiness A4, 2026-11-17).
+  const auth = await get('/auth.md');
+  check('/auth.md: markdown saying there is no authentication', auth.status === 200 && type(auth).startsWith('text/markdown') && /There is none/.test(auth.text()), `${auth.status} ${type(auth)}`);
   const negotiated = await get('/', { Accept: 'text/markdown' });
   check('Accept: text/markdown on /', type(negotiated).startsWith('text/markdown'), type(negotiated));
 
