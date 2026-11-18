@@ -33,6 +33,12 @@ await report({
       { what: 'a missing skill', path: '/skills/no-such-skill/SKILL.md', expect: 404, match: NO_STORE },
       { what: 'a missing well-known file', path: '/.well-known/agent-card.json', expect: 404, match: NO_STORE },
       { what: 'a missing endpoint', path: '/api/no-such-endpoint', expect: 404, match: NO_STORE },
+      // The API standard's hostile and missing-thing probes, and nothing secret answers (11-17).
+      { what: 'a missing Ground', path: '/api/grounds/no-such-ground-2026-01-01', expect: 404, match: NO_STORE },
+      { what: 'a body that isn\'t JSON', path: '/api/grounds', body: '{"username":', expect: 400, match: NO_STORE },
+      { what: 'a list limit that can\'t be used', path: '/api/grounds?limit=-5', expect: 400, match: NO_STORE },
+      { what: '/.env', path: '/.env', expect: 404 },
+      { what: '/.git/config', path: '/.git/config', expect: 404 },
       // Card URLs are versioned by hand (CARD_PATH; old paths 301), so a year is the promise.
       { what: 'a share card', path: '/og/v2/grounds/coralnetwork-2026-11-13.jpg', expect: 200, type: 'image/jpeg', match: { 'cache-control': 'max-age=31536000, immutable' } },
       { what: 'the favicon', path: '/favicon.svg', expect: 200, type: 'image/svg+xml' },
