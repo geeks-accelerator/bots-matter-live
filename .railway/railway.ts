@@ -10,7 +10,12 @@ export default defineRailway(() => {
   const botsMatterLive = service("bots-matter-live", {
     source: github("geeks-accelerator/bots-matter-live", { branch: "main", checkSuites: false }),
     // Railpack reads the Node version from engines.node in package.json.
-    build: { builder: "RAILPACK" },
+    // Watch paths: only what the build and server read. api/ (with its own
+    // package.json and lockfile), public/, skills/, docs/api.md (rendered at
+    // /docs/api) and package.json. A push of scripts/, other docs or the root
+    // .md files doesn't rebuild: 11 of the 20 deploys from 11-13 to 11-17 were
+    // such pushes (the Railway standard, point 5).
+    build: { builder: "RAILPACK", watchPatterns: ["/api/**", "/public/**", "/skills/**", "/docs/api.md", "/package.json"] },
     start: "node api/index.js",
     healthcheck: "/api/health",
     healthcheckTimeout: 30,
